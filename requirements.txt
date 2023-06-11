@@ -1,0 +1,6 @@
+Flask
+Flask-Cors
+pytumblr
+PyYAML
+markdownify
+BeautifulSoup4
