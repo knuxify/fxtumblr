@@ -24,3 +24,13 @@ Simply replace `www.tumblr.com` in your URL with the URL of the fxtumblr instanc
 * Modify config according to your needs
 * Install nginx and Gunicorn, copy nginx config (`fxtumblr.nginx`) into your sites-available, `ln -s` it into sites-enabled
 * Run `./run.sh`
+
+## TODO
+
+This is still a very early proof-of-concept, but it's good enough to kinda sorta work. Still, there are many quality-of-life improvements to be made:
+
+- Add code to stich together multiple images, and use it to display attached images
+- Add an alternative "post rendering" mode for very long threads or just as an alternative option
+  - While we're at it - figure out what the description length limit is on Discord
+- Apply some tweaks to the content on non-Discord platforms (not sure if we can get away with using Markdown in the description anywhere else...)
+- Start a flagship instance (I hope nobody steals the domain from me...)
