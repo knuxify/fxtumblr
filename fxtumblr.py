@@ -136,6 +136,26 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
             info['blogname'] = post['blog']['name']
         trail.append(info)
 
+    # Custom handling for video-only posts (type == 'video'):
+    # since these are not included in the reblog trail, we have to add
+    # a little placeholder
+    if post['type'] == 'video':
+        info = {
+            "type": "video",
+            "content": f"(video)",
+            "video": {
+                "url": post['video_url'],
+                "height": post['thumbnail_height'],
+                "width": post['thumbnail_width'],
+            },
+            "images": [post['thumbnail_url']]
+        }
+        if 'reblogged_root_name' in post:
+            info['blogname'] = post['reblogged_root_name']
+        else:
+            info['blogname'] = post['blog']['name']
+        trail.append(info)
+
     for p in post['trail']:
         trail.append(get_post_info(p))
 
@@ -144,7 +164,6 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     # have to add it manually
     if post['type'] == 'photo':
         trail[0]['images'] = [photo['original_size']['url'] for photo in post['photos']]
-        print(trail[0]['images'])
 
     card_type = 'tweet'
 
