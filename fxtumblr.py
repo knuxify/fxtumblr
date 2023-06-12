@@ -133,16 +133,19 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
 
     # Videos can only be appended to the first post in the trail,
     # so we only check there.
+    image = None
     video = None
     if trail[0]['type'] == 'video':
         video = trail[0]['video']
+        image = video.replace('.mp4', '_frame1.jpg').replace('va.media.tumblr.com', '64.media.tumblr.com')
 
     # Get image
-    if 'images' in trail[0] and trail[0]['images']:
-        # TODO: stich images
-        image = trail[0]['images'][0]
-    else:
-        image = _post['blog']['avatar'][0]['url']
+    if not image:
+        if 'images' in trail[0] and trail[0]['images']:
+            # TODO: stich images
+            image = trail[0]['images'][0]
+        else:
+            image = _post['blog']['avatar'][0]['url']
 
     reblog = {"by": '', "from": ''}
     try:
