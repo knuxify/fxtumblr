@@ -139,14 +139,20 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     for p in post['trail']:
         trail.append(get_post_info(p))
 
+    card_type = 'tweet'
+
     # Videos can only be appended to the first post in the trail,
     # so we only check there.
     video = None
     if trail[0]['type'] == 'video':
+        card_type = 'video'
         video = trail[0]['video']
 
     # Get image
     if 'images' in trail[0] and trail[0]['images']:
+        if not card_type == 'video':
+            card_type = 'summary_large_image'
+
         # TODO: stich images
         image = trail[0]['images'][0]
     else:
@@ -180,13 +186,20 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         description = ''
 
+    # Truncate description (a maximum of 350 characters can be displayed)
+    truncate_placeholder = '... (see full thread)'
+    max_desc_length = 350 - len(truncate_placeholder)
+    if len(description) > max_desc_length:
+        description = description[:max_desc_length] + truncate_placeholder
+
     if reblog['from']:
-        header = reblog["from"] + "🔁" + reblog["by"]
+        header = reblog["from"] + " 🔁 " + reblog["by"]
     else:
         header = trail[-1]["blogname"]
 
     return render_template('card.html',
             image = image,
+            card_type = card_type,
             posturl = post['post_url'],
             header = header,
             op = trail[-1]['blogname'],

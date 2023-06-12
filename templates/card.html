@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+	<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+
 {# 	Site data #}
 	<meta content="#000000" name="theme-color" />
 	<meta property="og:site_name" content="{{ app_name }}">
+
 {# 	Basic card info #}
 	{%- if video -%}
 		<meta name="twitter:card" content="player" />
 	{%- else -%}
-		<meta name="twitter:card" content="tweet" />
+		<meta name="twitter:card" content="{{ card_type }}" />
 	{%- endif -%}
 
 	<meta name="twitter:title" content="{{ header }}"/>
