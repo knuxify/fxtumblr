@@ -162,6 +162,7 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
                 description += f'### {title}\n\n'
             description += info['content']
             n += 1
+    description = description.lstrip().rstrip()
 
     return render_template('card.html',
             image = image,
