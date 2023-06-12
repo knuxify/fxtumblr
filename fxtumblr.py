@@ -194,7 +194,7 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     description = ''
     n = 0
     for info in trail:
-        description += f'\n{info["blogname"]}:\n'
+        description += f'\n\n{info["blogname"]}:\n'
         if n == 0 and title:
             description += f'# {title}\n\n'
         description += info['content']
