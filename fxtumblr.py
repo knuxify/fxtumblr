@@ -18,6 +18,8 @@ with open('config.yml') as config_file:
     config = yaml.safe_load(config_file)
 
 APP_NAME = config['app_name']
+BASE_URL = config['base_url']
+
 app = Flask(__name__)  # Flask app
 CORS(app)
 tumblr = pytumblr.TumblrRestClient(
@@ -27,7 +29,7 @@ tumblr = pytumblr.TumblrRestClient(
     None, # config['tumblr_oauth_secret'],
 )
 
-if '127.0.0.1' not in config['base_url']:
+if '127.0.0.1' not in BASE_URL:
     app.wsgi_app = ProxyFix(
         app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
     )
@@ -42,8 +44,6 @@ def get_post_info(post: dict):
 
     # Handle video posts. Video posts are just text posts with a <video> tag embedded in a <figure>.
     if soup.find('video'):
-        from pprint import pprint
-        pprint(post)
         info['type'] = 'video'
         for fig in soup.findAll('figure'):
             if fig.video:
@@ -184,7 +184,8 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
             video = video,
             desc = description,
             notes = post['note_count'],
-            app_name=APP_NAME
+            app_name=APP_NAME,
+            base_url=BASE_URL
         )
 
 

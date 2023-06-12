@@ -34,7 +34,7 @@
     <meta property="og:image" content="{{ op_pfp }}" />
 {% endif %}
 
-    <link rel="alternate" href="{{ url }}/oembed.json?desc={{ op | urlencode }}&user={{ desc | urlencode }}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ op }}">
+    <link rel="alternate" href="{{ base_url }}/oembed.json?desc={{ op | urlencode }}&user={{ desc | urlencode }}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ op }}">
     <meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />
 </head>
 <body>
