@@ -82,7 +82,7 @@ def get_post_info(post: dict):
             n += 1
             images.append(image['src'])
             image.replaceWith(f'(image {n}) ')
-        info['images'] = images
+    info['images'] = images
 
     content_html = str(soup)
     info['content'] = markdownify(content_html).rstrip()
@@ -145,18 +145,16 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
 
     # Videos can only be appended to the first post in the trail,
     # so we only check there.
-    image = None
     video = None
     if trail[0]['type'] == 'video':
         video = trail[0]['video']
 
     # Get image
-    if not image:
-        if 'images' in trail[0] and trail[0]['images']:
-            # TODO: stich images
-            image = trail[0]['images'][0]
-        else:
-            image = _post['blog']['avatar'][0]['url']
+    if 'images' in trail[0] and trail[0]['images']:
+        # TODO: stich images
+        image = trail[0]['images'][0]
+    else:
+        image = _post['blog']['avatar'][0]['url']
 
     reblog = {"by": '', "from": ''}
     try:
