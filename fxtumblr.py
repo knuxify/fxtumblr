@@ -192,14 +192,15 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
 @app.route('/oembed.json')
 def oembed_json():
     out = {
-        "type":"video",
+        "type":request.args.get("ttype", None),
         "version":"1.0",
         "provider_name":"fxtumblr",
         "provider_url":"https://github.com/knuxify/",
         "title": request.args.get("desc", None),
-        "author_name":request.args.get("user", None),
+        "author_name":request.args.get("op", None),
         "author_url":request.args.get("link", None)
     }
+
     return out
 
 

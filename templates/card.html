@@ -3,7 +3,7 @@
 <head>
 	<meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
 {# 	Site data #}
-	<meta content="#000000"  name="theme-color" />
+	<meta content="#000000" name="theme-color" />
 	<meta property="og:site_name" content="{{ app_name }}">
 {# 	Basic card info #}
 	{%- if video -%}
@@ -11,10 +11,12 @@
 	{%- else -%}
 		<meta name="twitter:card" content="tweet" />
 	{%- endif -%}
+
 	<meta name="twitter:title" content="{% if reblogged_from %}{{ reblogged_from }}{% else %}{{ op }}{% endif %}{% if reblogged_by %} 🔁 {{ reblogged_by }}{% endif %}"/>
-    <meta name="twitter:creator" content="@{{ op }}" />
-    <meta property="og:description" content="{{ desc }}"  />
 	<meta name="twitter:image" content="{{ image }}" />
+	{%- if not video -%}
+    <meta name="twitter:creator" content="@{{ op }}" />
+	{%- endif -%}
 
 {# 	Video data #} {%- if video -%}
     <meta name="twitter:player:width" content="{{ video.width }}" />
@@ -22,19 +24,22 @@
     <meta name="twitter:player:stream" content="{{ video.url }}" />
     <meta name="twitter:player:stream:content_type" content="video/mp4" />
 
-    <meta property="og:url"                content="{{ video.url }}" />
-    <meta property="og:video"              content="{{ video.url }}" />
-    <meta property="og:video:secure_url"   content="{{ video.url }}" />
-    <meta property="og:video:type"         content="video/mp4" />
-    <meta property="og:video:width"        content="{{ video.width }}" />
-    <meta property="og:video:height"       content="{{ video.height }}" />
-    <meta property="og:image"              content="{{ image }}" />
+    <meta property="og:url" content="{{ video.url }}" />
+    <meta property="og:video" content="{{ video.url }}" />
+    <meta property="og:video:secure_url" content="{{ video.url }}" />
+    <meta property="og:video:type" content="video/mp4" />
+    <meta property="og:video:width" content="{{ video.width }}" />
+    <meta property="og:video:height" content="{{ video.height }}" />
 {% else %}
-	<meta name="twitter:image" content="{{ op_pfp }}" />
-    <meta property="og:image" content="{{ op_pfp }}" />
+	<!--<meta name="twitter:image" content="{{ op_pfp }}" />
+    <meta property="og:image" content="{{ op_pfp }}" />-->
 {% endif %}
 
-    <link rel="alternate" href="{{ base_url }}/oembed.json?desc={{ op | urlencode }}&user={{ desc | urlencode }}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ op }}">
+	<meta property="og:image" content="{{ image }}" />
+
+    <meta property="og:description" content="{{ desc }}" />
+
+    <link rel="alternate" href="{{ base_url }}/oembed.json?desc={{ desc | urlencode }}&op={{ op | urlencode }}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ op }}">
     <meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />
 </head>
 <body>
