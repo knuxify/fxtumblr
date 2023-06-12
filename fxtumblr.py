@@ -41,7 +41,6 @@ def get_post_info(post: dict):
 
     # Handle video posts. Video posts are just text posts with a <video> tag embedded in a <figure>.
     if soup.find('video'):
-        _handle_video(soup)
         info['type'] = 'video'
         n = 0
         for fig in soup.findAll('figure'):
