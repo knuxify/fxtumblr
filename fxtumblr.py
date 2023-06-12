@@ -4,7 +4,7 @@ inspired by, and borrowing some code from the original TwitFix
 https://github.com/robinuniverse/TwitFix/
 """
 
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, request
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
 import pytumblr
@@ -174,6 +174,21 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
             notes = post['note_count'],
             app_name=APP_NAME
         )
+
+
+@app.route('/oembed.json')
+def oembed_json():
+    out = {
+        "type":"video",
+        "version":"1.0",
+        "provider_name":"fxtumblr",
+        "provider_url":"https://github.com/knuxify/",
+        "title": request.args.get("desc", None),
+        "author_name":request.args.get("user", None),
+        "author_url":request.args.get("link", None)
+    }
+    return out
+
 
 @app.route('/')
 def redirect_to_repo():
