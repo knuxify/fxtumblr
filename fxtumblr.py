@@ -165,7 +165,10 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
                 description += f'### {title}\n\n'
             description += info['content']
             n += 1
-    description = description.lstrip().rstrip()
+    if description is not None:
+        description = description.lstrip().rstrip()
+    else:
+        description = ''
 
     return render_template('card.html',
             image = image,
@@ -174,7 +177,7 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
             reblogged_from = reblog['from'],
             reblogged_by = reblog['by'],
             video = video,
-            desc = description or '',
+            desc = description,
             notes = post['note_count'],
             app_name=APP_NAME
         )
