@@ -52,7 +52,7 @@ def get_post_info(post: dict):
                     "width": fig['data-orig-width'],
                     "height": fig['data-orig-height']
                 }
-                fig.replaceWith(f'(video) ')
+                fig.replaceWith(f'')
         images = [
             info['video']['url']\
                 .replace('.mp4', '_frame1.jpg')\
@@ -161,7 +161,7 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
 
     description = ''
     if len(trail) == 1 and trail[0]['type'] == 'video':
-        description = None
+        description = trail[0]['content']
     else:
         n = 0
         for info in trail:
