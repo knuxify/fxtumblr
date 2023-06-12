@@ -139,6 +139,13 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     for p in post['trail']:
         trail.append(get_post_info(p))
 
+    # Custom handling for image posts (type == 'photo'):
+    # the image is not included in the first post in the trail, so we
+    # have to add it manually
+    if post['type'] == 'photo':
+        trail[0]['images'] = [photo['original_size']['url'] for photo in post['photos']]
+        print(trail[0]['images'])
+
     card_type = 'tweet'
 
     # Videos can only be appended to the first post in the trail,
