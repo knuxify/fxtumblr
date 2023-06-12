@@ -33,6 +33,7 @@ if '127.0.0.1' not in config['base_url']:
     )
 
 def get_post_info(post: dict):
+    images = []
     soup = BeautifulSoup(post['content_raw'], 'html.parser')
 
     info = {
@@ -41,13 +42,24 @@ def get_post_info(post: dict):
 
     # Handle video posts. Video posts are just text posts with a <video> tag embedded in a <figure>.
     if soup.find('video'):
+        from pprint import pprint
+        pprint(post)
         info['type'] = 'video'
         n = 0
         for fig in soup.findAll('figure'):
             if fig.video:
                 n += 1
-                info['video'] = next(fig.video.children, None)['src']
+                info['video'] = {
+                    "url": next(fig.video.children, None)['src'],
+                    "width": fig['data-orig-width'],
+                    "height": fig['data-orig-height']
+                }
                 fig.replaceWith(f'(video {n}) ')
+        images = [
+            info['video']['url']\
+                .replace('.mp4', '_frame1.jpg')\
+                .replace('va.media.tumblr.com', '64.media.tumblr.com')
+        ]
 
     # Handle audio posts. Audio posts with text or multiple audio files are
     # just text posts with a <audio> tags.
@@ -64,13 +76,13 @@ def get_post_info(post: dict):
     else:
         info['type'] = 'text'
 
-    n = 0
-    images = []
-    for image in soup.findAll('img'):
-        n += 1
-        images.append(image['src'])
-        image.replaceWith(f'(image {n}) ')
-    info['images'] = images
+    if not images:
+        n = 0
+        for image in soup.findAll('img'):
+            n += 1
+            images.append(image['src'])
+            image.replaceWith(f'(image {n}) ')
+        info['images'] = images
 
     content_html = str(soup)
     info['content'] = markdownify(content_html).rstrip()
@@ -137,7 +149,6 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     video = None
     if trail[0]['type'] == 'video':
         video = trail[0]['video']
-        image = video.replace('.mp4', '_frame1.jpg').replace('va.media.tumblr.com', '64.media.tumblr.com')
 
     # Get image
     if not image:

@@ -17,18 +17,18 @@
 	<meta name="twitter:image" content="{{ image }}" />
 
 {# 	Video data #} {%- if video -%}
-    <meta name="twitter:player:width" content="720" />
-    <meta name="twitter:player:height" content="480" />
-    <meta name="twitter:player:stream" content="{{ video }}" />
+    <meta name="twitter:player:width" content="{{ video.width }}" />
+    <meta name="twitter:player:height" content="{{ video.height }}" />
+    <meta name="twitter:player:stream" content="{{ video.url }}" />
     <meta name="twitter:player:stream:content_type" content="video/mp4" />
 
-    <meta property="og:url"                content="{{ video }}" />
-    <meta property="og:video"              content="{{ video }}" />
-    <meta property="og:video:secure_url"   content="{{ video }}" />
+    <meta property="og:url"                content="{{ video.url }}" />
+    <meta property="og:video"              content="{{ video.url }}" />
+    <meta property="og:video:secure_url"   content="{{ video.url }}" />
     <meta property="og:video:type"         content="video/mp4" />
-    <meta property="og:video:width"        content="720" />
-    <meta property="og:video:height"       content="480" />
-    <meta property="og:image"              content="{{ pic }}" />
+    <meta property="og:video:width"        content="{{ video.width }}" />
+    <meta property="og:video:height"       content="{{ video.height }}" />
+    <meta property="og:image"              content="{{ image }}" />
 {% else %}
 	<meta name="twitter:image" content="{{ op_pfp }}" />
     <meta property="og:image" content="{{ op_pfp }}" />
