@@ -54,9 +54,13 @@ def get_post_info(post: dict):
     elif soup.find('audio'):
         info['type'] = 'audio'
         n_audios = len(soup.findAll('audio'))
-        # markdownify already strips audio tags, so we don't need to do it manually here
-        content_html = f'<p>({n_audios} audio files attached)</p>' + content_html
-
+        n = 0
+        for tag in soup.findAll('audio'):
+            if n == 0:
+                tag.replaceWith(f'({n_audios} audio files attached) ')
+            else:
+                tag.replaceWith('')
+            n += 1
     else:
         info['type'] = 'text'
 
@@ -166,7 +170,7 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
             reblogged_from = reblog['from'],
             reblogged_by = reblog['by'],
             video = video,
-            desc = description,
+            desc = description or '',
             notes = post['note_count'],
             app_name=APP_NAME
         )
