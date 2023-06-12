@@ -192,28 +192,24 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
         pass
 
     description = ''
-    if trail[0]['type'] == 'video':
-        _desc = trail[0]['content']
-        if len(_desc) > 256 or len(trail) > 1:
-            description = trail[0]['blogname'] + ': ' + \
-                    _desc[:256] + '... (click to see full post/thread)'
-        else:
-            description = trail[0]['blogname'] + ': ' + _desc
-    else:
-        n = 0
-        for info in trail:
-            description += f'\n{info["blogname"]}:\n'
-            if n == 0 and title:
-                description += f'# {title}\n\n'
-            description += info['content']
-            n += 1
+    n = 0
+    for info in trail:
+        description += f'\n{info["blogname"]}:\n'
+        if n == 0 and title:
+            description += f'# {title}\n\n'
+        description += info['content']
+        n += 1
+
     if description is not None:
         description = description.lstrip().rstrip()
     else:
         description = ''
 
     # Truncate description (a maximum of 350 characters can be displayed)
-    truncate_placeholder = '... (see full thread)'
+    if trail[0]['type'] == 'video':
+        truncate_placeholder = '... (click to see full thread)'
+    else:
+        truncate_placeholder = '... (see full thread)'
     max_desc_length = 350 - len(truncate_placeholder)
     if len(description) > max_desc_length:
         description = description[:max_desc_length] + truncate_placeholder
