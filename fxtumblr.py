@@ -239,7 +239,7 @@ def oembed_json():
         "type":request.args.get("ttype", None),
         "version":"1.0",
         "provider_name":"fxtumblr",
-        "provider_url":"https://github.com/knuxify/",
+        "provider_url":"https://github.com/knuxify/fxtumblr",
         "title": request.args.get("op", None),
         "author_name":request.args.get("desc", None),
         "author_url":request.args.get("link", None)
