@@ -160,7 +160,8 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
         pass
 
     description = ''
-    if trail[0]['type'] == 'video':
+    if False and trail[0]['type'] == 'video':
+        # truncate description; turns out discord doesn't need this, but other platforms might. todo
         _desc = trail[0]['content']
         if '\n' in _desc or len(_desc) > 48 or len(trail) > 1:
             description = trail[0]['blogname'] + ': ' + \
@@ -170,9 +171,9 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         n = 0
         for info in trail:
-            description += f'\n\n**{info["blogname"]}:**\n\n'
+            description += f'\n\n{info["blogname"]}:\n\n'
             if n == 0 and title:
-                description += f'### {title}\n\n'
+                description += f'# {title}\n\n'
             description += info['content']
             n += 1
     if description is not None:
@@ -180,12 +181,16 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         description = ''
 
+    if reblog['from']:
+        header = reblog["from"] + "🔁" + reblog["by"]
+    else:
+        header = trail[-1]["blogname"]
+
     return render_template('card.html',
             image = image,
             posturl = post['post_url'],
+            header = header,
             op = trail[-1]['blogname'],
-            reblogged_from = reblog['from'],
-            reblogged_by = reblog['by'],
             video = video,
             desc = description,
             notes = post['note_count'],

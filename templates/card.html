@@ -12,7 +12,7 @@
 		<meta name="twitter:card" content="tweet" />
 	{%- endif -%}
 
-	<meta name="twitter:title" content="{% if reblogged_from %}{{ reblogged_from }}{% else %}{{ op }}{% endif %}{% if reblogged_by %} 🔁 {{ reblogged_by }}{% endif %}"/>
+	<meta name="twitter:title" content="{{ header }}"/>
 	<meta name="twitter:image" content="{{ image }}" />
 	{%- if not video -%}
     <meta name="twitter:creator" content="@{{ op }}" />
@@ -39,7 +39,7 @@
 
     <meta property="og:description" content="{{ desc }}" />
 
-    <link rel="alternate" href="{{ base_url }}/oembed.json?desc={{ desc | urlencode }}&op={{ op | urlencode }}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ op }}">
+    <link rel="alternate" href="{{ base_url }}/oembed.json?{% if video %}desc={{ desc | urlencode }}&op={{ op | urlencode }}{% else %}desc={{ op | urlencode }}&op={{ header | urlencode }}{% endif %}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ op }}">
     <meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />
 </head>
 <body>
