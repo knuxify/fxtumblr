@@ -160,18 +160,17 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
         pass
 
     description = ''
-    if False and trail[0]['type'] == 'video':
-        # truncate description; turns out discord doesn't need this, but other platforms might. todo
+    if trail[0]['type'] == 'video':
         _desc = trail[0]['content']
-        if '\n' in _desc or len(_desc) > 48 or len(trail) > 1:
+        if len(_desc) > 256 or len(trail) > 1:
             description = trail[0]['blogname'] + ': ' + \
-                    _desc.split('\n')[0][:48] + '... (see full post/thread)'
+                    _desc[:256] + '... (click to see full post/thread)'
         else:
             description = trail[0]['blogname'] + ': ' + _desc
     else:
         n = 0
         for info in trail:
-            description += f'\n\n{info["blogname"]}:\n\n'
+            description += f'\n{info["blogname"]}:\n'
             if n == 0 and title:
                 description += f'# {title}\n\n'
             description += info['content']
