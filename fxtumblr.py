@@ -45,16 +45,14 @@ def get_post_info(post: dict):
         from pprint import pprint
         pprint(post)
         info['type'] = 'video'
-        n = 0
         for fig in soup.findAll('figure'):
             if fig.video:
-                n += 1
                 info['video'] = {
                     "url": next(fig.video.children, None)['src'],
                     "width": fig['data-orig-width'],
                     "height": fig['data-orig-height']
                 }
-                fig.replaceWith(f'(video {n}) ')
+                fig.replaceWith(f'(video) ')
         images = [
             info['video']['url']\
                 .replace('.mp4', '_frame1.jpg')\
@@ -77,11 +75,9 @@ def get_post_info(post: dict):
         info['type'] = 'text'
 
     if not images:
-        n = 0
         for image in soup.findAll('img'):
-            n += 1
             images.append(image['src'])
-            image.replaceWith(f'(image {n}) ')
+            image.replaceWith(f'(image) ')
     info['images'] = images
 
     content_html = str(soup)
