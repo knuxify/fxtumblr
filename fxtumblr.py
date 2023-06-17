@@ -87,6 +87,8 @@ def get_post_info(post: dict):
 
 
 def get_trail(post):
+    trail = []
+
     # Custom handling for audio-only posts (type == 'audio'):
     # since these are not included in the reblog trail, we have to add
     # a little placeholder
