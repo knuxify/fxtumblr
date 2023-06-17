@@ -86,41 +86,7 @@ def get_post_info(post: dict):
     return info
 
 
-def parse_error(info: dict):
-    """Parses error returned by Tumblr API."""
-    if not info or 'meta' not in info:
-        return render_template('error.html',
-                app_name=APP_NAME,
-                msg="Internal server error."), 500
-
-    if info['meta']['status'] == 404:
-        if 'errors' in info and info['errors'] and info['errors'][0]['code'] == 4012:
-            return render_template('error/locked.html',
-                app_name=APP_NAME,
-                msg="Profile is only available for logged-in users."), 403
-        return render_template('error.html',
-            app_name=APP_NAME,
-            msg="Post not found."), 404
-
-    return render_template('error.html',
-            app_name=APP_NAME,
-            msg="Internal server error."), 500
-
-
-@app.route('/<string:blogname>/<int:postid>')
-@app.route('/<string:blogname>/<int:postid>/<string:summary>')
-def generate_embed(blogname: str, postid: int, summary: str = None):
-    _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True) #, notes_info=True)
-    if not _post or 'posts' not in _post or not _post['posts']:
-        return parse_error(_post)
-    post = _post['posts'][0]
-
-    title = None
-    if 'summary' in _post:
-        title = _post['summary']
-
-    trail = []
-
+def get_trail(post):
     # Custom handling for audio-only posts (type == 'audio'):
     # since these are not included in the reblog trail, we have to add
     # a little placeholder
@@ -164,6 +130,44 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     # have to add it manually
     if post['type'] == 'photo':
         trail[0]['images'] = [photo['original_size']['url'] for photo in post['photos']]
+
+    return trail
+
+
+def parse_error(info: dict):
+    """Parses error returned by Tumblr API."""
+    if not info or 'meta' not in info:
+        return render_template('error.html',
+                app_name=APP_NAME,
+                msg="Internal server error."), 500
+
+    if info['meta']['status'] == 404:
+        if 'errors' in info and info['errors'] and info['errors'][0]['code'] == 4012:
+            return render_template('error/locked.html',
+                app_name=APP_NAME,
+                msg="Profile is only available for logged-in users."), 403
+        return render_template('error.html',
+            app_name=APP_NAME,
+            msg="Post not found."), 404
+
+    return render_template('error.html',
+            app_name=APP_NAME,
+            msg="Internal server error."), 500
+
+
+@app.route('/<string:blogname>/<int:postid>')
+@app.route('/<string:blogname>/<int:postid>/<string:summary>')
+def generate_embed(blogname: str, postid: int, summary: str = None):
+    _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True) #, notes_info=True)
+    if not _post or 'posts' not in _post or not _post['posts']:
+        return parse_error(_post)
+    post = _post['posts'][0]
+
+    title = None
+    if 'summary' in _post:
+        title = _post['summary']
+
+    trail = get_trail(post)
 
     card_type = 'tweet'
 
@@ -227,7 +231,6 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
             op = trail[-1]['blogname'],
             video = video,
             desc = description,
-            notes = post['note_count'],
             app_name=APP_NAME,
             base_url=BASE_URL
         )
