@@ -219,9 +219,9 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
         description = description[:max_desc_length] + truncate_placeholder
 
     if reblog['from']:
-        header = reblog["from"] + " 🔁 " + reblog["by"]
+        header = reblog["from"] + " 🔁 " + reblog["by"] + f' ({post["note_count"]} notes)'
     else:
-        header = trail[-1]["blogname"]
+        header = trail[-1]["blogname"] + f' ({post["note_count"]} notes)'
 
     return render_template('card.html',
             image = image,
