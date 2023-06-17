@@ -220,17 +220,21 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     if len(description) > max_desc_length:
         description = description[:max_desc_length] + truncate_placeholder
 
+    op = trail[-1]['blogname']
+    miniheader = op + f' ({post["note_count"]} notes)'
+
     if reblog['from']:
-        header = reblog["from"] + " 🔁 " + reblog["by"] + f' ({post["note_count"]} notes)'
+        header = reblog["from"] + " 🔁 " + reblog["by"]
     else:
-        header = trail[-1]["blogname"] + f' ({post["note_count"]} notes)'
+        header = trail[-1]["blogname"]
 
     return render_template('card.html',
             image = image,
             card_type = card_type,
             posturl = post['post_url'],
             header = header,
-            op = trail[-1]['blogname'],
+            miniheader = miniheader,
+            op = op,
             video = video,
             desc = description,
             app_name=APP_NAME,
