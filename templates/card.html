@@ -32,14 +32,13 @@
     <meta property="og:video:type" content="video/mp4" />
     <meta property="og:video:width" content="{{ video.width }}" />
     <meta property="og:video:height" content="{{ video.height }}" />
+
+    <meta property="og:description" content="{{ miniheader }}" /> <!-- In video posts, Discord displays this like an oEmbed title; if it happens to have newlines, it will also be completely ignored. -->
 {% else %}
-	<!--<meta name="twitter:image" content="{{ op_pfp }}" />
-    <meta property="og:image" content="{{ op_pfp }}" />-->
+    <meta property="og:description" content="{{ desc }}" />
 {% endif %}
 
 	<meta property="og:image" content="{{ image }}" />
-
-    <meta property="og:description" content="{{ desc }}" />
 
     <link rel="alternate" href="{{ base_url }}/oembed.json?{% if video %}desc={{ desc | urlencode }}&op={{ miniheader | urlencode }}{% else %}desc={{ miniheader | urlencode }}&op={{ header | urlencode }}{% endif %}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ miniheader }}">
     <meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />
