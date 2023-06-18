@@ -39,7 +39,7 @@ def get_post_info(post: dict):
     soup = BeautifulSoup(post['content_raw'], 'html.parser')
 
     info = {
-        "blogname": post['blog']['name']
+        "blogname": post['blog']['name'],
     }
 
     # Handle video posts. Video posts are just text posts with a <video> tag embedded in a <figure>.
@@ -81,7 +81,12 @@ def get_post_info(post: dict):
     info['images'] = images
 
     content_html = str(soup)
-    info['content'] = markdownify(content_html).rstrip()
+    info['content'] = markdownify(content_html).strip()
+    if not info['content']:
+        if info['type'] == 'video':
+            info['content'] = '(video)'
+        elif info['type'] == 'audio':
+            info['content'] = '(audio)'
 
     return info
 
@@ -110,7 +115,7 @@ def get_trail(post):
     if post['type'] == 'video':
         info = {
             "type": "video",
-            "content": f"(video)",
+            "content": "(video)",
             "video": {
                 "url": post['video_url'],
                 "height": post['thumbnail_height'],
