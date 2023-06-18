@@ -7,20 +7,22 @@
 	<meta content="#000000" name="theme-color" />
 	<meta property="og:site_name" content="{{ app_name }}">
 
-{# 	Basic card info #}
-	{%- if video -%}
-		<meta name="twitter:card" content="player" />
-	{%- else -%}
-		<meta name="twitter:card" content="{{ card_type }}" />
-	{%- endif -%}
+{#  Basic card info #}
+    {%- if video -%}
+        <meta name="twitter:card" content="player" />
+        <meta name="twitter:title" content="{{ miniheader }} | {{ header }}"/>
+    {%- else -%}
+        <meta name="twitter:card" content="{{ card_type }}" />
+        <meta name="twitter:title" content="{{ header }}"/>
+    {%- endif -%}
 
-	<meta name="twitter:title" content="{{ header }}"/>
-	<meta name="twitter:image" content="{{ image }}" />
-	{%- if not video -%}
+    <meta name="twitter:title" content="{{ header }}"/>
+    <meta name="twitter:image" content="{{ image }}" />
+    {%- if not video -%}
     <meta name="twitter:creator" content="@{{ op }}" />
-	{%- endif -%}
+    {%- endif -%}
 
-{# 	Video data #} {%- if video -%}
+{#  Video data #} {%- if video -%}
     <meta name="twitter:player:width" content="{{ video.width }}" />
     <meta name="twitter:player:height" content="{{ video.height }}" />
     <meta name="twitter:player:stream" content="{{ video.url }}" />
@@ -32,15 +34,12 @@
     <meta property="og:video:type" content="video/mp4" />
     <meta property="og:video:width" content="{{ video.width }}" />
     <meta property="og:video:height" content="{{ video.height }}" />
-
-    <meta property="og:description" content="{{ miniheader }}" /> <!-- In video posts, Discord displays this like an oEmbed title; if it happens to have newlines, it will also be completely ignored. -->
-{% else %}
-    <meta property="og:description" content="{{ desc }}" />
 {% endif %}
 
-	<meta property="og:image" content="{{ image }}" />
+    <meta property="og:description" content="{{ desc }}" />
+    <meta property="og:image" content="{{ image }}" />
 
-    <link rel="alternate" href="{{ base_url }}/oembed.json?{% if video %}desc={{ desc | urlencode }}&op={{ miniheader | urlencode }}{% else %}desc={{ miniheader | urlencode }}&op={{ header | urlencode }}{% endif %}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ miniheader }}">
+    <link rel="alternate" href="{{ base_url }}/oembed.json?{% if video %}desc={{ desc | urlencode }}&op={{ miniheader | urlencode }}%20%7C%20{{ header | urlencode }}{% else %}desc={{ miniheader | urlencode }}&op={{ header | urlencode }}{% endif %}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ miniheader }}">
     <meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />
 </head>
 <body>

@@ -211,12 +211,14 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         description = ''
 
-    # Truncate description (a maximum of 350 characters can be displayed)
+    # Truncate description (a maximum of 350 characters can be displayed, 256 for video desc)
     if trail[0]['type'] == 'video':
         truncate_placeholder = '... (click to see full thread)'
+        max_desc_length = 256 - len(truncate_placeholder)
     else:
         truncate_placeholder = '... (see full thread)'
-    max_desc_length = 350 - len(truncate_placeholder)
+        max_desc_length = 350 - len(truncate_placeholder)
+
     if len(description) > max_desc_length:
         description = description[:max_desc_length] + truncate_placeholder
 
