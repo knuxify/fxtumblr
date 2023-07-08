@@ -12,6 +12,7 @@ import yaml
 from markdownify import markdownify
 from bs4 import BeautifulSoup
 import os.path
+import itertools
 
 # https://stackoverflow.com/questions/2632199/how-do-i-get-the-path-of-the-current-executed-file-in-python
 from inspect import getsourcefile
@@ -56,6 +57,7 @@ if config['renders_enable']:
     @app.route('/renders/<path:path>')
     async def get_render(path):
         return await send_from_directory(RENDERS_PATH, path)
+
 
 async def get_post_info(post: dict):
     images = []
@@ -198,10 +200,8 @@ async def render_thread(post: dict, trail: dict, reblog_info: dict = {}):
         target_html.write(bytes(await render_template('render.html', trail=trail, fxtumblr_path=FXTUMBLR_PATH, reblog_info=reblog_info), 'utf-8'))
 
         page = await browser.newPage()
-        # For some reason, the viewport width is not respected by full-page screenshots, so we set the full height manually.
         await page.setViewport({'width': 560, 'height': 300})
         await page.goto(f'file://{target_html.name}')
-        #await page.setViewport({'width': 560, 'height': await page.evaluate('document.body.clientHeight'), 'isMobile': True})
         await page.screenshot({'path': os.path.join(RENDERS_PATH, target_filename), 'fullPage': True, 'omitBackground': True})
         await page.close()
 
@@ -211,6 +211,8 @@ async def render_thread(post: dict, trail: dict, reblog_info: dict = {}):
 @app.route('/<string:blogname>/<int:postid>')
 @app.route('/<string:blogname>/<int:postid>/<string:summary>')
 async def generate_embed(blogname: str, postid: int, summary: str = None):
+    should_render = False
+
     _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True) #, notes_info=True)
     if not _post or 'posts' not in _post or not _post['posts']:
         return await parse_error(_post)
@@ -232,14 +234,18 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         video = trail[0]['video']
 
     # Get image
-    if 'images' in trail[0] and trail[0]['images']:
+    images = list(itertools.chain.from_iterable(
+        [post['images'] for post in trail if 'images' in post]
+        ))
+
+    if len(images) == 0:
+        image = _post['blog']['avatar'][0]['url']
         if not card_type == 'video':
             card_type = 'summary_large_image'
-
-        # TODO: stich images
-        image = trail[0]['images'][0]
+    elif len(images) == 1:
+        image = images[0]
     else:
-        image = _post['blog']['avatar'][0]['url']
+        should_render = True
 
     reblog = {"by": '', "from": ''}
     try:
@@ -256,11 +262,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
             description += f'# {title}\n\n'
         description += info['content']
         n += 1
-
-    if description is not None:
-        description = description.lstrip().rstrip()
-    else:
-        description = ''
+    description = description.strip()
 
     # Truncate description (a maximum of 349 characters can be displayed, 256 for video desc)
     if trail[0]['type'] == 'video':
@@ -272,6 +274,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     if len(description) > max_desc_length:
         description = description[:max_desc_length] + truncate_placeholder
+        should_render = True
 
     op = trail[-1]['blogname']
     miniheader = op + f' ({post["note_count"]} notes)'
@@ -281,11 +284,14 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         header = trail[-1]["blogname"]
 
-    return await render_thread(post, trail, reblog)
+    if config['renders_enable'] and should_render:
+        image = await render_thread(post, trail, reblog)
+        card_type = 'summary_large_image'
+        description = ''
+        video = None
+    else:
+        should_render = False
 
-    #return await render_template('render.html', trail=trail, fxtumblr_path=FXTUMBLR_PATH, reblog_info=reblog)
-
-    """
     return await render_template('card.html',
             image = image,
             card_type = card_type,
@@ -296,9 +302,9 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
             video = video,
             desc = description,
             app_name=APP_NAME,
-            base_url=BASE_URL
+            base_url=BASE_URL,
+            is_rendered=should_render
         )
-    """
 
 
 @app.route('/oembed.json')
