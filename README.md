@@ -25,6 +25,14 @@ Simply replace `www.tumblr.com` in your URL with the URL of the fxtumblr instanc
 * Install nginx and Gunicorn, copy nginx config (`fxtumblr.nginx`) into your sites-available, `ln -s` it into sites-enabled
 * Run `./run.sh`
 
+## Enabling thread rendering support
+
+Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless version of Chrome/Chromium using the `pyppeteer` package.
+
+In order to make use of it, set `renders_enable` in your config. A copy of Chrome should be downloaded automatically on first launch.
+
+You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md.
+
 ## TODO
 
 This is still a very early proof-of-concept, but it's good enough to kinda sorta work. Still, there are many quality-of-life improvements to be made:

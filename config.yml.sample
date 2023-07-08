@@ -1,6 +1,9 @@
 app_name: "fxtumblr"
 base_url: "https://your-fxtumblr-instance.here"
 
+renders_enable: false
+renders_path: "./renders"
+
 # Get these from your app's info at https://www.tumblr.com/oauth/apps
 tumblr_consumer_key: "FIXME"
 tumblr_consumer_secret: "FIXME"

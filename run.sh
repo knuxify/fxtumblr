@@ -1,4 +1,4 @@
 #!/bin/sh
-export FLASK_ENV=development
-export FLASK_APP=fxtumblr
+export QUART_ENV=development
+export QUART_APP=fxtumblr
 gunicorn -w 4 'fxtumblr:app'

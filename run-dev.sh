@@ -1,5 +1,5 @@
 #!/bin/sh
-export FLASK_ENV=development
-export FLASK_DEBUG=1
-export FLASK_APP=fxtumblr
-python3 -m flask run
+export QUART_ENV=development
+export QUART_DEBUG=1
+export QUART_APP=fxtumblr
+python3 -m quart run

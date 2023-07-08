@@ -4,13 +4,18 @@ inspired by, and borrowing some code from the original TwitFix
 https://github.com/robinuniverse/TwitFix/
 """
 
-from flask import Flask, render_template, redirect, request
-from flask_cors import CORS
+from quart import Quart, render_template, redirect, request, send_from_directory
+from quart_cors import cors
 from werkzeug.middleware.proxy_fix import ProxyFix
 import pytumblr
 import yaml
 from markdownify import markdownify
 from bs4 import BeautifulSoup
+import os.path
+
+# https://stackoverflow.com/questions/2632199/how-do-i-get-the-path-of-the-current-executed-file-in-python
+from inspect import getsourcefile
+FXTUMBLR_PATH = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
 
 # Initial setup to get things up and running
 
@@ -20,8 +25,8 @@ with open('config.yml') as config_file:
 APP_NAME = config['app_name']
 BASE_URL = config['base_url']
 
-app = Flask(__name__)  # Flask app
-CORS(app)
+app = Quart(__name__)  # Quart app
+cors(app)
 tumblr = pytumblr.TumblrRestClient(
     config['tumblr_consumer_key'],
     config['tumblr_consumer_secret'],
@@ -34,12 +39,31 @@ if '127.0.0.1' not in BASE_URL:
         app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
     )
 
-def get_post_info(post: dict):
+if config['renders_enable']:
+    import tempfile
+    import pyppeteer
+    RENDERS_PATH = config['renders_path']
+    browser = None
+
+    @app.before_serving
+    async def setup_browser():
+        global browser
+        if not browser:
+            browser = await pyppeteer.launch()
+            # keep alive by leaving blank page open
+            await browser.newPage()
+
+    @app.route('/renders/<path:path>')
+    async def get_render(path):
+        return await send_from_directory(RENDERS_PATH, path)
+
+async def get_post_info(post: dict):
     images = []
     soup = BeautifulSoup(post['content_raw'], 'html.parser')
 
     info = {
         "blogname": post['blog']['name'],
+        "content_html": post['content']
     }
 
     # Handle video posts. Video posts are just text posts with a <video> tag embedded in a <figure>.
@@ -91,7 +115,7 @@ def get_post_info(post: dict):
     return info
 
 
-def get_trail(post):
+async def get_trail(post):
     trail = []
 
     # Custom handling for audio-only posts (type == 'audio'):
@@ -130,7 +154,7 @@ def get_trail(post):
         trail.append(info)
 
     for p in post['trail']:
-        trail.append(get_post_info(p))
+        trail.append(await get_post_info(p))
 
     # Custom handling for image posts (type == 'photo'):
     # the image is not included in the first post in the trail, so we
@@ -141,40 +165,62 @@ def get_trail(post):
     return trail
 
 
-def parse_error(info: dict):
+async def parse_error(info: dict):
     """Parses error returned by Tumblr API."""
     if not info or 'meta' not in info:
-        return render_template('error.html',
+        return await render_template('error.html',
                 app_name=APP_NAME,
                 msg="Internal server error."), 500
 
     if info['meta']['status'] == 404:
         if 'errors' in info and info['errors'] and info['errors'][0]['code'] == 4012:
-            return render_template('error/locked.html',
+            return await render_template('error/locked.html',
                 app_name=APP_NAME,
                 msg="Profile is only available for logged-in users."), 403
-        return render_template('error.html',
+        return await render_template('error.html',
             app_name=APP_NAME,
             msg="Post not found."), 404
 
-    return render_template('error.html',
+    return await render_template('error.html',
             app_name=APP_NAME,
             msg="Internal server error."), 500
 
 
+async def render_thread(post: dict, trail: dict, reblog_info: dict = {}):
+    """
+    Takes trail info from the generate_embed function and renders out
+    the thread into a picture. Returns a URL to the generated image.
+    """
+    global browser
+    target_filename = f'{post["blog_name"]}-{post["id"]}.png'
+
+    with tempfile.NamedTemporaryFile(suffix='.html') as target_html:
+        target_html.write(bytes(await render_template('render.html', trail=trail, fxtumblr_path=FXTUMBLR_PATH, reblog_info=reblog_info), 'utf-8'))
+
+        page = await browser.newPage()
+        # For some reason, the viewport width is not respected by full-page screenshots, so we set the full height manually.
+        await page.setViewport({'width': 560, 'height': 300})
+        await page.goto(f'file://{target_html.name}')
+        #await page.setViewport({'width': 560, 'height': await page.evaluate('document.body.clientHeight'), 'isMobile': True})
+        await page.screenshot({'path': os.path.join(RENDERS_PATH, target_filename), 'fullPage': True, 'omitBackground': True})
+        await page.close()
+
+    return BASE_URL + f'/renders/{target_filename}'
+
+
 @app.route('/<string:blogname>/<int:postid>')
 @app.route('/<string:blogname>/<int:postid>/<string:summary>')
-def generate_embed(blogname: str, postid: int, summary: str = None):
+async def generate_embed(blogname: str, postid: int, summary: str = None):
     _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True) #, notes_info=True)
     if not _post or 'posts' not in _post or not _post['posts']:
-        return parse_error(_post)
+        return await parse_error(_post)
     post = _post['posts'][0]
 
     title = None
     if 'summary' in _post:
         title = _post['summary']
 
-    trail = get_trail(post)
+    trail = await get_trail(post)
 
     card_type = 'tweet'
 
@@ -216,13 +262,13 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         description = ''
 
-    # Truncate description (a maximum of 350 characters can be displayed, 256 for video desc)
+    # Truncate description (a maximum of 349 characters can be displayed, 256 for video desc)
     if trail[0]['type'] == 'video':
         truncate_placeholder = '... (click to see full thread)'
         max_desc_length = 256 - len(truncate_placeholder)
     else:
         truncate_placeholder = '... (see full thread)'
-        max_desc_length = 350 - len(truncate_placeholder)
+        max_desc_length = 349 - len(truncate_placeholder)
 
     if len(description) > max_desc_length:
         description = description[:max_desc_length] + truncate_placeholder
@@ -235,7 +281,12 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         header = trail[-1]["blogname"]
 
-    return render_template('card.html',
+    return await render_thread(post, trail, reblog)
+
+    #return await render_template('render.html', trail=trail, fxtumblr_path=FXTUMBLR_PATH, reblog_info=reblog)
+
+    """
+    return await render_template('card.html',
             image = image,
             card_type = card_type,
             posturl = post['post_url'],
@@ -247,23 +298,24 @@ def generate_embed(blogname: str, postid: int, summary: str = None):
             app_name=APP_NAME,
             base_url=BASE_URL
         )
+    """
 
 
 @app.route('/oembed.json')
-def oembed_json():
+async def oembed_json():
     out = {
-        "type":request.args.get("ttype", None),
-        "version":"1.0",
-        "provider_name":"fxtumblr",
-        "provider_url":"https://github.com/knuxify/fxtumblr",
-        "title": request.args.get("op", None),
-        "author_name":request.args.get("desc", None),
-        "author_url":request.args.get("link", None)
+        "type": await request.args.get("ttype", None),
+        "version": "1.0",
+        "provider_name": "fxtumblr",
+        "provider_url": "https://github.com/knuxify/fxtumblr",
+        "title": await request.args.get("op", None),
+        "author_name": await request.args.get("desc", None),
+        "author_url": await request.args.get("link", None)
     }
 
     return out
 
 
 @app.route('/')
-def redirect_to_repo():
+async def redirect_to_repo():
     return redirect('https://github.com/knuxify/fxtumblr')
