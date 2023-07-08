@@ -141,13 +141,13 @@ async def parse_error(info: dict):
 @app.route('/oembed.json')
 async def oembed_json():
     out = {
-        "type": await request.args.get("ttype", None),
+        "type": request.args.get("ttype", None),
         "version": "1.0",
         "provider_name": "fxtumblr",
         "provider_url": "https://github.com/knuxify/fxtumblr",
-        "title": await request.args.get("op", None),
-        "author_name": await request.args.get("desc", None),
-        "author_url": await request.args.get("link", None)
+        "title": request.args.get("op", None),
+        "author_name": request.args.get("desc", None),
+        "author_url": request.args.get("link", None)
     }
 
     return out
