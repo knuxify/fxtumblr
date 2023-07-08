@@ -47,6 +47,11 @@ async def get_trail(post: dict) -> dict:
     for p in post['trail']:
         trail.append(await get_post_info(p))
 
+    # Workaround for bug where reblogged root user is ignored and the second
+    # reblogger appears as the OP of the first post.
+    if 'reblogged_root_name' in post:
+        trail[0]['blogname'] = post['reblogged_root_name']
+
     # Custom handling for image posts (type == 'photo'):
     # the image is not included in the first post in the trail, so we
     # have to add it manually
