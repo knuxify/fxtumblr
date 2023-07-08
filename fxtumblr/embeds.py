@@ -50,10 +50,10 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     if len(images) == 0:
         image = _post['blog']['avatar'][0]['url']
-        if not card_type == 'video':
-            card_type = 'summary_large_image'
     elif len(images) == 1:
         image = images[0]
+        if not card_type == 'video':
+            card_type = 'summary_large_image'
     else:
         should_render = True
 
