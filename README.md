@@ -22,7 +22,7 @@ Simply replace `www.tumblr.com` in your URL with the URL of the fxtumblr instanc
 * Get all the dependencies with `pip3 install -r requirements.txt`
 * Copy `config.yml.sample` to `config.yml`
 * Modify config according to your needs
-* Install nginx and Gunicorn, copy nginx config (`fxtumblr.nginx`) into your sites-available, `ln -s` it into sites-enabled
+* Install nginx and Hypercorn, copy nginx config (`fxtumblr.nginx`) into your sites-available, `ln -s` it into sites-enabled
 * Run `./run.sh`
 
 ## Enabling thread rendering support
