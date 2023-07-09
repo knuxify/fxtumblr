@@ -10,6 +10,5 @@ fxtumblr looks for the following fonts:
 - favorit-85-italic.woff2
 - favorit-medium.woff2
 - fairwater-regular.woff2
-- gibson-semibold.woff
 
 Download them and place them in this directory. fxtumblr should be able to find them automatically.
