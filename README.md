@@ -37,5 +37,4 @@ You will also have to download Tumblr's web fonts for the best experience - see 
 
 This is still a very early proof-of-concept, but it's good enough to kinda sorta work. Still, there are many quality-of-life improvements to be made:
 
-- Add proper caching support
 - Start a flagship instance (I hope nobody steals the domain from me...)

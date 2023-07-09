@@ -1,6 +1,9 @@
 app_name: "fxtumblr"
 base_url: "https://your-fxtumblr-instance.here"
 
+cache_path: './cache.json'
+cache_expiry: 43200 # 12 hours
+
 renders_enable: false
 renders_path: "./renders"
 

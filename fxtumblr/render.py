@@ -30,7 +30,8 @@ if config['renders_enable']:
     async def get_render(path):
         return await send_from_directory(RENDERS_PATH, path)
 
-    async def render_thread(post: dict, trail: dict, reblog_info: dict = {}):
+    async def render_thread(post: dict, trail: dict, reblog_info: dict = {},
+                            force_new_render: bool = False):
         """
         Takes trail info from the generate_embed function and renders out
         the thread into a picture. Returns a URL to the generated image.
@@ -42,20 +43,21 @@ if config['renders_enable']:
                 not reblog_info['by'] or not reblog_info['from']:
             reblog_info = None
 
-        with tempfile.NamedTemporaryFile(suffix='.html') as target_html:
-            target_html.write(bytes(await render_template('render.html',
-                trail=trail, fxtumblr_path=FXTUMBLR_PATH,
-                reblog_info=reblog_info, tags=post['tags']),
-                'utf-8'))
+        if force_new_render or not os.path.exists(os.path.join(RENDERS_PATH, target_filename)):
+            with tempfile.NamedTemporaryFile(suffix='.html') as target_html:
+                target_html.write(bytes(await render_template('render.html',
+                    trail=trail, fxtumblr_path=FXTUMBLR_PATH,
+                    reblog_info=reblog_info, tags=post['tags']),
+                    'utf-8'))
 
-            page = await browser.newPage()
-            await page.setViewport({'width': 560, 'height': 300})
-            await page.goto(f'file://{target_html.name}')
-            await page.screenshot(
-                {'path': os.path.join(RENDERS_PATH, target_filename),
-                 'fullPage': True, 'omitBackground': True}
-            )
-            await page.close()
+                page = await browser.newPage()
+                await page.setViewport({'width': 560, 'height': 300})
+                await page.goto(f'file://{target_html.name}')
+                await page.screenshot(
+                    {'path': os.path.join(RENDERS_PATH, target_filename),
+                     'fullPage': True, 'omitBackground': True}
+                )
+                await page.close()
 
         return BASE_URL + f'/renders/{target_filename}'
 else:

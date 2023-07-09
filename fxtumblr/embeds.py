@@ -7,6 +7,7 @@ import pytumblr
 from quart import request, render_template
 
 from . import app
+from .cache import post_needs_caching, cache_post, get_cached_post
 from .config import APP_NAME, BASE_URL, config
 from .parser import get_trail
 from .render import render_thread
@@ -23,14 +24,18 @@ tumblr = pytumblr.TumblrRestClient(
 async def generate_embed(blogname: str, postid: int, summary: str = None):
     should_render = False
 
-    _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True)
-    if not _post or 'posts' not in _post or not _post['posts']:
-        return await parse_error(_post)
-    post = _post['posts'][0]
+    if True or post_needs_caching(blogname, postid):
+        _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True)
+        if not _post or 'posts' not in _post or not _post['posts']:
+            return await parse_error(_post)
+        post = _post['posts'][0]
+        cache_post(blogname, postid, _post)
+    else:
+        post = get_cached_post(blogname, postid)['posts'][0]
 
     title = None
-    if 'summary' in _post:
-        title = _post['summary']
+    if 'title' in post:
+        title = post['title']
 
     trail = await get_trail(post)
 
