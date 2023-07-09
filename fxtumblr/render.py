@@ -38,6 +38,10 @@ if config['renders_enable']:
         global browser
         target_filename = f'{post["blog_name"]}-{post["id"]}.png'
 
+        if 'by' not in reblog_info or 'from' not in reblog_info or \
+                not reblog_info['by'] or not reblog_info['from']:
+            reblog_info = None
+
         with tempfile.NamedTemporaryFile(suffix='.html') as target_html:
             target_html.write(bytes(await render_template('render.html',
                 trail=trail, fxtumblr_path=FXTUMBLR_PATH, reblog_info=reblog_info),
