@@ -117,6 +117,8 @@ async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
             images.append(image['src'])
             if not skip_placeholders:
                 image.replaceWith('(image) ')
+            else:
+                image.replaceWith('')
 
     info['images'] = images
 
