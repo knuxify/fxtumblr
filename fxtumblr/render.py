@@ -44,7 +44,8 @@ if config['renders_enable']:
 
         with tempfile.NamedTemporaryFile(suffix='.html') as target_html:
             target_html.write(bytes(await render_template('render.html',
-                trail=trail, fxtumblr_path=FXTUMBLR_PATH, reblog_info=reblog_info),
+                trail=trail, fxtumblr_path=FXTUMBLR_PATH,
+                reblog_info=reblog_info, tags=post['tags']),
                 'utf-8'))
 
             page = await browser.newPage()

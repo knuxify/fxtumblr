@@ -83,6 +83,9 @@
 
 		.post-content > p { margin-top: 15px; margin-bottom: 15px; }
 
+		.tags { padding-left: 20px; padding-right: 20px; padding-bottom: 10px; }
+		.tag { color: rgba(0, 0, 0, .65); }
+
 	</style>
 </head>
 <body>
@@ -107,6 +110,10 @@
 		</div>
 	</div>
 	{% endfor %}
-
+	<div class="tags">
+	{% for tag in tags %}
+		<span class="tag">#{{tag}}</span>
+	{% endfor %}
+	</div>
 </body>
 </html>
