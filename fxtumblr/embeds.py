@@ -23,13 +23,14 @@ tumblr = pytumblr.TumblrRestClient(
 @app.route('/<string:blogname>/<int:postid>/<string:summary>')
 async def generate_embed(blogname: str, postid: int, summary: str = None):
     should_render = False
+    needs_caching = post_needs_caching(blogname, postid)
 
-    if True or post_needs_caching(blogname, postid):
+    if needs_caching:
         _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True)
         if not _post or 'posts' not in _post or not _post['posts']:
             return await parse_error(_post)
         post = _post['posts'][0]
-        cache_post(blogname, postid, _post)
+        needs_caching = cache_post(blogname, postid, _post)
     else:
         post = get_cached_post(blogname, postid)['posts'][0]
 
@@ -100,7 +101,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         header = trail[-1]["blogname"]
 
     if config['renders_enable'] and should_render:
-        image = await render_thread(post, trail, reblog)
+        image = await render_thread(post, trail, reblog, force_new_render=needs_caching)
         card_type = 'summary_large_image'
         description = ''
         video = None
