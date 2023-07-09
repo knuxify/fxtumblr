@@ -102,16 +102,23 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         header = trail[-1]["blogname"]
 
+    image_width = None
+    image_height = None
     if config['renders_enable'] and should_render:
-        image = await render_thread(post, trail, reblog, force_new_render=needs_caching)
+        image, image_width, image_height = await render_thread(post, trail, reblog, force_new_render=needs_caching)
         card_type = 'summary_large_image'
         description = ''
         video = None
     else:
         should_render = False
 
+    image_size = None
+    if image_width and image_height:
+        image_size = (image_width, image_height)
+
     return await render_template('card.html',
         image=image,
+        image_size=image_size,
         card_type=card_type,
         posturl=post['post_url'],
         header=header,

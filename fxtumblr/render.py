@@ -53,13 +53,14 @@ if config['renders_enable']:
                 page = await browser.newPage()
                 await page.setViewport({'width': 560, 'height': 300})
                 await page.goto(f'file://{target_html.name}')
+                height = await page.evaluate('document.body.scrollHeight')
                 await page.screenshot(
                     {'path': os.path.join(RENDERS_PATH, target_filename),
                      'fullPage': True, 'omitBackground': True}
                 )
                 await page.close()
 
-        return BASE_URL + f'/renders/{target_filename}'
+        return (BASE_URL + f'/renders/{target_filename}', 560, height)
 else:
     async def render_thread(*args, **kwargs):
         return False
