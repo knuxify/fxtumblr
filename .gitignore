@@ -19,3 +19,5 @@ build/
 *.woff2
 
 renders
+
+cache.json
