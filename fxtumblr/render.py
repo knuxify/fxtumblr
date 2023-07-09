@@ -43,12 +43,16 @@ if config['renders_enable']:
                 not reblog_info['by'] or not reblog_info['from']:
             reblog_info = None
 
-        if force_new_render or not os.path.exists(os.path.join(RENDERS_PATH, target_filename)):
+        if config['renders_debug'] or force_new_render or not os.path.exists(os.path.join(RENDERS_PATH, target_filename)):
             with tempfile.NamedTemporaryFile(suffix='.html') as target_html:
                 target_html.write(bytes(await render_template('render.html',
                     trail=trail, fxtumblr_path=FXTUMBLR_PATH,
                     reblog_info=reblog_info, tags=post['tags']),
                     'utf-8'))
+
+                if config['renders_debug']:
+                    import shutil
+                    shutil.copyfile(target_html.name, 'latest-render.html')
 
                 page = await browser.newPage()
                 await page.setViewport({'width': 560, 'height': 300})
