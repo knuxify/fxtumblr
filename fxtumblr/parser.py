@@ -16,6 +16,7 @@ async def get_trail(post: dict) -> dict:
         info = {
             "type": "audio",
             "content": f"{post['track_name']} (1 audio file attached)",
+            "content_html": post['body'],
             "images": [post['album_art']]
         }
         if 'reblogged_root_name' in post:
@@ -31,6 +32,7 @@ async def get_trail(post: dict) -> dict:
         info = {
             "type": "video",
             "content": "(video)",
+            "content_html": post['body'],
             "video": {
                 "url": post['video_url'],
                 "height": post['thumbnail_height'],
@@ -44,8 +46,12 @@ async def get_trail(post: dict) -> dict:
             info['blogname'] = post['blog']['name']
         trail.append(info)
 
+    skip_placeholders = False
+    if len(trail) + len(post['trail']) == 1:
+        skip_placeholders = True
+
     for p in post['trail']:
-        trail.append(await get_post_info(p))
+        trail.append(await get_post_info(p, skip_placeholders=skip_placeholders))
 
     # Workaround for bug where reblogged root user is ignored and the second
     # reblogger appears as the OP of the first post.
@@ -58,10 +64,14 @@ async def get_trail(post: dict) -> dict:
     if post['type'] == 'photo':
         trail[0]['images'] = [photo['original_size']['url'] for photo in post['photos']]
 
+    if len(trail) == 1:
+        if trail[0]['type'] == ['video']:
+            trail[0]['content'] = ''
+
     return trail
 
 
-async def get_post_info(post: dict) -> dict:
+async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
     images = []
     soup = BeautifulSoup(post['content_raw'], 'html.parser')
 
@@ -105,7 +115,9 @@ async def get_post_info(post: dict) -> dict:
     if not images:
         for image in soup.findAll('img'):
             images.append(image['src'])
-            image.replaceWith('(image) ')
+            if not skip_placeholders:
+                image.replaceWith('(image) ')
+
     info['images'] = images
 
     content_html = str(soup)

@@ -32,7 +32,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         post = _post['posts'][0]
         needs_caching = cache_post(blogname, postid, _post)
     else:
-        post = get_cached_post(blogname, postid)['posts'][0]
+        _post = get_cached_post(blogname, postid)
+        post = _post['posts'][0]
 
     title = None
     if 'title' in post:
@@ -73,7 +74,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     description = ''
     n = 0
     for info in trail:
-        description += f'\n\n{info["blogname"]}:\n'
+        if len(trail) > 1:
+            description += f'\n\n{info["blogname"]}:\n'
         if n == 0 and title:
             description += f'# {title}\n\n'
         description += info['content']
