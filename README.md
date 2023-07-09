@@ -12,9 +12,9 @@ This is heavily inspired by fxtwitter.com, vxtwitter.com, twxtter/`s/i/x` and so
 
 ## How to use it
 
-**TODO**: launch a flagship instance.
-
 Simply replace `www.tumblr.com` in your URL with the URL of the fxtumblr instance you want to use.
+
+You can try out the test instance, `fx.dithernet.org`. Note that this instance is still a bit unstable, and may disappear at any moment; if you'd like to see a proper instance pop up at some point, [feel free to donate](https://paypal.me/knuxfanwin8).
 
 ## Setting up for self-hosting
 
