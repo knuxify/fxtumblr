@@ -16,7 +16,7 @@ if config['renders_enable']:
     # https://stackoverflow.com/questions/2632199/how-do-i-get-the-path-of-the-current-executed-file-in-python
     from inspect import getsourcefile
     import os.path
-    FXTUMBLR_PATH = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
+    FXTUMBLR_PATH = os.path.dirname(os.path.dirname(os.path.abspath(getsourcefile(lambda: 0))))
 
     @app.before_serving
     async def setup_browser():
