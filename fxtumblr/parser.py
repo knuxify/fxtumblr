@@ -101,16 +101,13 @@ async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
                     "width": fig['data-orig-width'],
                     "height": fig['data-orig-height']
                 }
-                thumbnail = info['video']['url']\
+                info['video']['thumbnail'] = info['video']['url']\
                     .replace('.mp4', '_frame1.jpg')\
                     .replace('va.media.tumblr.com', '64.media.tumblr.com')\
                     .replace('ve.media.tumblr.com', '64.media.tumblr.com')
 
                 fig.replaceWith('')
-                info['content_html'] = f"""<p><div class="tmblr-full video-thumbnail"><img src="{thumbnail}"><svg id="managed-icon__video-play" class="play-button" width="72" role="presentation" fill="#ffffff" viewBox="0 0 24 24">
-    <path d="M20.508 11.126a1.022 1.022 0 010 1.748L7.257 20.788C6.258 21.384 5 20.653 5 19.478V4.522c0-1.176 1.258-1.907 2.257-1.31l13.25 7.913z"></path>
-</svg></div></p>""" + info['content_html']
-        images = [thumbnail]
+        images = [info['video']['thumbnail']]
 
     # Handle audio posts. Audio posts with text or multiple audio files are
     # just text posts with a <audio> tags.

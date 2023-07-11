@@ -50,15 +50,15 @@
 		}
 
 		/* Span colors: for some reason my test output had some of these as inline styles, others as classes. On-site it's all inline styles. Here are all the classes: */
-		.npf_color_joey { color: #ff492f; }      /* red */
-		.npf_color_monica { color: #ff8a00; }    /* orange */
+		.npf_color_joey { color: #ff492f; }	  /* red */
+		.npf_color_monica { color: #ff8a00; }	/* orange */
 		.npf_color_chandler { color: #7c5cff; }  /* purple */
-		.npf_color_phoebe { color: #e8d73a; }    /* yellow */
-		.npf_color_rachel { color: #00b8ff; }    /* blue */
-		.npf_color_ross { color: #00cf35; }      /* green */
-		.npf_color_niles { color: #ff62ce; }     /* pink */
+		.npf_color_phoebe { color: #e8d73a; }	/* yellow */
+		.npf_color_rachel { color: #00b8ff; }	/* blue */
+		.npf_color_ross { color: #00cf35; }	  /* green */
+		.npf_color_niles { color: #ff62ce; }	 /* pink */
 		.npf_color_frasier { color: #001935; }   /* deep blue */
-		.npf_color_mr_big { color: #000c1a; }    /* almost black */
+		.npf_color_mr_big { color: #000c1a; }	/* almost black */
 
 		.npf_quote { font-family: Georgia,Times,Times New Roman,serif; line-height: 1.5; font-size: 34px; }
 		.npf_chat { font-family: Courier,monospace; }
@@ -125,6 +125,12 @@
 		</div>
 		{% endif %}
 		<div class="post-content">
+			{% if 'video' in post %}
+			<p><div class="tmblr-full video-thumbnail"><img src="{{ post['video']['thumbnail'] }}"><svg id="managed-icon__video-play" class="play-button" width="72" role="presentation" fill="#ffffff" viewBox="0 0 24 24">
+				<path d="M20.508 11.126a1.022 1.022 0 010 1.748L7.257 20.788C6.258 21.384 5 20.653 5 19.478V4.522c0-1.176 1.258-1.907 2.257-1.31l13.25 7.913z"></path>
+			</svg></div></p>
+			{% endif %}
+
 			{{ post['content_html'] | safe }}
 		</div>
 	</div>
