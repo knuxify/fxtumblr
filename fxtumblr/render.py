@@ -37,7 +37,7 @@ if config['renders_enable']:
         the thread into a picture. Returns a URL to the generated image.
         """
         global browser
-        target_filename = f'{post["blog_name"]}-{post["id"]}.png'
+        target_filename = f'{post["blogname"]}-{post["id"]}.png'
 
         if 'by' not in reblog_info or 'from' not in reblog_info or \
                 not reblog_info['by'] or not reblog_info['from']:
