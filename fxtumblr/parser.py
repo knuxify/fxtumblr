@@ -79,6 +79,18 @@ async def get_trail(post: dict, post_body: str = '') -> dict:
         if trail[0]['type'] == ['video']:
             trail[0]['content'] = ''
 
+    # Limit the amount of images in a thread to prevent DDoS with long posts
+    n_images = 0
+    n_post = 0
+    for p in trail:
+        soup = BeautifulSoup(p['content_html'], 'html.parser')
+        for image in soup.findAll('img'):
+            n_images += 1
+            if n_images > 10:
+                image.replaceWith('(too many images - see original post) ')
+        trail[n_post]['content_html'] = str(soup)
+        n_post += 1
+
     return trail
 
 
@@ -147,14 +159,5 @@ async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
             info['content'] = '(video)'
         elif info['type'] == 'audio':
             info['content'] = '(audio)'
-
-    # Limit the amount of images in a post to prevent DDoS with long posts
-    n = 0
-    soup2 = BeautifulSoup(info['content_html'], 'html.parser')
-    for image in soup2.findAll('img'):
-        n += 1
-        if n > 10:
-            image.replaceWith('(too many images - see original post) ')
-    info['content_html'] = str(soup2)
 
     return info
