@@ -148,4 +148,13 @@ async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
         elif info['type'] == 'audio':
             info['content'] = '(audio)'
 
+    # Limit the amount of images in a post to prevent DDoS with long posts
+    n = 0
+    soup2 = BeautifulSoup(info['content_html'], 'html.parser')
+    for image in soup2.findAll('img'):
+        n += 1
+        if n > 10:
+            image.replaceWith('(too many images - see original post) ')
+    info['content_html'] = str(soup2)
+
     return info
