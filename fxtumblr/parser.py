@@ -127,6 +127,9 @@ async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
     if not images:
         for image in soup.findAll('img'):
             images.append(image['src'])
+            # Embedded gifs with attribution are skipped in regular content but included in content_raw. Prepend them manually.
+            if image['src'] not in info['content_html']:
+                info['content_html'] = f'<p><figure class="tmblr-full"><img src={image["src"]}></figure></p><p><span class="gif-attribution">GIF by {image["data-tumblr-attribution"].split(":")[0]}</span></p>' + info['content_html']
             if not skip_placeholders:
                 image.replaceWith('(image) ')
             else:
