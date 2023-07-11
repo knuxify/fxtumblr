@@ -103,8 +103,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         header = trail[-1]["blogname"]
 
     if not should_render:
-        for post in trail:
-            if '<span class="npf_' or '<span style="color:' or '<p class="npf_' in post['content_html']:
+        for trailpost in trail:
+            if '<span class="npf_' or '<span style="color:' or '<p class="npf_' in trailpost['content_html']:
                 should_render = True
                 break
 
