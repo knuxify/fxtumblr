@@ -4,7 +4,7 @@ Contains code for creating the embed.
 
 import itertools
 import pytumblr
-from quart import request, render_template
+from quart import request, render_template, redirect
 
 from . import app
 from .cache import post_needs_caching, cache_post, get_cached_post
@@ -49,6 +49,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     if trail[0]['type'] == 'video':
         card_type = 'video'
         video = trail[0]['video']
+        if 'video' in request.args:
+            return redirect(video['url'])
 
     # Get image
     images = list(itertools.chain.from_iterable(
@@ -104,14 +106,19 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     if not should_render:
         for trailpost in trail:
-            if '<span class="npf_' or '<span style="color:' or '<p class="npf_' in trailpost['content_html']:
+            if '<span class="npf_' in trailpost['content_html'] or \
+                    '<span style="color:' in trailpost['content_html'] or \
+                    '<p class="npf_' in trailpost['content_html']:
                 should_render = True
                 break
 
     if config['renders_enable'] and should_render:
         image = await render_thread(post, trail, reblog, force_new_render=needs_caching)
         card_type = 'summary_large_image'
-        description = ''
+        if video:
+            description = 'TIP: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video'
+        else:
+            description = ''
         video = None
     else:
         should_render = False
