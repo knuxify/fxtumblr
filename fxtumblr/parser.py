@@ -140,19 +140,6 @@ async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
 
     info['images'] = images
 
-    # Downscale all images if possible
-    soup2 = BeautifulSoup(info['content_html'], 'html.parser')
-    print(info['content_html'])
-    for image in soup2.findAll('img'):
-        try:
-            new_src = image['src'].split('/')
-            if new_src[2] == '64.media.tumblr.com':
-                new_src[5] = 's540x540'
-                image['src'] = '/'.join(new_src)
-        except (KeyError, IndexError):
-            pass
-    info['content_html'] = str(soup2)
-
     content_html = str(soup)
     info['content'] = markdownify(content_html).strip()
     if not info['content']:
