@@ -147,7 +147,7 @@ async def parse_error(info: dict):
 
     if info['meta']['status'] == 404:
         if 'errors' in info and info['errors'] and info['errors'][0]['code'] == 4012:
-            return await render_template('error.htmlx',
+            return await render_template('error.html',
                 app_name=APP_NAME,
                 msg="Profile is only available for logged-in users."), 403
         return await render_template('error.html',
