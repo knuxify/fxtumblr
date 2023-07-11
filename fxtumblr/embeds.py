@@ -102,6 +102,12 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         header = trail[-1]["blogname"]
 
+    if not should_render:
+        for post in trail:
+            if '<span class="npf_' or '<span style="color:' or '<p class="npf_' in post['content_html']:
+                should_render = True
+                break
+
     if config['renders_enable'] and should_render:
         image = await render_thread(post, trail, reblog, force_new_render=needs_caching)
         card_type = 'summary_large_image'
