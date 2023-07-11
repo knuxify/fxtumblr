@@ -116,7 +116,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         image = await render_thread(post, trail, reblog, force_new_render=needs_caching)
         card_type = 'summary_large_image'
         if video:
-            description = 'TIP: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video'
+            description = f'TIP: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video'
         else:
             description = ''
         video = None
@@ -147,7 +147,7 @@ async def parse_error(info: dict):
 
     if info['meta']['status'] == 404:
         if 'errors' in info and info['errors'] and info['errors'][0]['code'] == 4012:
-            return await render_template('error.html',
+            return await render_template('error.htmlx',
                 app_name=APP_NAME,
                 msg="Profile is only available for logged-in users."), 403
         return await render_template('error.html',
