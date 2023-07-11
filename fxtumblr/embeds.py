@@ -28,7 +28,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     if needs_caching:
         _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True)
         if not _post or 'posts' not in _post or not _post['posts']:
-            return await parse_error(_post)
+            return await parse_error(_post, post_url=f'https://www.tumblr.com/{blogname}/{postid}')
         post = _post['posts'][0]
         needs_caching = cache_post(blogname, postid, _post)
     else:
@@ -138,7 +138,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     )
 
 
-async def parse_error(info: dict):
+async def parse_error(info: dict, post_url: str = None):
     """Parses error returned by Tumblr API."""
     if not info or 'meta' not in info:
         return await render_template('error.html',
@@ -148,7 +148,7 @@ async def parse_error(info: dict):
     if info['meta']['status'] == 404:
         if 'errors' in info and info['errors'] and info['errors'][0]['code'] == 4012:
             return await render_template('locked.html',
-                app_name=APP_NAME)
+                app_name=APP_NAME, posturl=post_url)
         return await render_template('error.html',
             app_name=APP_NAME,
             msg="Post not found."), 404
