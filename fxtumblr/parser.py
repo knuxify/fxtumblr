@@ -5,6 +5,7 @@ Contains code for getting data from Tumblr's API and parsing it.
 from bs4 import BeautifulSoup
 from markdownify import markdownify
 
+from .config import config
 
 async def get_trail(post: dict, post_body: str = '') -> dict:
     trail = []
@@ -86,7 +87,7 @@ async def get_trail(post: dict, post_body: str = '') -> dict:
         soup = BeautifulSoup(p['content_html'], 'html.parser')
         for image in soup.findAll('img'):
             n_images += 1
-            if n_images > 10:
+            if n_images > config['max_images_in_thread']:
                 image.replaceWith('(too many images - see original post) ')
         trail[n_post]['content_html'] = str(soup)
         n_post += 1
