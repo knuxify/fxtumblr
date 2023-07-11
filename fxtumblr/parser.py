@@ -72,7 +72,6 @@ async def get_trail(post: dict, post_body: str = '') -> dict:
     # the question is not included in the main content, so we have to
     # prepend it manually
     if post['type'] == 'answer':
-        print(markdownify(post['question']))
         trail[0]['content'] = f'{post["asking_name"]} asked:' + "\n" + markdownify(post['question']).strip() + "\n\n" + trail[0]['content']
         trail[0]['content_html'] = f'<div class="question"><p class="question-header"><strong class="asking-name">{post["asking_name"]}</strong> asked:</p>\n' + post['question'] + '</div>\n' + trail[0]['content_html']
 
