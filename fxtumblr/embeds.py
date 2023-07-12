@@ -100,7 +100,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     miniheader = op + f' ({post["note_count"]} notes)'
 
     if reblog['from']:
-        header = reblog["from"] + " 🔁 " + reblog["by"]
+        header = reblog["by"] + " 🔁 " + reblog["from"]
     else:
         header = trail[-1]["blogname"]
 
