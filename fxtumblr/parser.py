@@ -47,6 +47,28 @@ async def get_trail(post: dict, post_body: str = '') -> dict:
             info['blogname'] = post['blog']['name']
         trail.append(info)
 
+    # Custom handling for photo-only posts (type == 'photo'):
+    # since these are not included in the reblog trail, we have to add
+    # a little placeholder
+    if post['type'] == 'photo':
+        info = {
+            "type": "text",
+            "content": "(images)",
+            "images": [photo['original_size']['url'] for photo in post['photos']]
+        }
+
+        images_include = ''
+        for image in info['images']:
+            images_include += f'<p><figure class="tmblr-full"><img src="{image}"></figure></p>'
+        info['content_html'] = images_include
+
+        if 'reblogged_root_name' in post:
+            info['blogname'] = post['reblogged_root_name']
+        else:
+            info['blogname'] = post['blog']['name']
+
+        trail.append(info)
+
     skip_placeholders = False
     if len(trail) + len(post['trail']) == 1:
         skip_placeholders = True
@@ -58,16 +80,6 @@ async def get_trail(post: dict, post_body: str = '') -> dict:
     # reblogger appears as the OP of the first post.
     if 'reblogged_root_name' in post:
         trail[0]['blogname'] = post['reblogged_root_name']
-
-    # Custom handling for image posts (type == 'photo'):
-    # the image is not included in the first post in the trail, so we
-    # have to add it manually
-    if post['type'] == 'photo':
-        trail[0]['images'] = [photo['original_size']['url'] for photo in post['photos']]
-        images_include = ''
-        for image in trail[0]['images']:
-            images_include += f'<p><figure class="tmblr-full"><img src="{image}"></figure></p>'
-        trail[0]['content_html'] = images_include + trail[0]['content_html']
 
     # Custom handling for asks (type == 'answer'):
     # the question is not included in the main content, so we have to
