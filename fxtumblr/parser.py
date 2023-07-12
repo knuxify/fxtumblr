@@ -38,6 +38,7 @@ async def get_trail(post: dict, post_body: str = '') -> dict:
                 "url": post['video_url'],
                 "height": post['thumbnail_height'],
                 "width": post['thumbnail_width'],
+                "thumbnail": post['thumbnail_url']
             },
             "images": [post['thumbnail_url']]
         }
