@@ -64,6 +64,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         if not card_type == 'video':
             card_type = 'summary_large_image'
     else:
+        image = images[0]
         should_render = True
 
     reblog = {"by": '', "from": ''}
