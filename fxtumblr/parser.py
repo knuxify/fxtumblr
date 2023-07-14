@@ -10,9 +10,6 @@ from .config import config
 async def get_trail(post: dict, post_body: str = '') -> dict:
     trail = []
 
-    from pprint import pprint
-    pprint(post)
-
     # Custom handling for audio-only posts (type == 'audio'):
     # since these are not included in the reblog trail, we have to add
     # a little placeholder
@@ -171,6 +168,7 @@ async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
                     info['content_html'] = f'<p><figure class="tmblr-full"><img src={image["src"]}></figure></p><p><span class="gif-attribution">GIF by {image.parent["data-tumblr-attribution"].split(":")[0]}</span></p>' + info['content_html']
                 except KeyError:
                     info['content_html'] = f'<p><figure class="tmblr-full"><img src={image["src"]}></figure></p>' + info['content_html']
+
             if not skip_placeholders:
                 image.replaceWith('(image) ')
             else:
