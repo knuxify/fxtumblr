@@ -10,6 +10,9 @@ from .config import config
 async def get_trail(post: dict, post_body: str = '') -> dict:
     trail = []
 
+    from pprint import pprint
+    pprint(post)
+
     # Custom handling for audio-only posts (type == 'audio'):
     # since these are not included in the reblog trail, we have to add
     # a little placeholder
@@ -149,6 +152,15 @@ async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
             n += 1
     else:
         info['type'] = 'text'
+
+    # Remove ALT badge from images
+    if soup.find('span'):
+        for span in soup.findAll('span'):
+            try:
+                if span['class'] == "tmblr-alt-text-helper":
+                    span.replaceWith('')
+            except KeyError:
+                continue
 
     if not images:
         for image in soup.findAll('img'):
