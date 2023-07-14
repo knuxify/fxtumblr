@@ -77,6 +77,20 @@ async def get_trail(post: dict, post_body: str = '') -> dict:
     for p in post['trail']:
         trail.append(await get_post_info(p, skip_placeholders=skip_placeholders))
 
+    # For photo, video and audio posts:
+    # - if the post has a caption, it's added to the trail (caption only)
+    # - if the post doesn't have a caption, it's not added to the trail.
+    #
+    # We initially assume that the post will *not* be included in the
+    # trail (since prepending items into a list can be memory-costly).
+    # So, to prevent posts with captions having the caption split off
+    # into a separate post within the trail, we move the caption back
+    # into the first post if needed here.
+    if post['type'] in ('photo', 'video', 'audio') and 'caption' in post and post['caption']:
+        trail[0]['content_html'] += trail[1]['content_html']
+        trail[0]['content'] += trail[1]['content']
+        del trail[1]
+
     # Workaround for bug where reblogged root user is ignored and the second
     # reblogger appears as the OP of the first post.
     if 'reblogged_root_name' in post:
