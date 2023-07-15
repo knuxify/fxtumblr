@@ -7,7 +7,18 @@ from markdownify import markdownify
 
 from .config import config
 
-async def get_trail(post: dict, post_body: str = '') -> dict:
+
+async def get_trail(post: dict) -> list:
+    """
+    Parses a Tumblr post and returns a "trail".
+    """
+
+    from pprint import pprint
+    pprint(post)
+
+    return []
+
+async def get_trail_legacy(post: dict, post_body: str = '') -> dict:
     trail = []
 
     # Custom handling for audio-only posts (type == 'audio'):

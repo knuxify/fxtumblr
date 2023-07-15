@@ -31,7 +31,7 @@ if config['renders_enable']:
         return await send_from_directory(RENDERS_PATH, path)
 
     async def render_thread(post: dict, trail: dict, reblog_info: dict = {},
-                            force_new_render: bool = False):
+                            force_new_render: bool = False, is_legacy: bool = False):
         """
         Takes trail info from the generate_embed function and renders out
         the thread into a picture. Returns a URL to the generated image.
@@ -47,8 +47,8 @@ if config['renders_enable']:
             with tempfile.NamedTemporaryFile(suffix='.html') as target_html:
                 target_html.write(bytes(await render_template('render.html',
                     trail=trail, fxtumblr_path=FXTUMBLR_PATH,
-                    reblog_info=reblog_info, tags=post['tags']),
-                    'utf-8'))
+                    reblog_info=reblog_info, tags=post['tags'],
+                    is_legacy=False), 'utf-8'))
 
                 if config['renders_debug']:
                     import shutil

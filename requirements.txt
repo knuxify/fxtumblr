@@ -1,6 +1,6 @@
 quart
 quart-cors
-pytumblr
+pytumblr2
 PyYAML
 markdownify
 BeautifulSoup4
