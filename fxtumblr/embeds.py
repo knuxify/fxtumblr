@@ -85,6 +85,9 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         n += 1
     description = description.strip()
 
+    if 'tags' in post and post['tags']:
+        description += '\n\n(#' + ' #'.join(post['tags']) + ')'
+
     # Truncate description (a maximum of 349 characters can be displayed, 256 for video desc)
     if trail[0]['type'] == 'video':
         truncate_placeholder = '... (click to see full thread)'
