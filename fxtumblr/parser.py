@@ -124,54 +124,61 @@ async def get_trail(post: dict, post_body: str = '') -> dict:
 
 async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
     images = []
-    soup = BeautifulSoup(post['content_raw'], 'html.parser')
 
     info = {
         "blogname": post['blog']['name'],
-        "content_html": post['content']
+        "content": ''
     }
 
-    # Handle video posts. Video posts are just text posts with a <video> tag embedded in a <figure>.
-    if soup.find('video'):
-        info['type'] = 'video'
-        for fig in soup.findAll('figure'):
-            if fig.video:
-                info['video'] = {
-                    "url": next(fig.video.children, None)['src'],
-                    "width": fig['data-orig-width'],
-                    "height": fig['data-orig-height']
-                }
-                info['video']['thumbnail'] = info['video']['url']\
-                    .replace('.mp4', '_frame1.jpg')\
-                    .replace('va.media.tumblr.com', '64.media.tumblr.com')\
-                    .replace('ve.media.tumblr.com', '64.media.tumblr.com')
-
-                fig.replaceWith('')
-        images = [info['video']['thumbnail']]
-
-    # Handle audio posts. Audio posts with text or multiple audio files are
-    # just text posts with a <audio> tags.
-    elif soup.find('audio'):
-        info['type'] = 'audio'
-        n_audios = len(soup.findAll('audio'))
-        n = 0
-        for tag in soup.findAll('audio'):
-            if n == 0:
-                tag.replaceWith(f'({n_audios} audio files attached) ')
-            else:
-                tag.replaceWith('')
-            n += 1
+    if 'content' in post:
+        info["content_html"] = post['content']
     else:
-        info['type'] = 'text'
+        info["content_html"] = ''
 
-    # Remove ALT badge from images
-    if soup.find('span'):
-        for span in soup.findAll('span'):
-            try:
-                if span['class'] == "tmblr-alt-text-helper":
-                    span.replaceWith('')
-            except KeyError:
-                continue
+    if 'content_raw' in post:
+        soup = BeautifulSoup(post['content_raw'], 'html.parser')
+
+        # Handle video posts. Video posts are just text posts with a <video> tag embedded in a <figure>.
+        if soup.find('video'):
+            info['type'] = 'video'
+            for fig in soup.findAll('figure'):
+                if fig.video:
+                    info['video'] = {
+                        "url": next(fig.video.children, None)['src'],
+                        "width": fig['data-orig-width'],
+                        "height": fig['data-orig-height']
+                    }
+                    info['video']['thumbnail'] = info['video']['url']\
+                        .replace('.mp4', '_frame1.jpg')\
+                        .replace('va.media.tumblr.com', '64.media.tumblr.com')\
+                        .replace('ve.media.tumblr.com', '64.media.tumblr.com')
+
+                    fig.replaceWith('')
+            images = [info['video']['thumbnail']]
+
+        # Handle audio posts. Audio posts with text or multiple audio files are
+        # just text posts with a <audio> tags.
+        elif soup.find('audio'):
+            info['type'] = 'audio'
+            n_audios = len(soup.findAll('audio'))
+            n = 0
+            for tag in soup.findAll('audio'):
+                if n == 0:
+                    tag.replaceWith(f'({n_audios} audio files attached) ')
+                else:
+                    tag.replaceWith('')
+                n += 1
+        else:
+            info['type'] = 'text'
+
+        # Remove ALT badge from images
+        if soup.find('span'):
+            for span in soup.findAll('span'):
+                try:
+                    if span['class'] == "tmblr-alt-text-helper":
+                        span.replaceWith('')
+                except KeyError:
+                    continue
 
     if not images:
         for image in soup.findAll('img'):
@@ -190,8 +197,10 @@ async def get_post_info(post: dict, skip_placeholders: bool = False) -> dict:
 
     info['images'] = images
 
-    content_html = str(soup)
-    info['content'] = markdownify(content_html).strip()
+    if 'content_raw' in post:
+        content_html = str(soup)
+        info['content'] = markdownify(content_html).strip()
+
     if not info['content']:
         if info['type'] == 'video':
             info['content'] = '(video)'
