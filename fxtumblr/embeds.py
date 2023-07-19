@@ -43,14 +43,17 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     card_type = 'tweet'
 
-    # Videos can only be appended to the first post in the trail,
-    # so we only check there.
+    # In general, videos can be prepended only to the first post in the trail,
+    # but some clever folks have figured out how to put them in a reblog:
+    # https://tumblr.com/punkitt-is-here/723305358401077248
+    # So, we have to check *all* posts. Oops.
     video = None
-    if trail[0]['type'] == 'video':
-        card_type = 'video'
-        video = trail[0]['video']
-        if 'video' in request.args:
-            return redirect(video['url'])
+    for tpost in trail:
+        if tpost['type'] == 'video':
+            card_type = 'video'
+            video = tpost['video']
+            if 'video' in request.args:
+                return redirect(video['url'])
 
     # Get image
     images = list(itertools.chain.from_iterable(
@@ -89,7 +92,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         description += '\n\n(#' + ' #'.join(post['tags']) + ')'
 
     # Truncate description (a maximum of 349 characters can be displayed, 256 for video desc)
-    if trail[0]['type'] == 'video':
+    if video:
         truncate_placeholder = '... (click to see full thread)'
         max_desc_length = 256 - len(truncate_placeholder)
     else:
