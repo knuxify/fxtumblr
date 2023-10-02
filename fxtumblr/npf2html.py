@@ -1,3 +1,7 @@
+# NPF to HTML converter. Taken from pytumblr2 and extended for fxtumblr's needs:
+# https://github.com/nostalgebraist/pytumblr2/blob/master/pytumblr2/format_conversion/npf2html.py
+
+
 from typing import List, Optional, Tuple
 from collections import defaultdict
 from itertools import zip_longest
@@ -267,10 +271,10 @@ class NPFVideoBlock(NPFMediaBlock):
     @staticmethod
     def from_payload(payload: dict) -> "NPFVideoBlock":
         return NPFVideoBlock(
-            media=[payload["media"]] if "media" in payload,
+            media=[payload["media"]] if "media" in payload else [],
             alt_text=payload.get("alt_text"),
-            poster=payload["poster"] if "poster" in payload,
-            embed_html=payload["embed_html"] if "embed_html" in payload,
+            poster=payload["poster"] if "poster" in payload else None,
+            embed_html=payload["embed_html"] if "embed_html" in payload else '',
         )
 
     def to_html(self, target_width: int = 640) -> str:
@@ -287,7 +291,7 @@ class NPFVideoBlock(NPFMediaBlock):
             )
 
         video_tag = (
-            f"<video poster=\"{selected_size_poster['url']}\" controls=\"controls\"{original_dimensions_attrs_str}><source src=\"{self.media['url']}\" type=\"video/mp4\"></video>"
+            f"<video poster=\"{selected_size_poster['url']}\" controls=\"controls\"{original_dimensions_attrs_str}><source src=\"{self.media.media[0]['url']}\" type=\"video/mp4\"></video>"
         )
 
         figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{video_tag}</figure>'
@@ -299,10 +303,10 @@ class NPFAudioBlock(NPFMediaBlock):
     @staticmethod
     def from_payload(payload: dict) -> "NPFAudioBlock":
         return NPFAudioBlock(
-            media=[payload["media"]] if "media" in payload,
+            media=[payload["media"]] if "media" in payload else [],
             alt_text=payload.get("alt_text"),
-            poster=payload["poster"] if "poster" in payload,
-            embed_html=payload["embed_html"] if "embed_html" in payload,
+            poster=payload["poster"] if "poster" in payload else None,
+            embed_html=payload["embed_html"] if "embed_html" in payload else '',
         )
 
     def to_html(self, target_width: int = 640) -> str:
@@ -752,6 +756,33 @@ class TumblrPostBase:
         return self._content
 
 
+class TumblrReblogInfo:
+    def __init__(
+        self,
+        reblogged_from: str,
+        reblogged_by: str,
+    ):
+        self._reblogged_from = reblogged_from
+        self._reblogged_by = reblogged_by
+
+    @staticmethod
+    def from_payload(payload: dict) -> Optional["TumblrReblogInfo"]:
+        if 'reblogged_from_id' not in payload:
+            return None
+        return TumblrReblogInfo(
+            reblogged_from=payload['reblogged_from_name'],
+            reblogged_by=_get_blogname_from_payload(payload),
+        )
+
+    @property
+    def reblogged_from(self):
+        return self._reblogged_from
+
+    @property
+    def reblogged_by(self):
+        return self._reblogged_by
+
+
 class TumblrPost(TumblrPostBase):
     def __init__(
         self,
@@ -780,9 +811,10 @@ class TumblrPost(TumblrPostBase):
 
 
 class TumblrThread:
-    def __init__(self, posts: List[TumblrPost], timestamp: int):
+    def __init__(self, posts: List[TumblrPost], timestamp: int, reblog_info: Optional[TumblrReblogInfo]):
         self._posts = posts
         self._timestamp = timestamp
+        self._reblog_info = reblog_info
 
     @property
     def posts(self):
@@ -791,6 +823,22 @@ class TumblrThread:
     @property
     def timestamp(self):
         return self._timestamp
+
+    @property
+    def reblog_info(self):
+        return self._reblog_info
+
+    @property
+    def reblogged_from(self):
+        if self._reblog_info:
+            return self._reblog_info.reblogged_from
+        return ''
+
+    @property
+    def reblogged_by(self):
+        if self._reblog_info:
+            return self._reblog_info.reblogged_by
+        return ''
 
     @staticmethod
     def from_payload(payload: dict) -> "TumblrThread":
@@ -803,10 +851,11 @@ class TumblrThread:
             )
             for post_payload in post_payloads
         ]
+        reblog_info = TumblrReblogInfo.from_payload(payload)
 
         timestamp = payload["timestamp"]
 
-        return TumblrThread(posts, timestamp)
+        return TumblrThread(posts, timestamp, reblog_info)
 
     @staticmethod
     def _format_post_as_quoting_previous(

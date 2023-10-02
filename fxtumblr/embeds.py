@@ -11,6 +11,9 @@ from .cache import post_needs_caching, cache_post, get_cached_post
 from .config import APP_NAME, BASE_URL, config
 from .parser import get_trail
 from .render import render_thread
+from .npf2html import TumblrThread
+
+app.config['EXPLAIN_TEMPLATE_LOADING'] = True
 
 tumblr = pytumblr.TumblrRestClient(
     config['tumblr_consumer_key'],
@@ -26,7 +29,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     needs_caching = post_needs_caching(blogname, postid)
 
     if needs_caching:
-        _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True)
+        _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True, npf=True)
         if not _post or 'posts' not in _post or not _post['posts']:
             return await parse_error(_post, post_url=f'https://www.tumblr.com/{blogname}/{postid}')
         post = _post['posts'][0]
@@ -34,6 +37,12 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         _post = get_cached_post(blogname, postid)
         post = _post['posts'][0]
+
+    from pprint import pprint
+    pprint(post)
+
+    #return TumblrThread.from_payload(post).to_html()
+    return await render_template('render.html', thread=TumblrThread.from_payload(post))
 
     title = None
     if 'title' in post:
