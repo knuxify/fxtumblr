@@ -581,7 +581,7 @@ class NPFContent(TumblrContentBase):
                 if raise_on_unimplemented:
                     raise e
                 # generic default/fake filler block
-                blocks.append(NPFTextBlock("unimplemented block"))
+                blocks.append(NPFTextBlock("(Unimplemented block; click to see the full post)"))
 
         layout = []
         for lay in payload["layout"]:
@@ -816,23 +816,51 @@ class TumblrPost(TumblrPostBase):
 
 
 class TumblrThreadInfo:
-    """Despite the name, this describes the information for a thread."""
-    def __init__(self, title: str, description: str, images: Optional[List[NPFImageBlock]], videos=Optional[List[NPFVideoBlock]]):
+    def __init__(self, title: str, images: Optional[List[NPFMediaList]], videos: Optional[List[NPFMediaList]], audio: Optional[List[NPFMediaList]], other_blocks: Optional[List[NPFBlock]], has_formatting: bool):
         self._title = title
-        self._description = description
         self._images = images
         self._videos = videos
+        self._audio = audio
+        self._other_blocks = other_blocks
+        self._has_formatting = has_formatting
 
-    def from_payload(self, payload: dict, posts: List) -> "TumblrThreadInfo":
-        title = payload['title']
+    @staticmethod
+    def from_payload(payload: dict, posts: List) -> "TumblrThreadInfo":
+        title = payload['title'] if 'title' in payload else ''
+        images = []
+        videos = []
+        audio = []
+        # polls = []
+        other_blocks = []
+        has_formatting = False
+        for post in posts:
+            raw_blocks = [
+                block.base_block if isinstance(block, NPFBlockAnnotated) else block
+                for block in post.content.blocks
+            ]
+            for block in raw_blocks:
+                if isinstance(block, NPFTextBlock):
+                    if block.formatting:
+                        has_formatting = True
+                elif block.media:
+                    if isinstance(block, NPFImageBlock):
+                        images.append(block.media)
+                    elif isinstance(block, NPFVideoBlock):
+                        videos.append(block.media)
+                    elif isinstance(block, NPFAudioBlock):
+                        audio.append(block.media)
+                    else:
+                        other_blocks.append(block)
+                # elif isinstance(block, NPFPollBlock):
+                # 	polls.append(block)
+                else:
+                    other_blocks.append(block)
+
+        return TumblrThreadInfo(title, images, videos, audio, other_blocks, has_formatting)
 
     @property
     def title(self):
         return self._title
-
-    @property
-    def description(self):
-        return self._description
 
     @property
     def images(self):
@@ -842,9 +870,23 @@ class TumblrThreadInfo:
     def videos(self):
         return self._videos
 
+    @property
+    def audio(self):
+        return self._audio
+
+    @property
+    def other_blocks(self):
+        return self._other_blocks
+
+    @property
+    def has_formatting(self):
+        return self._has_formatting
+
 
 class TumblrThread:
-    def __init__(self, posts: List[TumblrPost], timestamp: int, thread_info: TumblrThreadInfo, reblog_info: Optional[TumblrReblogInfo]):
+    def __init__(self, id: str, blog_name: str, posts: List[TumblrPost], timestamp: int, thread_info: TumblrThreadInfo, reblog_info: Optional[TumblrReblogInfo]):
+        self._id = id
+        self._blog_name = blog_name
         self._posts = posts
         self._timestamp = timestamp
         self._thread_info = thread_info
@@ -853,6 +895,14 @@ class TumblrThread:
     @property
     def posts(self):
         return self._posts
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def blog_name(self):
+        return self._blog_name
 
     @property
     def timestamp(self):
@@ -889,12 +939,14 @@ class TumblrThread:
             )
             for post_payload in post_payloads
         ]
+        id = payload["id"]
+        blog_name = _get_blogname_from_payload(payload)
         thread_info = TumblrThreadInfo.from_payload(payload, posts)
         reblog_info = TumblrReblogInfo.from_payload(payload)
 
         timestamp = payload["timestamp"]
 
-        return TumblrThread(posts, timestamp, reblog_info)
+        return TumblrThread(id, blog_name, posts, timestamp, thread_info, reblog_info)
 
     @staticmethod
     def _format_post_as_quoting_previous(

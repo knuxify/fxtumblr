@@ -37,11 +37,7 @@ if config['renders_enable']:
         the thread into a picture. Returns a URL to the generated image.
         """
         global browser
-        target_filename = f'{post["blog_name"]}-{post["id"]}.png'
-
-        if 'by' not in reblog_info or 'from' not in reblog_info or \
-                not reblog_info['by'] or not reblog_info['from']:
-            reblog_info = None
+        target_filename = f'{thread.blog_name}-{thread.id}.png'
 
         if config['renders_debug'] or force_new_render or not os.path.exists(os.path.join(RENDERS_PATH, target_filename)):
             with tempfile.NamedTemporaryFile(suffix='.html') as target_html:

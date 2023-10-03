@@ -5,15 +5,15 @@ Contains code for creating the embed.
 import itertools
 import pytumblr
 from quart import request, render_template, redirect
+from markdownify import markdownify
 
 from . import app
 from .cache import post_needs_caching, cache_post, get_cached_post
 from .config import APP_NAME, BASE_URL, config
-from .parser import get_trail
 from .render import render_thread
 from .npf import TumblrThread
 
-app.config['EXPLAIN_TEMPLATE_LOADING'] = True
+app.config['EXPLAIN_TEMPLATE_LOADING'] = False
 
 tumblr = pytumblr.TumblrRestClient(
     config['tumblr_consumer_key'],
@@ -32,6 +32,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True, npf=True)
         if not _post or 'posts' not in _post or not _post['posts']:
             return await parse_error(_post, post_url=f'https://www.tumblr.com/{blogname}/{postid}')
+
         post = _post['posts'][0]
         needs_caching = cache_post(blogname, postid, _post)
     else:
@@ -41,61 +42,46 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     from pprint import pprint
     pprint(post)
 
-    title = None
-    if 'title' in post:
-        title = post['title']
+    thread = TumblrThread.from_payload(post)
+    thread_info = thread.thread_info
 
-    trail = await get_trail(post)
-
-    card_type = 'tweet'
-
-    # In general, videos can be prepended only to the first post in the trail,
-    # but some clever folks have figured out how to put them in a reblog:
-    # https://tumblr.com/punkitt-is-here/723305358401077248
-    # So, we have to check *all* posts. Oops.
-    video = None
-    for tpost in trail:
-        if tpost['type'] == 'video':
-            card_type = 'video'
-            video = tpost['video']
-            if 'video' in request.args:
-                return redirect(video['url'])
-
-    # Get image
-    images = list(itertools.chain.from_iterable(
-        [post['images'] for post in trail if 'images' in post]
-    ))
-
-    if len(images) == 0:
-        image = _post['blog']['avatar'][0]['url']
-    elif len(images) == 1:
-        image = images[0]
-        if not card_type == 'video':
-            card_type = 'summary_large_image'
-    else:
-        image = images[0]
-        should_render = True
-
-    reblog = {"by": '', "from": ''}
+    # Get title and embed description (post content)
+    title = thread_info.title
     try:
-        reblog['from'] = post['reblogged_from_name']
-        reblog['by'] = post['blog_name']
-    except KeyError:
-        pass
+        pfp = _post['blog']['avatar'][0]['url']
+    except (KeyError, IndexError):
+        pfp = None
 
+    # Get embed description
     description = ''
-    n = 0
-    for info in trail:
-        if len(trail) > 1:
-            description += f'\n\n{info["blogname"]}:\n'
-        if n == 0 and title:
-            description += f'# {title}\n\n'
-        description += info['content']
-        n += 1
-    description = description.strip()
-
+    for tpost in thread.posts:
+        description += f'\n\n{tpost.blog_name:}\n' + markdownify(tpost.to_html())
     if 'tags' in post and post['tags']:
         description += '\n\n(#' + ' #'.join(post['tags']) + ')'
+    description.strip()
+
+    # Get image(s) for thread
+    image = None
+    if thread_info.images:
+        if thread_info.images[0].original_dimensions:
+            target_width = thread_info.images[0].original_dimensions[0]
+        else:
+            target_width = 640  # pick whatever
+        thread_info.images[0]._pick_one_size(target_width)['url']
+
+        if len(thread_info.images) > 1:
+            should_render = True
+
+    # Get video(s) for thread
+    video = None
+    if thread_info.videos:
+        video = thread_info.videos[0].media[0]['url']
+
+        if len(thread_info.videos) > 1:
+            should_render = True
+
+        if 'video' in request.args:
+            return redirect(video['url'])
 
     # Truncate description (a maximum of 349 characters can be displayed, 256 for video desc)
     if video:
@@ -109,21 +95,35 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         description = description[:max_desc_length] + truncate_placeholder
         should_render = True
 
-    op = trail[-1]['blogname']
+    reblog = {"by": '', "from": ''}
+    try:
+        reblog['from'] = post['reblogged_from_name']
+        reblog['by'] = post['blog_name']
+    except KeyError:
+        pass
+
+    op = thread.posts[0].blog_name
     miniheader = op + f' ({post["note_count"]} notes)'
 
     if reblog['from']:
         header = reblog["by"] + " 🔁 " + reblog["from"]
     else:
-        header = trail[-1]["blogname"]
+        header = op
 
-    if not should_render:
-        for trailpost in trail:
-            if '<span class="npf_' in trailpost['content_html'] or \
-                    '<span style="color:' in trailpost['content_html'] or \
-                    '<p class="npf_' in trailpost['content_html']:
-                should_render = True
-                break
+    if image and video:
+        should_render = True
+
+    if thread_info.audio or thread_info.other_blocks:
+        should_render = True
+
+    if thread_info.has_formatting:
+        should_render = True
+
+    card_type = 'tweet'
+    if image and not video:
+        card_type = 'summary_large_image'
+    elif video and not image:
+        card_type = 'video'
 
     if config['renders_enable'] and should_render:
         image = await render_thread(thread, force_new_render=needs_caching)
@@ -137,17 +137,21 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         should_render = False
 
     return await render_template('card.html',
-        image=image,
+        app_name=APP_NAME,
+        base_url=BASE_URL,
+
         card_type=card_type,
         posturl=post['post_url'],
+        image=image,
+        pfp=pfp,
+        video=video,
+
         header=header,
         miniheader=miniheader,
         op=op,
-        video=video,
         desc=description,
-        app_name=APP_NAME,
-        base_url=BASE_URL,
-        is_rendered=should_render
+
+        is_rendered=should_render,
     )
 
 
