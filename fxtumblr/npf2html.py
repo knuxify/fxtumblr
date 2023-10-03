@@ -114,6 +114,8 @@ class NPFBlock(TumblrContentBlockBase):
             return NPFImageBlock.from_payload(payload)
         elif payload.get("type") == "video":
             return NPFVideoBlock.from_payload(payload)
+        elif payload.get("type") == "audio":
+            return NPFAudioBlock.from_payload(payload)
         else:
             raise ValueError(payload.get("type"))
 
@@ -313,8 +315,6 @@ class NPFAudioBlock(NPFMediaBlock):
         if self.embed_html:
             return self.embed_html
 
-        selected_size_poster = self.poster._pick_one_size(target_width)
-
         original_dimensions_attrs_str = ""
         if self.media.original_dimensions is not None:
             orig_w, orig_h = self.media.original_dimensions
@@ -322,11 +322,11 @@ class NPFAudioBlock(NPFMediaBlock):
                 f' data-orig-height="{orig_h}" data-orig-width="{orig_w}"'
             )
 
-        video_tag = (
-            f"<video src=\"{self.media['url']}\" poster=\"{selected_size_poster['url']}\" controls=\"controls\" muted=\"muted\"{original_dimensions_attrs_str}/>"
+        audio_tag = (
+            f"<audio src=\"{self.media.media[0]['url']}\" controls=\"controls\" muted=\"muted\"{original_dimensions_attrs_str}/>"
         )
 
-        figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{video_tag}</figure>'
+        figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{audio_tag}</figure>'
 
         return figure_tag
 
@@ -581,7 +581,7 @@ class NPFContent(TumblrContentBase):
                 if raise_on_unimplemented:
                     raise e
                 # generic default/fake filler block
-                blocks.append(NPFTextBlock(""))
+                blocks.append(NPFTextBlock("unimplemented block"))
 
         layout = []
         for lay in payload["layout"]:
