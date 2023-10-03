@@ -219,7 +219,7 @@ class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
         media: Optional[List[dict]] = [],
         alt_text: Optional[str] = None,
         embed_html: Optional[str] = None,
-        poster: Optional[dict] = []
+        poster: Optional[dict] = [],
     ):
         if not media and not embed_html:
             raise ValueError("Either media or embed_html must be provided")
@@ -276,7 +276,7 @@ class NPFVideoBlock(NPFMediaBlock):
             media=[payload["media"]] if "media" in payload else [],
             alt_text=payload.get("alt_text"),
             poster=payload["poster"] if "poster" in payload else None,
-            embed_html=payload["embed_html"] if "embed_html" in payload else '',
+            embed_html=payload["embed_html"] if "embed_html" in payload else "",
         )
 
     def to_html(self, target_width: int = 640) -> str:
@@ -292,9 +292,7 @@ class NPFVideoBlock(NPFMediaBlock):
                 f' data-orig-height="{orig_h}" data-orig-width="{orig_w}"'
             )
 
-        video_tag = (
-            f"<video poster=\"{selected_size_poster['url']}\" controls=\"controls\"{original_dimensions_attrs_str}><source src=\"{self.media.media[0]['url']}\" type=\"video/mp4\"></video>"
-        )
+        video_tag = f"<video poster=\"{selected_size_poster['url']}\" controls=\"controls\"{original_dimensions_attrs_str}><source src=\"{self.media.media[0]['url']}\" type=\"video/mp4\"></video>"
 
         figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{video_tag}</figure>'
 
@@ -308,7 +306,7 @@ class NPFAudioBlock(NPFMediaBlock):
             media=[payload["media"]] if "media" in payload else [],
             alt_text=payload.get("alt_text"),
             poster=payload["poster"] if "poster" in payload else None,
-            embed_html=payload["embed_html"] if "embed_html" in payload else '',
+            embed_html=payload["embed_html"] if "embed_html" in payload else "",
         )
 
     def to_html(self, target_width: int = 640) -> str:
@@ -322,9 +320,7 @@ class NPFAudioBlock(NPFMediaBlock):
                 f' data-orig-height="{orig_h}" data-orig-width="{orig_w}"'
             )
 
-        audio_tag = (
-            f"<audio src=\"{self.media.media[0]['url']}\" controls=\"controls\" muted=\"muted\"{original_dimensions_attrs_str}/>"
-        )
+        audio_tag = f"<audio src=\"{self.media.media[0]['url']}\" controls=\"controls\" muted=\"muted\"{original_dimensions_attrs_str}/>"
 
         figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{audio_tag}</figure>'
 
@@ -581,7 +577,9 @@ class NPFContent(TumblrContentBase):
                 if raise_on_unimplemented:
                     raise e
                 # generic default/fake filler block
-                blocks.append(NPFTextBlock("(Unimplemented block; click to see the full post)"))
+                blocks.append(
+                    NPFTextBlock("(Unimplemented block; click to see the full post)")
+                )
 
         layout = []
         for lay in payload["layout"]:
@@ -695,12 +693,16 @@ class NPFContent(TumblrContentBase):
         self._assign_indents()
         self._assign_nonlocal_tags()
 
-        ret = "".join([block.to_html() for block in self.blocks[len(self.ask_blocks) :]])
+        ret = "".join(
+            [block.to_html() for block in self.blocks[len(self.ask_blocks) :]]
+        )
         if len(self.ask_blocks) > 0:
-            ret = f'<div class="question"><p class="question-header"><strong class="asking-name">{self.ask_content.asking_name}</strong> asked:</p>\n' \
-                + "".join(
-                    [block.to_html() for block in self.ask_blocks]
-                ) + '</div>' + ret
+            ret = (
+                f'<div class="question"><p class="question-header"><strong class="asking-name">{self.ask_content.asking_name}</strong> asked:</p>\n'
+                + "".join([block.to_html() for block in self.ask_blocks])
+                + "</div>"
+                + ret
+            )
 
         return ret
 
@@ -772,10 +774,10 @@ class TumblrReblogInfo:
 
     @staticmethod
     def from_payload(payload: dict) -> Optional["TumblrReblogInfo"]:
-        if 'reblogged_from_id' not in payload:
+        if "reblogged_from_id" not in payload:
             return None
         return TumblrReblogInfo(
-            reblogged_from=payload['reblogged_from_name'],
+            reblogged_from=payload["reblogged_from_name"],
             reblogged_by=_get_blogname_from_payload(payload),
         )
 
@@ -816,7 +818,15 @@ class TumblrPost(TumblrPostBase):
 
 
 class TumblrThreadInfo:
-    def __init__(self, title: str, images: Optional[List[NPFMediaList]], videos: Optional[List[NPFMediaList]], audio: Optional[List[NPFMediaList]], other_blocks: Optional[List[NPFBlock]], has_formatting: bool):
+    def __init__(
+        self,
+        title: str,
+        images: Optional[List[NPFMediaList]],
+        videos: Optional[List[NPFMediaList]],
+        audio: Optional[List[NPFMediaList]],
+        other_blocks: Optional[List[NPFBlock]],
+        has_formatting: bool,
+    ):
         self._title = title
         self._images = images
         self._videos = videos
@@ -826,7 +836,7 @@ class TumblrThreadInfo:
 
     @staticmethod
     def from_payload(payload: dict, posts: List) -> "TumblrThreadInfo":
-        title = payload['title'] if 'title' in payload else ''
+        title = payload["title"] if "title" in payload else ""
         images = []
         videos = []
         audio = []
@@ -856,7 +866,9 @@ class TumblrThreadInfo:
                 else:
                     other_blocks.append(block)
 
-        return TumblrThreadInfo(title, images, videos, audio, other_blocks, has_formatting)
+        return TumblrThreadInfo(
+            title, images, videos, audio, other_blocks, has_formatting
+        )
 
     @property
     def title(self):
@@ -884,7 +896,15 @@ class TumblrThreadInfo:
 
 
 class TumblrThread:
-    def __init__(self, id: str, blog_name: str, posts: List[TumblrPost], timestamp: int, thread_info: TumblrThreadInfo, reblog_info: Optional[TumblrReblogInfo]):
+    def __init__(
+        self,
+        id: str,
+        blog_name: str,
+        posts: List[TumblrPost],
+        timestamp: int,
+        thread_info: TumblrThreadInfo,
+        reblog_info: Optional[TumblrReblogInfo],
+    ):
         self._id = id
         self._blog_name = blog_name
         self._posts = posts
@@ -920,13 +940,13 @@ class TumblrThread:
     def reblogged_from(self):
         if self._reblog_info:
             return self._reblog_info.reblogged_from
-        return ''
+        return ""
 
     @property
     def reblogged_by(self):
         if self._reblog_info:
             return self._reblog_info.reblogged_by
-        return ''
+        return ""
 
     @staticmethod
     def from_payload(payload: dict) -> "TumblrThread":
