@@ -11,7 +11,7 @@ from .cache import post_needs_caching, cache_post, get_cached_post
 from .config import APP_NAME, BASE_URL, config
 from .parser import get_trail
 from .render import render_thread
-from .npf2html import TumblrThread
+from .npf import TumblrThread
 
 app.config['EXPLAIN_TEMPLATE_LOADING'] = True
 
@@ -40,9 +40,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     from pprint import pprint
     pprint(post)
-
-    #return TumblrThread.from_payload(post).to_html()
-    return await render_template('render.html', thread=TumblrThread.from_payload(post))
 
     title = None
     if 'title' in post:
@@ -129,7 +126,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
                 break
 
     if config['renders_enable'] and should_render:
-        image = await render_thread(post, trail, reblog, force_new_render=needs_caching)
+        image = await render_thread(thread, force_new_render=needs_caching)
         card_type = 'summary_large_image'
         if video:
             description = f'TIP: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video'

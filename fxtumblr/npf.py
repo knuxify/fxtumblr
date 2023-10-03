@@ -695,9 +695,14 @@ class NPFContent(TumblrContentBase):
         self._assign_indents()
         self._assign_nonlocal_tags()
 
-        return "".join(
-            [block.to_html() for block in self.blocks[len(self.ask_blocks) :]]
-        )
+        ret = "".join([block.to_html() for block in self.blocks[len(self.ask_blocks) :]])
+        if len(self.ask_blocks) > 0:
+            ret = f'<div class="question"><p class="question-header"><strong class="asking-name">{self.ask_content.asking_name}</strong> asked:</p>\n' \
+                + "".join(
+                    [block.to_html() for block in self.ask_blocks]
+                ) + '</div>' + ret
+
+        return ret
 
     @property
     def ask_content(self) -> Optional["NPFAsk"]:
@@ -810,10 +815,39 @@ class TumblrPost(TumblrPostBase):
         return self._content.to_html()
 
 
+class TumblrThreadInfo:
+    """Despite the name, this describes the information for a thread."""
+    def __init__(self, title: str, description: str, images: Optional[List[NPFImageBlock]], videos=Optional[List[NPFVideoBlock]]):
+        self._title = title
+        self._description = description
+        self._images = images
+        self._videos = videos
+
+    def from_payload(self, payload: dict, posts: List) -> "TumblrThreadInfo":
+        title = payload['title']
+
+    @property
+    def title(self):
+        return self._title
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def images(self):
+        return self._images
+
+    @property
+    def videos(self):
+        return self._videos
+
+
 class TumblrThread:
-    def __init__(self, posts: List[TumblrPost], timestamp: int, reblog_info: Optional[TumblrReblogInfo]):
+    def __init__(self, posts: List[TumblrPost], timestamp: int, thread_info: TumblrThreadInfo, reblog_info: Optional[TumblrReblogInfo]):
         self._posts = posts
         self._timestamp = timestamp
+        self._thread_info = thread_info
         self._reblog_info = reblog_info
 
     @property
@@ -823,6 +857,10 @@ class TumblrThread:
     @property
     def timestamp(self):
         return self._timestamp
+
+    @property
+    def thread_info(self):
+        return self._thread_info
 
     @property
     def reblog_info(self):
@@ -851,6 +889,7 @@ class TumblrThread:
             )
             for post_payload in post_payloads
         ]
+        thread_info = TumblrThreadInfo.from_payload(payload, posts)
         reblog_info = TumblrReblogInfo.from_payload(payload)
 
         timestamp = payload["timestamp"]
