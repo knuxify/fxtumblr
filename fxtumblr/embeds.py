@@ -70,7 +70,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
             target_width = thread_info.images[0].original_dimensions[0]
         else:
             target_width = 640  # pick whatever
-        thread_info.images[0]._pick_one_size(target_width)["url"]
+        image = thread_info.images[0]._pick_one_size(target_width)["url"]
 
         if len(thread_info.images) > 1:
             should_render = True
