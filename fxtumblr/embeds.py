@@ -5,7 +5,6 @@ Contains code for creating the embed.
 import itertools
 import pytumblr
 from quart import request, render_template, redirect
-from markdownify import markdownify
 
 from . import app
 from .cache import post_needs_caching, cache_post, get_cached_post
@@ -59,10 +58,12 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     # Get embed description
     description = ""
     for tpost in thread.posts:
-        description += f"\n\n{tpost.blog_name:}\n" + markdownify(tpost.to_html())
+        description += f"\n\n{tpost.blog_name}:\n" + tpost.to_markdown(
+            placeholders=True
+        )
     if "tags" in post and post["tags"]:
         description += "\n\n(#" + " #".join(post["tags"]) + ")"
-    description.strip()
+    description = description.strip()
 
     # Get image(s) for thread
     image = None

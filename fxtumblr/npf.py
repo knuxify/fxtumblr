@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 from collections import defaultdict
 from itertools import zip_longest
 from copy import deepcopy
+from markdownify import markdownify
 
 
 def _get_blogname_from_payload(post_payload):
@@ -19,6 +20,9 @@ class TumblrContentBlockBase:
     def to_html(self) -> str:
         raise NotImplementedError
 
+    def to_markdown(self, placeholders: bool = False) -> str:
+        raise NotImplementedError
+
 
 class LegacyBlock(TumblrContentBlockBase):
     def __init__(self, body: str):
@@ -30,6 +34,9 @@ class LegacyBlock(TumblrContentBlockBase):
 
     def to_html(self):
         return self._body
+
+    def to_markdown(self, placeholders: bool = False):
+        return markdownify(self._body)
 
 
 class NPFFormattingRange:
@@ -78,6 +85,36 @@ class NPFFormattingRange:
             raise ValueError(self.type)
         return result
 
+    def to_markdown(self, placeholders=False):
+        result = {"start": self.start, "end": self.end}
+
+        types_to_style_tags = {
+            "bold": "**",
+            "italic": "**",
+            "small": "_",
+            "strikethrough": "~",
+        }
+
+        if self.type in types_to_style_tags:
+            tag = types_to_style_tags[self.type]
+            result["start_insert"] = tag
+            result["end_insert"] = tag
+        elif self.type == "link":
+            result["start_insert"] = "["
+            result["end_insert"] = "]"
+        elif self.type == "mention":
+            if placeholders:
+                result["start_insert"] = ""
+                result["end_insert"] = ""
+            else:
+                blog_url = self.blog.get("url")
+                result["start_insert"] = "["
+                result["end_insert"] = f"]({blog_url})"
+        else:
+            result["start_insert"] = "*"
+            result["end_insert"] = "*"
+        return result
+
 
 class NPFSubtype:
     def __init__(self, subtype: str):
@@ -104,6 +141,25 @@ class NPFSubtype:
             return ""
         else:
             return f"<p>{text_or_break}</p>"
+
+    def format_markdown(self, text: str):
+        if not text:
+            return ""
+        if self.subtype == "heading1":
+            return f"\n# {text}"
+        elif self.subtype == "heading2":
+            return f"\n## {text}"
+        elif self.subtype == "ordered-list-item":
+            return f"\n* {text}"
+        elif self.subtype == "unordered-list-item":
+            return f"\n* {text}"
+        # These match the standard classes used in Tumblr's CSS:
+        elif self.subtype in ("chat", "quote", "quirky"):
+            return f"\n*{text}*"
+        elif len(text) == 0:
+            return ""
+        else:
+            return f"\n{text}"
 
 
 class NPFBlock(TumblrContentBlockBase):
@@ -137,8 +193,14 @@ class NPFTextBlock(NPFBlock):
     def subtype_name(self):
         return self.subtype.subtype
 
-    def apply_formatting(self):
-        insertions = [formatting.to_html() for formatting in self.formatting]
+    def apply_formatting(self, markdown: bool = False, placeholders: bool = False):
+        if markdown:
+            insertions = [
+                formatting.to_markdown(placeholders=placeholders)
+                for formatting in self.formatting
+            ]
+        else:
+            insertions = [formatting.to_html() for formatting in self.formatting]
 
         insert_ix_to_inserted_text = defaultdict(list)
         for insertion in insertions:
@@ -160,10 +222,18 @@ class NPFTextBlock(NPFBlock):
         return "".join(accum)
 
     def to_html(self):
-        formatted = self.apply_formatting()
+        formatted = self.apply_formatting(markdown=False)
 
         if self.subtype is not None:
             formatted = self.subtype.format_html(formatted)
+
+        return formatted
+
+    def to_markdown(self, placeholders: bool = False):
+        formatted = self.apply_formatting(markdown=True, placeholders=placeholders)
+
+        if self.subtype is not None:
+            formatted = self.subtype.format_markdown(formatted)
 
         return formatted
 
@@ -268,6 +338,14 @@ class NPFImageBlock(NPFMediaBlock):
 
         return figure_tag
 
+    def to_markdown(self, target_width: int = 640, placeholders: bool = False) -> str:
+        if placeholders:
+            return "\n(image)"
+
+        selected_size = self.media._pick_one_size(target_width)
+
+        return f"\n![Image]({selected_size['url']})"
+
 
 class NPFVideoBlock(NPFMediaBlock):
     @staticmethod
@@ -298,6 +376,18 @@ class NPFVideoBlock(NPFMediaBlock):
 
         return figure_tag
 
+    def to_markdown(self, target_width: int = 640, placeholders: bool = False) -> str:
+        if self.embed_html:
+            if placeholders:
+                return "\n(video embed)"
+            return self.embed_html
+        if placeholders:
+            return "\n(video)"
+
+        selected_size_poster = self.poster._pick_one_size(target_width)
+
+        return f"\n![Video thumbnail]({selected_size_poster['url']})"
+
 
 class NPFAudioBlock(NPFMediaBlock):
     @staticmethod
@@ -325,6 +415,17 @@ class NPFAudioBlock(NPFMediaBlock):
         figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{audio_tag}</figure>'
 
         return figure_tag
+
+    def to_markdown(self, target_width: int = 640, placeholders: bool = False) -> str:
+        if self.embed_html:
+            if placeholders:
+                return "\n(audio embed)"
+            return self.embed_html
+        if placeholders:
+            return "\n(audio)"
+
+        # todo: return poster
+        return "\n(audio)"
 
 
 class NPFLayout:
@@ -469,12 +570,19 @@ class NPFBlockAnnotated(NPFBlock):
         inside = self.base_block.to_html()
         return self.prefix + inside + self.suffix
 
+    def to_markdown(self, placeholders: bool = False) -> str:
+        inside = self.base_block.to_markdown(placeholders=placeholders)
+        return self.prefix + inside + self.suffix
+
 
 class TumblrContentBase:
     def __init__(self, content: List[TumblrContentBlockBase]):
         self.content = content
 
     def to_html(self) -> str:
+        raise NotImplementedError
+
+    def to_markdown(self, placeholders: bool = False) -> str:
         raise NotImplementedError
 
 
@@ -706,6 +814,30 @@ class NPFContent(TumblrContentBase):
 
         return ret
 
+    def to_markdown(self, placeholders: bool = False):
+        self._reset_annotations()
+
+        ret = "".join(
+            [
+                block.to_markdown(placeholders=placeholders)
+                for block in self.blocks[len(self.ask_blocks) :]
+            ]
+        )
+        if len(self.ask_blocks) > 0:
+            ret = (
+                f"{self.ask_content.asking_name} asked:\n"
+                + "".join(
+                    [
+                        block.to_markdown(placeholders=placeholders)
+                        for block in self.ask_blocks
+                    ]
+                )
+                + "\n"
+                + ret
+            )
+
+        return ret
+
     @property
     def ask_content(self) -> Optional["NPFAsk"]:
         if self.has_ask:
@@ -815,6 +947,9 @@ class TumblrPost(TumblrPostBase):
 
     def to_html(self) -> str:
         return self._content.to_html()
+
+    def to_markdown(self, placeholders: bool = False) -> str:
+        return self._content.to_markdown(placeholders=placeholders)
 
 
 class TumblrThreadInfo:
@@ -984,6 +1119,19 @@ class TumblrThread:
             result = TumblrThread._format_post_as_quoting_previous(post, prev, result)
 
         return result
+
+    def to_markdown(self, placeholders: bool = False) -> str:
+        return "".join(
+            [
+                "".join(
+                    [
+                        block.to_markdown(placeholders=placeholders)
+                        for block in posts.blocks
+                    ]
+                )
+                for post in self.posts
+            ]
+        )
 
     @property
     def ask_content(self) -> Optional[NPFAsk]:
