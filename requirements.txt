@@ -3,7 +3,6 @@ quart-cors
 pytumblr
 PyYAML
 markdownify
-BeautifulSoup4
 uvicorn
 hypercorn
 nh3
