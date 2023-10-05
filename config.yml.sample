@@ -1,5 +1,6 @@
 app_name: "fxtumblr"
 base_url: "https://your-fxtumblr-instance.here"
+motd: ""
 
 max_images_in_thread: 30
 

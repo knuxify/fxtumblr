@@ -5,7 +5,7 @@
 
 {# 	Site data #}
 	<meta content="#000000" name="theme-color" />
-	<meta property="og:site_name" content="{{ app_name }}">
+	<meta property="og:site_name" content="{{ app_name }}{% if motd %} | {{ motd }}{% endif %}">
 
 {#  Basic card info #}
     {%- if video -%}

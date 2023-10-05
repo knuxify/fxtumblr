@@ -145,6 +145,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         "card.html",
         app_name=APP_NAME,
         base_url=BASE_URL,
+        motd=config.get("motd", ""),
         card_type=card_type,
         posturl=post["post_url"],
         image=image,
