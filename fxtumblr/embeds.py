@@ -61,8 +61,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         description += "\n\n(#" + " #".join(post["tags"]) + ")"
     description = description.strip()
 
-    print(thread_info.images, thread_info.videos)
-
     # Get image(s) for thread
     image = None
     if thread_info.images:
