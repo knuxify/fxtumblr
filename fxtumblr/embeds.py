@@ -41,10 +41,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         _post = get_cached_post(blogname, postid)
         post = _post["posts"][0]
 
-    from pprint import pprint
-
-    pprint(post)
-
     thread = TumblrThread.from_payload(post)
     thread_info = thread.thread_info
 
@@ -65,6 +61,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         description += "\n\n(#" + " #".join(post["tags"]) + ")"
     description = description.strip()
 
+    print(thread_info.images, thread_info.videos)
+
     # Get image(s) for thread
     image = None
     if thread_info.images:
@@ -80,7 +78,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     # Get video(s) for thread
     video = None
     if thread_info.videos:
-        video = thread_info.videos[0].media[0]["url"]
+        video = thread_info.videos[0].media[0]
 
         if len(thread_info.videos) > 1:
             should_render = True
