@@ -202,4 +202,7 @@ async def oembed_json():
         "author_url": request.args.get("link", None),
     }
 
+    if 'motd' in config and config['motd']:
+        out['provider_name'] += ' - ' + config.get('motd', '')
+
     return out
