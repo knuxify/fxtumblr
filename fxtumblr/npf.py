@@ -991,9 +991,9 @@ class TumblrThreadInfo:
                     if isinstance(block, NPFImageBlock):
                         images.append(block.media)
                     elif isinstance(block, NPFVideoBlock):
-                        videos.append(block.media)
+                        videos.append((block.media, block.poster))
                     elif isinstance(block, NPFAudioBlock):
-                        audio.append(block.media)
+                        audio.append((block.media, block.poster))
                     else:
                         other_blocks.append(block)
                 # elif isinstance(block, NPFPollBlock):

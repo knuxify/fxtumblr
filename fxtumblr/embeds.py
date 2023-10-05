@@ -76,7 +76,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     # Get video(s) for thread
     video = None
     if thread_info.videos:
-        video = thread_info.videos[0].media[0]
+        video = thread_info.videos[0][0].media[0]
+        video_thumbnail = thread_info.videos[0][1].media[0]["url"]
 
         if len(thread_info.videos) > 1:
             should_render = True
@@ -146,6 +147,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         image=image,
         pfp=pfp,
         video=video,
+        video_thumbnail=video_thumbnail,
         header=header,
         miniheader=miniheader,
         op=op,

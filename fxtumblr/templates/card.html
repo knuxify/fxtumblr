@@ -18,8 +18,13 @@
 
 	{%- if image -%}
     	<meta name="twitter:image" content="{{ image }}" />
+	    <meta property="og:image" content="{{ image }}" />
+	{%- elif video_thumbnail -%}
+    	<meta name="twitter:image" content="{{ video_thumbnail }}" />
+	    <meta property="og:image" content="{{ video_thumbnail }}" />
 	{%- elif pfp -%}
     	<meta name="twitter:image" content="{{ pfp }}" />
+	    <meta property="og:image" content="{{ pfp }}" />
 	{%- endif -%}
     {%- if not video -%}
     <meta name="twitter:creator" content="@{{ op }}" />
@@ -40,7 +45,6 @@
 {% endif %}
 
     <meta property="og:description" content="{{ desc }}" />
-    <meta property="og:image" content="{{ image }}" />
 
     <link rel="alternate" href="{{ base_url }}/oembed.json?{% if video %}desc={{ desc | urlencode }}&op={{ miniheader | urlencode }}%20%7C%20{{ header | urlencode }}{% else %}desc={{ miniheader | urlencode }}&op={{ header | urlencode }}{% endif %}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ miniheader }}">
     <!--<meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />-->
