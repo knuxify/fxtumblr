@@ -47,7 +47,7 @@
     <meta property="og:description" content="{{ desc }}" />
 
     <link rel="alternate" href="{{ base_url }}/oembed.json?{% if video %}desc={{ desc | urlencode }}&op={{ miniheader | urlencode }}%20%7C%20{{ header | urlencode }}{% else %}desc={{ miniheader | urlencode }}&op={{ header | urlencode }}{% endif %}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ miniheader }}">
-    <!--<meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />-->
+    <meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />
 </head>
 <body>
 Redirecting you to the post in a moment. <a href="{{ posturl }}">Or click here.</a>
