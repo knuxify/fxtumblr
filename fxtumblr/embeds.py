@@ -54,9 +54,9 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     # Get embed description
     description = ""
     for tpost in thread.posts:
-        description += f"\n\n{tpost.blog_name}:\n" + tpost.to_markdown(
-            placeholders=True
-        )
+        post_content = tpost.to_markdown(placeholders=True)
+        post_content = "\n".join(l for l in post_content.split("\n") if l.strip())
+        description += f"\n\n {tpost.blog_name}:\n" + post_content
     if "tags" in post and post["tags"]:
         description += "\n\n(#" + " #".join(post["tags"]) + ")"
     description = description.strip()
