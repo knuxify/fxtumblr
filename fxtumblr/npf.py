@@ -17,6 +17,57 @@ def _get_blogname_from_payload(post_payload):
     return post_payload["blog"]["name"]
 
 
+def sanitize_html(html: str) -> str:
+    """
+    Sanitizes HTML to only include elements we add; second line of defense
+    against arbitrary code execution.
+
+    Update this whenever you add a new object.
+    """
+    return nh3.clean(
+        html,
+        tags={
+            "p",
+            "b",
+            "i",
+            "a",
+            "small",
+            "strike",
+            "h1",
+            "h2",
+            "ul",
+            "ol",
+            "li",
+            "blockquote",
+            "span",
+            "div",
+            "figure",
+            "img",
+            "audio",
+            "video",
+            "source",
+        },
+        attributes={
+            "*": {"class", "id"},
+            "a": {"class", "id", "href"},
+            "span": {"class", "id", "style"},
+            "figure": {"class", "id", "data-orig-height", "data-orig-width"},
+            "img": {"class", "id", "src", "data-orig-height", "data-orig-width"},
+            "video": {
+                "class",
+                "id",
+                "poster",
+                "src",
+                "controls",
+                "data-orig-height",
+                "data-orig-width",
+            },
+            "source": {"src", "type"},
+            "audio": {"class", "id", "poster", "src", "controls", "muted"},
+        },
+    )
+
+
 class TumblrContentBlockBase:
     def to_html(self) -> str:
         raise NotImplementedError
@@ -123,7 +174,6 @@ class NPFSubtype:
 
     def format_html(self, text: str):
         text_or_break = text if len(text) > 0 else "<br>"
-        text_or_break = html.escape(text_or_break)
         if self.subtype == "heading1":
             return f"<p><h1>{text_or_break}</h1></p>"
         elif self.subtype == "heading2":
@@ -190,7 +240,7 @@ class NPFTextBlock(NPFBlock):
         indent_level: Optional[int] = None,
         formatting: List[NPFFormattingRange] = None,
     ):
-        self.text = text
+        self.text = html.escape(text)
         self.subtype = NPFSubtype("no_subtype") if subtype is None else subtype
         self.indent_level = 0 if indent_level is None else indent_level
         self.formatting = [] if formatting is None else formatting
@@ -818,7 +868,7 @@ class NPFContent(TumblrContentBase):
         )
         if len(self.ask_blocks) > 0:
             ret = (
-                f'<div class="question"><p class="question-header"><strong class="asking-name">{self.ask_content.asking_name}</strong> asked:</p>\n'
+                f'<div class="question"><p class="question-header"><strong class="asking-name">{html.escape(self.ask_content.asking_name)}</strong> asked:</p>\n'
                 + "".join([block.to_html() for block in self.ask_blocks])
                 + "</div>"
                 + ret
@@ -1130,7 +1180,7 @@ class TumblrThread:
         for prev, post in zip(self.posts[:-1], self.posts[1:]):
             result = TumblrThread._format_post_as_quoting_previous(post, prev, result)
 
-        return result
+        return sanitize_html(result)
 
     def to_markdown(self, placeholders: bool = False) -> str:
         return "".join(
