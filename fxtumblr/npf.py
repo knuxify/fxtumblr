@@ -7,6 +7,7 @@ from collections import defaultdict
 from itertools import zip_longest
 from copy import deepcopy
 from markdownify import markdownify
+import html
 
 
 def _get_blogname_from_payload(post_payload):
@@ -122,6 +123,7 @@ class NPFSubtype:
 
     def format_html(self, text: str):
         text_or_break = text if len(text) > 0 else "<br>"
+        text_or_break = html.escape(text_or_break)
         if self.subtype == "heading1":
             return f"<p><h1>{text_or_break}</h1></p>"
         elif self.subtype == "heading2":
