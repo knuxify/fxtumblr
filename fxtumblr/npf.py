@@ -754,13 +754,8 @@ class NPFContent(TumblrContentBase):
             indent_delta = block.base_block.indent_level - indent_level
             indent_delta_abs = abs(indent_delta)
 
-            print(f"Parsing block of type {subtype}")
-
             if subtype != previous_subtype and previous_subtype in subtype_wrappers:
                 # If the subtype has changed, dump the last closing tag into the prefix
-                print(
-                    "Subtype has changed and we should dump the last closing tag into prefix"
-                )
                 block.prefix = closing_tags.pop() + block.prefix
                 type_stack.pop()
 
