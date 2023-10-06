@@ -23,7 +23,7 @@ tumblr = pytumblr.TumblrRestClient(
 )
 
 if config.get("logging", False):
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(name)s:%(levelname)s %(message)s')
 
 @app.route("/<string:blogname>/<int:postid>")
 @app.route("/<string:blogname>/<int:postid>/<string:summary>")
