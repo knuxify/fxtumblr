@@ -22,11 +22,13 @@ tumblr = pytumblr.TumblrRestClient(
     None,
 )
 
+if config.get("logging", False):
+    logging.basicConfig(level=logging.INFO)
+
 @app.route("/<string:blogname>/<int:postid>")
 @app.route("/<string:blogname>/<int:postid>/<string:summary>")
 async def generate_embed(blogname: str, postid: int, summary: str = None):
-    if config.get("logging", False):
-        app.logger.info(f"parsing post: https://www.tumblr.com/{blogname}/{postid}")
+    app.logger.info(f"parsing post: https://www.tumblr.com/{blogname}/{postid}")
 
     should_render = False
     needs_caching = post_needs_caching(blogname, postid)
@@ -144,8 +146,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         should_render = False
 
-    if config.get("logging", False):
-        app.logger.info(f"parsed post {blogname}/{postid}, rendered: {should_render}")
+    app.logger.info(f"parsed post {blogname}/{postid}, rendered: {should_render}")
 
     return await render_template(
         "card.html",
