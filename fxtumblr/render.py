@@ -50,7 +50,12 @@ if config["renders_enable"]:
         ):
             with tempfile.NamedTemporaryFile(suffix=".html") as target_html:
                 target_html.write(
-                    bytes(await render_template("render.html", thread=thread), "utf-8")
+                    bytes(
+                        await render_template(
+                            "render.html", thread=thread, fxtumblr_path=FXTUMBLR_PATH
+                        ),
+                        "utf-8",
+                    )
                 )
 
                 if config["renders_debug"]:
