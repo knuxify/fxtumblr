@@ -3,6 +3,7 @@ Contains code for creating the embed.
 """
 
 import itertools
+import logging
 import pytumblr
 from quart import request, render_template, redirect
 
@@ -21,10 +22,12 @@ tumblr = pytumblr.TumblrRestClient(
     None,
 )
 
-
 @app.route("/<string:blogname>/<int:postid>")
 @app.route("/<string:blogname>/<int:postid>/<string:summary>")
 async def generate_embed(blogname: str, postid: int, summary: str = None):
+    if config.get("logging", False):
+        app.logger.info(f"parsing post: https://www.tumblr.com/{blogname}/{postid}")
+
     should_render = False
     needs_caching = post_needs_caching(blogname, postid)
 
@@ -140,6 +143,9 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         video = None
     else:
         should_render = False
+
+    if config.get("logging", False):
+        app.logger.info(f"parsed post {blogname}/{postid}, rendered: {should_render}")
 
     return await render_template(
         "card.html",
