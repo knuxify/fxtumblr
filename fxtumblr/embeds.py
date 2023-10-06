@@ -85,7 +85,10 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     video_thumbnail = None
     if thread_info.videos:
         video = thread_info.videos[0][0].media[0]
-        video_thumbnail = thread_info.videos[0][1].media[0]["url"]
+        try:
+            video_thumbnail = thread_info.videos[0][1].media[0]["url"]
+        except (IndexError, AttributeError):
+            video_thumbnail = None
 
         if len(thread_info.videos) > 1:
             should_render = True
