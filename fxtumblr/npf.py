@@ -132,14 +132,18 @@ class NPFSubtype:
             return f"<li>{text}</li>"
         # These match the standard classes used in Tumblr's CSS:
         elif self.subtype == "chat":
+            text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_chat">')
             return f'<p class="npf_chat">{text_or_break}</p>'
         elif self.subtype == "quote":
+            text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_quote">')
             return f'<p class="npf_quote">{text_or_break}</p>'
         elif self.subtype == "quirky":
+            text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_quirky">')
             return f'<p class="npf_quirky">{text_or_break}</p>'
         elif len(text) == 0:
             return ""
         else:
+            text_or_break = text_or_break.replace("\n\n", "</p><p>")
             return f"<p>{text_or_break}</p>"
 
     def format_markdown(self, text: str):
@@ -543,7 +547,6 @@ class NPFBlockAnnotated(NPFBlock):
 
         self.prefix = ""
         self.suffix = ""
-        self.indent_delta = None
         self.is_ask_block = is_ask_block
         self.ask_layout = ask_layout
 
@@ -727,79 +730,91 @@ class NPFContent(TumblrContentBase):
             bl.reset_annotations()
         self.blocks = self._make_blocks()
 
-    def _assign_indents(self):
-        indenting_subtypes = {"indented", "ordered-list-item", "unordered-list-item"}
-        prev_subtypes = [None] + [
-            block.base_block.subtype_name for block in self.blocks
-        ]
-
-        cur_level = 0
-
-        for block in self.blocks:
-            this_indents = block.base_block.subtype_name in indenting_subtypes
-            full_indent_level = this_indents + block.base_block.indent_level
-
-            indent_delta = full_indent_level - cur_level
-
-            block.indent_delta = indent_delta
-            cur_level = full_indent_level
-
-    def _assign_nonlocal_tags(self):
-        """
-        TODO:
-
-        make this wrap multiple "inside" blocks in one <li></li> when needed
-        as in the "nested in two blockquotes and a list" example in the docs
-        """
-        subtype_and_sign_to_tag = {
-            ("indented", True): "<blockquote>",
-            ("indented", False): "</blockquote>",
-            ("ordered-list-item", True): "<ol>",
-            ("ordered-list-item", False): "</ol>",
-            ("unordered-list-item", True): "<ul>",
-            ("unordered-list-item", False): "</ul>",
+    def _assign_html_indents(self):
+        # This is what the block is wrapped in. The actual contents of the
+        # block itself are wrapped in the <p>, <li> elements as needed.
+        subtype_wrappers = {
+            "indented": "blockquote",
+            "ordered-list-item": "ol",
+            "unordered-list-item": "ul",
         }
 
-        stack = []
+        indent_level = 0
+        type_stack = []
+        closing_tags = []
 
+        n = 0
         for block in self.blocks:
-            if block.indent_delta == 0:
-                continue
+            if n != 0:
+                previous_subtype = self.blocks[n - 1].base_block.subtype_name
+            else:
+                previous_subtype = "no_subtype"
+            subtype = block.base_block.subtype_name
 
-            sign = block.indent_delta > 0
-            abs = block.indent_delta if sign else -1 * block.indent_delta
+            indent_delta = block.base_block.indent_level - indent_level
+            indent_delta_abs = abs(indent_delta)
 
-            for _ in range(abs):
-                if sign:
-                    subtype_key = block.base_block.subtype_name
-                    stack.append(subtype_key)
-                else:
-                    subtype_key = stack.pop()
+            print(f"Parsing block of type {subtype}")
 
-                key = (subtype_key, sign)
-                if key not in subtype_and_sign_to_tag:
-                    raise ValueError(key)  # TODO: improve
+            if subtype != previous_subtype and previous_subtype in subtype_wrappers:
+                # If the subtype has changed, dump the last closing tag into the prefix
+                print(
+                    "Subtype has changed and we should dump the last closing tag into prefix"
+                )
+                block.prefix = closing_tags.pop() + block.prefix
+                type_stack.pop()
 
-                tag = subtype_and_sign_to_tag[key]
+            if subtype in subtype_wrappers:
+                if subtype != previous_subtype:
+                    # If the indent stays the same, and the subtype is changed,
+                    # then we just need to add the prefix for the new tag (we
+                    # added the closing tag for the previous type already).
+                    block.prefix = block.prefix + f"<{subtype_wrappers[subtype]}>"
+                    closing_tags.append(f"</{subtype_wrappers[subtype]}>")
+                    type_stack.append(subtype)
 
-                block.prefix = tag + block.prefix
+                # TODO: These next cases are... kinda broken. Indentation levels are
+                # currently completely ignored by Tumblr and it is **impossible**
+                # to make a post that's as advanced as in the docs (and even if it
+                # was, nobody in their right mind would do it, except to piss me off).
+                # See https://github.com/tumblr/docs/issues/115
+                # Thus, the next two bits are untested and are broken at least for
+                # lists (this should be <li><ul><li><ul>... not <ul><ul>...), but since
+                # it's not possible to make a post that triggers this I'm ignoring it
+                # for now.
 
-        closers = []
-        while len(stack) > 0:
-            subtype_key = stack.pop()
-            key = (subtype_key, False)
-            closers.append(subtype_and_sign_to_tag[key])
+                if indent_delta > 0:
+                    # If we're going up an indent, add a closing tag to the stack:
+                    block.prefix = block.prefix + (
+                        f"<{subtype_wrappers[subtype]}>" * (indent_delta_abs)
+                    )
+                    closing_tags.extend(
+                        [f"</{subtype_wrappers[subtype]}>"] * (indent_delta_abs)
+                    )
+                    type_stack.extend([subtype] * (indent_delta_abs))
 
-        try:
-            self.blocks[-1].suffix += "".join(closers)
-        except IndexError:
-            # if there are 0 blocks
-            pass
+                elif indent_delta < 0:
+                    # If we're going down an indent, pop some closing tags and
+                    # add them to the prefix of the current block.
+                    _closing = ""
+                    for _ in range((indent_delta_abs)):
+                        _closing += closing_tags.pop()
+                        type_stack.pop()
+                    block.prefix = _closing + block.prefix
+
+            indent_level += indent_delta
+            n += 1
+
+        if closing_tags:
+            _closing = ""
+            for _ in range(len(closing_tags)):
+                _closing += closing_tags.pop()
+                type_stack.pop()
+            self.blocks[-1].suffix += _closing
 
     def to_html(self):
         self._reset_annotations()
-        self._assign_indents()
-        self._assign_nonlocal_tags()
+        self._assign_html_indents()
 
         ret = "".join(
             [block.to_html() for block in self.blocks[len(self.ask_blocks) :]]
