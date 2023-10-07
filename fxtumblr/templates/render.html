@@ -70,7 +70,7 @@
 		a { color: inherit; }
 
 		figure.tmblr-full { margin: 0; margin-block: 0; margin-inline: 0; margin-bottom: -5px; }
-		img, video, audio { object-fit: cover; width: calc(100% + 40px); height: 100%; margin-left: -20px; margin-right: -20px; }
+		figure.tmblr-full img, figure.tmblr-full video, figure.tmblr-full audio, .audio-player { object-fit: cover; width: calc(100% + 40px); height: 100%; margin-left: -20px; margin-right: -20px; }
 
 		/* tumblr doesn't put <p> elements in blockquotes, but their API does */
 		blockquote { margin: 0; padding: 0; border-left: 3px solid rgba(0, 0, 0, .07); font-size: 1rem; font-style: normal; line-height: 1.5; }
@@ -129,16 +129,29 @@
 
 		.post-content h1:nth-child(2), .post-content h2:nth-child(2) { margin-top: -12px; }
 
+		.audio-player { height: 85px; display: flex; background-color: RGB(124, 92, 255); color: #fff; margin-bottom: 10px; }
+		.audio-player .play-button svg { margin: 0 25px; }
+		.audio-player .audio-info, .audio-player .play-button { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
+		.audio-player .audio-info { padding-right: 20px; width: 100%; }
+		.audio-player .audio-info > div { font-size: 1rem; font-weight: 700; line-height: 1.5; }
+		.audio-player .audio-info .artist, .audio-player .audio-info .album { font-size: .875rem; font-weight: 4000; color: rgba(255, 255, 255, .65); line-height: 1.42857; }
+		.audio-player .audio-image { width: 85px; height: 85px; flex-shrink: 0; }
+		.audio-player .audio-image img { object-fit: cover; width: 100%; height: 100%; display: block; }
 	</style>
 </head>
 <body>
+	<aside id="icons" style="width:0;height:0;overflow:hidden;display:none;">
+		<svg id="managed-icon__play-cropped" fill="var(--icon-color-primary, #ffffff)" viewBox="18 15 13 16">
+			<path d="M30.592 23.578L19.52 30.3a1 1 0 0 1-1.52-.854V16a1 1 0 0 1 1.519-.855l11.073 6.723a1 1 0 0 1 0 1.71z"></path>
+		</svg>
+	</aside>
 	{% if thread.reblog_info %}
 	<header class="main-header">
 		<span class="username reblogged-from">{{ thread.reblogged_by }}</span><svg width="16" role="presentation" id="managed-icon__reblog-compact" fill="rgba(0, 0, 0, 0.65)" viewBox="0 0 12.3 13.7">
   <path d="M9.2.2C8.7-.2 8 .2 8 .8v1.1H3.1c-2 0-3.1 1-3.1 2.6v1.9c0 .5.4.9.9.9.1 0 .2 0 .3-.1.3-.1.6-.5.6-.8V5.2c0-1.4.3-1.5 1.3-1.5H8v1.1c0 .6.7 1 1.2.6l3.1-2.6L9.2.2zM12 7.4c0-.5-.4-.9-.9-.9s-.9.4-.9.9v1.2c0 1.4-.3 1.5-1.3 1.5H4.3V9c0-.6-.7-.9-1.2-.5L0 11l3.1 2.6c.5.4 1.2.1 1.2-.5v-1.2h4.6c2 0 3.1-1 3.1-2.6V7.4z"></path>
 </svg><span class="username reblogged-by">{{ thread.reblogged_from }}</span>
-		{% endif %}
 	</header>
+		{% endif %}
 	{% for post in thread.posts %}
 		{% if post.to_html() %}
 		<div class="post">

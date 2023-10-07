@@ -346,6 +346,7 @@ class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
         alt_text: Optional[str] = None,
         embed_html: Optional[str] = None,
         poster: Optional[dict] = [],
+        data: Optional[dict] = {},
     ):
         if not media and not embed_html:
             raise ValueError("Either media or embed_html must be provided")
@@ -353,6 +354,7 @@ class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
         self._alt_text = alt_text
         self._embed_html = embed_html
         self._poster = NPFMediaList(poster) if poster else None
+        self._data = data
 
     @property
     def media(self):
@@ -370,11 +372,19 @@ class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
     def embed_html(self) -> Optional[str]:
         return self._embed_html
 
+    @property
+    def data(self):
+        return self._data
+
 
 class NPFImageBlock(NPFMediaBlock):
     @staticmethod
     def from_payload(payload: dict) -> "NPFImageBlock":
-        return NPFImageBlock(media=payload["media"], alt_text=payload.get("alt_text"))
+        return NPFImageBlock(
+            media=payload["media"],
+            alt_text=payload.get("alt_text"),
+            data={"caption": payload.get("caption")},
+        )
 
     def to_html(self, target_width: int = 640) -> str:
         selected_size = self.media._pick_one_size(target_width)
@@ -453,26 +463,59 @@ class NPFAudioBlock(NPFMediaBlock):
             alt_text=payload.get("alt_text"),
             poster=payload["poster"] if "poster" in payload else None,
             embed_html=payload["embed_html"] if "embed_html" in payload else "",
+            data={
+                "title": payload.get("title", ""),
+                "artist": payload.get("artist", ""),
+                "album": payload.get("album", ""),
+            },
         )
 
-    def to_html(self, target_width: int = 640) -> str:
+    def to_standard_html(self) -> str:
+        # this is unused, but left in case it's ever useful to anyone
         if self.embed_html:
             return self.embed_html
 
-        original_dimensions_attrs_str = ""
-        if self.media.original_dimensions is not None:
-            orig_w, orig_h = self.media.original_dimensions
-            original_dimensions_attrs_str = (
-                f' data-orig-height="{orig_h}" data-orig-width="{orig_w}"'
-            )
-
         audio_tag = f"<audio src=\"{self.media.media[0]['url']}\" controls=\"controls\" muted=\"muted\"{original_dimensions_attrs_str}/>"
 
-        figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{audio_tag}</figure>'
+        figure_tag = f'<figure class="tmblr-full">{audio_tag}</figure>'
 
         return figure_tag
 
-    def to_markdown(self, target_width: int = 640, placeholders: bool = False) -> str:
+    def to_html(self) -> str:
+        # This returns a (nonfunctional) official client-like view of an
+        # audio track.
+        if self.embed_html:
+            return self.embed_html
+
+        selected_size_poster = self.poster._pick_one_size(85)
+        poster_url = ""
+        if selected_size_poster and "url" in selected_size_poster:
+            poster_url = selected_size_poster["url"]
+
+        html = f"""
+                <div class="audio-player">
+                    <div class="play-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__play-cropped"></use></svg>
+                    </div>
+                    <div class="audio-info">
+                        <div class="title">{self.title}</div>
+                        <div class="artist">{self.artist}</div>
+                        <div class="album">{self.album}</div>
+                    </div>
+        """
+        if poster_url:
+            html += f"""
+                    <div class="audio-image">
+                        <img src="{poster_url}">
+                    </div>
+            """
+        html += """
+                </div>
+        """
+
+        return html
+
+    def to_markdown(self, placeholders: bool = False) -> str:
         if self.embed_html:
             if placeholders:
                 return "\n(audio embed)"
@@ -482,6 +525,18 @@ class NPFAudioBlock(NPFMediaBlock):
 
         # todo: return poster
         return "\n(audio)"
+
+    @property
+    def title(self):
+        return self.data["title"]
+
+    @property
+    def artist(self):
+        return self.data["artist"]
+
+    @property
+    def album(self):
+        return self.data["album"]
 
 
 class NPFLayout:

@@ -23,7 +23,10 @@ tumblr = pytumblr.TumblrRestClient(
 )
 
 if config.get("logging", False):
-    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(name)s:%(levelname)s %(message)s')
+    logging.basicConfig(
+        level=logging.INFO, format="[%(asctime)s] %(name)s:%(levelname)s %(message)s"
+    )
+
 
 @app.route("/<string:blogname>/<int:postid>")
 @app.route("/<string:blogname>/<int:postid>/<string:summary>")
@@ -95,6 +98,11 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
         if "video" in request.args:
             return redirect(video["url"])
+
+    # Get audio for thread
+    if thread_info.audio:
+        if "audio" in request.args:
+            return redirect(thread_info.audio[0][0].media[0]["url"])
 
     # Truncate description (a maximum of 349 characters can be displayed, 256 for video desc)
     if video:
