@@ -175,27 +175,35 @@ class NPFSubtype:
     def format_html(self, text: str):
         text_or_break = text if len(text) > 0 else "<br>"
         if self.subtype == "heading1":
+            text_or_break = text_or_break.replace('\n', '<br>')
             return f"<p><h1>{text_or_break}</h1></p>"
         elif self.subtype == "heading2":
+            text_or_break = text_or_break.replace('\n', '<br>')
             return f"<p><h2>{text_or_break}</h2></p>"
         elif self.subtype == "ordered-list-item":
+            text_or_break = text_or_break.replace('\n', '<br>')
             return f"<li>{text}</li>"
         elif self.subtype == "unordered-list-item":
+            text_or_break = text_or_break.replace('\n', '<br>')
             return f"<li>{text}</li>"
         # These match the standard classes used in Tumblr's CSS:
         elif self.subtype == "chat":
             text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_chat">')
+            text_or_break = text_or_break.replace('\n', '<br>')
             return f'<p class="npf_chat">{text_or_break}</p>'
         elif self.subtype == "quote":
             text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_quote">')
+            text_or_break = text_or_break.replace('\n', '<br>')
             return f'<p class="npf_quote">{text_or_break}</p>'
         elif self.subtype == "quirky":
             text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_quirky">')
+            text_or_break = text_or_break.replace('\n', '<br>')
             return f'<p class="npf_quirky">{text_or_break}</p>'
         elif len(text) == 0:
             return ""
         else:
             text_or_break = text_or_break.replace("\n\n", "</p><p>")
+            text_or_break = text_or_break.replace('\n', '<br>')
             return f"<p>{text_or_break}</p>"
 
     def format_markdown(self, text: str):
