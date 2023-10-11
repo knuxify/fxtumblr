@@ -435,7 +435,9 @@ class NPFVideoBlock(NPFMediaBlock):
         if self.embed_html:
             return self.embed_html
 
-        selected_size_poster = self.poster._pick_one_size(target_width)
+        selected_size_poster = None
+        if self.poster:
+            selected_size_poster = self.poster._pick_one_size(target_width)
 
         original_dimensions_attrs_str = ""
         if self.media.original_dimensions is not None:
@@ -444,7 +446,10 @@ class NPFVideoBlock(NPFMediaBlock):
                 f' data-orig-height="{orig_h}" data-orig-width="{orig_w}"'
             )
 
-        video_tag = f"<video poster=\"{selected_size_poster['url']}\" controls=\"controls\"{original_dimensions_attrs_str}><source src=\"{self.media.media[0]['url']}\" type=\"video/mp4\"></video>"
+        video_tag = f"<video "
+        if selected_size_poster:
+            video_tag += "poster=\"{selected_size_poster['url']}\""
+        video_tag += "controls=\"controls\"{original_dimensions_attrs_str}><source src=\"{self.media.media[0]['url']}\" type=\"video/mp4\"></video>"
 
         figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{video_tag}</figure>'
 
@@ -458,9 +463,10 @@ class NPFVideoBlock(NPFMediaBlock):
         if placeholders:
             return "\n(video)"
 
-        selected_size_poster = self.poster._pick_one_size(target_width)
-
-        return f"\n![Video thumbnail]({selected_size_poster['url']})"
+        if self.poster:
+            selected_size_poster = self.poster._pick_one_size(target_width)
+            return f"\n![Video thumbnail]({selected_size_poster['url']})"
+        return "\n(video)"
 
 
 class NPFAudioBlock(NPFMediaBlock):
@@ -495,7 +501,9 @@ class NPFAudioBlock(NPFMediaBlock):
         if self.embed_html:
             return self.embed_html
 
-        selected_size_poster = self.poster._pick_one_size(85)
+        selected_size_poster = None
+        if self.poster:
+            selected_size_poster = self.poster._pick_one_size(85)
         poster_url = ""
         if selected_size_poster and "url" in selected_size_poster:
             poster_url = selected_size_poster["url"]
