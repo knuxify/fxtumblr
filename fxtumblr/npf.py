@@ -248,7 +248,7 @@ class NPFTextBlock(NPFBlock):
         indent_level: Optional[int] = None,
         formatting: List[NPFFormattingRange] = None,
     ):
-        self.text = html.escape(text)
+        self.text = text
         self.subtype = NPFSubtype("no_subtype") if subtype is None else subtype
         self.indent_level = 0 if indent_level is None else indent_level
         self.formatting = [] if formatting is None else formatting
@@ -263,8 +263,30 @@ class NPFTextBlock(NPFBlock):
                 formatting.to_markdown(placeholders=placeholders)
                 for formatting in self.formatting
             ]
+            text = self.text
         else:
             insertions = [formatting.to_html() for formatting in self.formatting]
+            # For HTML formatting, we must first escape HTML characters in the text,
+            # then apply formatting, then return the result. We can't escape the result
+            # or the tags we add will be escaped as well; we can't just escape the input
+            # text without changing the length of it, and causing formatting to drift off.
+            # So, first, modify the insertions to accomodate for the offset.
+
+            text = ''
+            offset = 0
+            n = 0
+            for char in self.text:
+                esc = html.escape(char)
+                if esc != char:
+                    new_offset = len(esc) - 1
+                    for insertion in insertions:
+                        if insertion["start"] > (n + offset):
+                            insertion["start"] += new_offset
+                        if insertion["end"] > (n + offset):
+                            insertion["end"] += new_offset
+                    offset += new_offset
+                text += esc
+                n += 1
 
         insert_ix_to_inserted_text = defaultdict(list)
         for insertion in insertions:
@@ -273,7 +295,7 @@ class NPFTextBlock(NPFBlock):
             )
             insert_ix_to_inserted_text[insertion["end"]].append(insertion["end_insert"])
 
-        split_ixs = {0, len(self.text)}
+        split_ixs = {0, len(text)}
         split_ixs.update(insert_ix_to_inserted_text.keys())
         split_ixs = sorted(split_ixs)
 
@@ -281,7 +303,7 @@ class NPFTextBlock(NPFBlock):
 
         for ix1, ix2 in zip_longest(split_ixs, split_ixs[1:], fillvalue=split_ixs[-1]):
             accum.extend(insert_ix_to_inserted_text[ix1])
-            accum.append(self.text[ix1:ix2])
+            accum.append(text[ix1:ix2])
 
         return "".join(accum)
 

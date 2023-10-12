@@ -49,10 +49,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         _post = get_cached_post(blogname, postid)
         post = _post["posts"][0]
 
-    from pprint import pprint
-    pprint(post)
-    print(post)
-
     thread = TumblrThread.from_payload(post)
     thread_info = thread.thread_info
 
