@@ -8,6 +8,7 @@ from itertools import zip_longest
 from copy import deepcopy
 from markdownify import markdownify
 import html
+import nh3
 
 
 def _get_blogname_from_payload(post_payload):
@@ -123,6 +124,9 @@ class NPFFormattingRange:
             tag = types_to_style_tags[self.type]
             result["start_insert"] = f"<{tag}>"
             result["end_insert"] = f"</{tag}>"
+        elif self.type == "underline":
+            result["start_insert"] = f'<span style="text-decoration:underline">'
+            result["end_insert"] = f"</span>"
         elif self.type == "link":
             result["start_insert"] = f'<a href="{self.url}">'
             result["end_insert"] = f"</a>"
@@ -175,35 +179,35 @@ class NPFSubtype:
     def format_html(self, text: str):
         text_or_break = text if len(text) > 0 else "<br>"
         if self.subtype == "heading1":
-            text_or_break = text_or_break.replace('\n', '<br>')
+            text_or_break = text_or_break.replace("\n", "<br>")
             return f"<p><h1>{text_or_break}</h1></p>"
         elif self.subtype == "heading2":
-            text_or_break = text_or_break.replace('\n', '<br>')
+            text_or_break = text_or_break.replace("\n", "<br>")
             return f"<p><h2>{text_or_break}</h2></p>"
         elif self.subtype == "ordered-list-item":
-            text_or_break = text_or_break.replace('\n', '<br>')
+            text_or_break = text_or_break.replace("\n", "<br>")
             return f"<li>{text}</li>"
         elif self.subtype == "unordered-list-item":
-            text_or_break = text_or_break.replace('\n', '<br>')
+            text_or_break = text_or_break.replace("\n", "<br>")
             return f"<li>{text}</li>"
         # These match the standard classes used in Tumblr's CSS:
         elif self.subtype == "chat":
             text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_chat">')
-            text_or_break = text_or_break.replace('\n', '<br>')
+            text_or_break = text_or_break.replace("\n", "<br>")
             return f'<p class="npf_chat">{text_or_break}</p>'
         elif self.subtype == "quote":
             text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_quote">')
-            text_or_break = text_or_break.replace('\n', '<br>')
+            text_or_break = text_or_break.replace("\n", "<br>")
             return f'<p class="npf_quote">{text_or_break}</p>'
         elif self.subtype == "quirky":
             text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_quirky">')
-            text_or_break = text_or_break.replace('\n', '<br>')
+            text_or_break = text_or_break.replace("\n", "<br>")
             return f'<p class="npf_quirky">{text_or_break}</p>'
         elif len(text) == 0:
             return ""
         else:
             text_or_break = text_or_break.replace("\n\n", "</p><p>")
-            text_or_break = text_or_break.replace('\n', '<br>')
+            text_or_break = text_or_break.replace("\n", "<br>")
             return f"<p>{text_or_break}</p>"
 
     def format_markdown(self, text: str):
@@ -272,7 +276,7 @@ class NPFTextBlock(NPFBlock):
             # text without changing the length of it, and causing formatting to drift off.
             # So, first, modify the insertions to accomodate for the offset.
 
-            text = ''
+            text = ""
             offset = 0
             n = 0
             for char in self.text:
@@ -471,7 +475,7 @@ class NPFVideoBlock(NPFMediaBlock):
         video_tag = f"<video "
         if selected_size_poster:
             video_tag += "poster=\"{selected_size_poster['url']}\""
-        video_tag += "controls=\"controls\"{original_dimensions_attrs_str}><source src=\"{self.media.media[0]['url']}\" type=\"video/mp4\"></video>"
+        video_tag += 'controls="controls"{original_dimensions_attrs_str}><source src="{self.media.media[0][\'url\']}" type="video/mp4"></video>'
 
         figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{video_tag}</figure>'
 
@@ -511,7 +515,7 @@ class NPFAudioBlock(NPFMediaBlock):
         if self.embed_html:
             return self.embed_html
 
-        audio_tag = f"<audio src=\"{self.media.media[0]['url']}\" controls=\"controls\" muted=\"muted\"{original_dimensions_attrs_str}/>"
+        audio_tag = f"<audio src=\"{self.media.media[0]['url']}\" controls=\"controls\" muted=\"muted\"/>"
 
         figure_tag = f'<figure class="tmblr-full">{audio_tag}</figure>'
 
@@ -1281,7 +1285,7 @@ class TumblrThread:
                 "".join(
                     [
                         block.to_markdown(placeholders=placeholders)
-                        for block in posts.blocks
+                        for block in post.blocks
                     ]
                 )
                 for post in self.posts
