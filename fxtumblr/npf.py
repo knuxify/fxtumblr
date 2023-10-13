@@ -1149,19 +1149,13 @@ class NPFContent(TumblrContentBase):
     ):
         self._reset_annotations()
 
-        block_counts = {"image": 0, "video": 0}
-        block_position = {"image": False, "video": False}
+        blocks = self.blocks[len(self.ask_blocks) :]
 
         ret = ""
-        if placeholders and skip_single_placeholders:
-            n = 0
-            ret_unjoined = []
+        if placeholders and skip_single_placeholders and not self.ask_blocks:
+            block_counts = {"image": 0, "video": 0}
 
-            # TODO: This could be done in one loop, but it's easier to do it in two.
-
-            # Loop 1: make sure there is only one image or video block, not both and not
-            # more than 1 of each.
-            for block in self.blocks[len(self.ask_blocks) :]:
+            for block in blocks:
                 md = block.to_markdown(placeholders=True)
                 try:
                     base = block.base_block
@@ -1177,33 +1171,22 @@ class NPFContent(TumblrContentBase):
             ):
                 banned_type = type(None)
                 if block_counts["image"] == 1:
-                    banned_type = NPFImageBlock
+                    if isinstance(blocks[0], banned_type):
+                        del blocks[0]
+                    elif isinstance(blocks[-1], banned_type):
+                        del blocks[-1]
                 elif block_counts["video"] == 1:
-                    banned_type = NPFVideoBlock
+                    if isinstance(blocks[0], banned_type):
+                        del blocks[0]
+                    elif isinstance(blocks[-1], banned_type):
+                        del blocks[-1]
 
-                for block in self.blocks[len(self.ask_blocks) :]:
-                    md = block.to_markdown(placeholders=True)
-                    try:
-                        base = block.base_block
-                    except AttributeError:
-                        base = block
-                    if not isinstance(base, banned_type):
-                        ret += md
-            else:
-                ret = "".join(
-                    [
-                        block.to_markdown(placeholders=placeholders)
-                        for block in self.blocks[len(self.ask_blocks) :]
-                    ]
-                )
-
-        else:
-            ret = "".join(
-                [
-                    block.to_markdown(placeholders=placeholders)
-                    for block in self.blocks[len(self.ask_blocks) :]
-                ]
-            )
+        ret = "".join(
+            [
+                block.to_markdown(placeholders=placeholders)
+                for block in blocks
+            ]
+        )
 
         if len(self.ask_blocks) > 0:
             ret = (
