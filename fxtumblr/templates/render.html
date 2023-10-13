@@ -50,6 +50,15 @@
 		.post-header > *, .main-header > * { margin-right: .4rem; }
 		.main-header .reblogged-by { color: rgba(0, 0, 0, 0.65) }
 
+		.post:not(:first-child) {
+			border-top: 1px solid rgba(0, 0, 0, .13);
+		}
+		.main-header + .post { border-top: none; }
+
+		.main-header {
+			border-bottom: 1px solid rgba(0, 0, 0, .13);
+		}
+
 		.tags {
 			padding: 0 20px;
 			margin: 0 -6px;
