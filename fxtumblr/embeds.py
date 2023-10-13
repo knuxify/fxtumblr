@@ -31,7 +31,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
             post, post_url=f"https://www.tumblr.com/{blogname}/{postid}"
         )
 
-
     thread = TumblrThread.from_payload(post)
     thread_info = thread.thread_info
 

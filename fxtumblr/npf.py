@@ -235,6 +235,8 @@ class NPFBlock(TumblrContentBlockBase):
             return NPFVideoBlock.from_payload(payload)
         elif payload.get("type") == "audio":
             return NPFAudioBlock.from_payload(payload)
+        elif payload.get("type") == "link":
+            return NPFLinkBlock.from_payload(payload)
         else:
             raise ValueError(payload.get("type"))
 
@@ -430,7 +432,7 @@ class NPFImageBlock(NPFMediaBlock):
         )
 
         alt_tag = ""
-        if 'gif' in selected_size['url']:
+        if "gif" in selected_size["url"]:
             alt_tag = '<span class="tmblr-alt-text-helper">GIF</span>'
         elif self.alt_text:
             alt_tag = '<span class="tmblr-alt-text-helper">ALT</span>'
@@ -580,6 +582,99 @@ class NPFAudioBlock(NPFMediaBlock):
     @property
     def album(self):
         return self.data["album"]
+
+
+class NPFLinkBlock(NPFBlock, NPFNonTextBlockMixin):
+    @staticmethod
+    def from_payload(payload: dict) -> "NPFTextBlock":
+        return NPFLinkBlock(
+            url=payload["url"],
+            title=payload.get("title"),
+            description=payload.get("description"),
+            author=payload.get("author"),
+            site_name=payload.get("site_name"),
+            display_url=payload.get("display_url"),
+            poster=payload.get("poster"),
+        )
+
+    def __init__(
+        self,
+        url: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        author: Optional[str] = None,
+        site_name: Optional[str] = None,
+        display_url: Optional[str] = None,
+        poster: Optional[dict] = [],
+    ):
+        self._url = url
+        self._title = title
+        self._description = description
+        self._author = author
+        self._site_name = site_name
+        self._display_url = display_url
+        self._poster = NPFMediaList(poster) if poster else None
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def title(self):
+        return self._title
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def author(self):
+        return self._author
+
+    @property
+    def site_name(self):
+        return self._site_name
+
+    @property
+    def display_url(self):
+        return self._display_url
+
+    @property
+    def poster(self):
+        return self._poster
+
+    def to_html(self) -> str:
+        title = ""
+        if self.title:
+            title = self.title
+        elif self.display_url:
+            title = self.display_url
+        else:
+            title = self.url
+
+        html = '<div class="link-embed">'
+
+        if self.poster:
+            selected_size_poster = self.poster._pick_one_size(540)
+            html += f'<div class="link-embed-image-top"><img src="{selected_size_poster["url"]}" class="link-image"><span class="link-image-title">{title}</span></div>'
+        else:
+            html += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
+
+        html += '<div class="link-embed-bottom">'
+        if self.description:
+            html += f'<span class="link-description">{self.description}</span>'
+        if self.site_name:
+            html += f'<span class="link-sitename">{self.site_name}</span>'
+        html += "</div></div>"
+
+        return html
+
+    def to_markdown(self) -> str:
+        if self.title:
+            return f"[{self.title}]({self.url})"
+        elif self.display_url:
+            return f"[{self.display_url}]({self.url})"
+        return f"[{self.url}]({self.url})"
 
 
 class NPFLayout:
@@ -1170,6 +1265,8 @@ class TumblrThreadInfo:
                 if isinstance(block, NPFTextBlock):
                     if block.formatting:
                         has_formatting = True
+                elif isinstance(block, NPFLinkBlock):
+                    other_blocks.append(block)
                 elif block.media:
                     if isinstance(block, NPFImageBlock):
                         images.append(block.media)
