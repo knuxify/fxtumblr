@@ -1136,9 +1136,9 @@ class NPFContent(TumblrContentBase):
 
         if len(self.ask_blocks) > 0:
             ret = (
-                f'<div class="question"><p class="question-header"><strong class="asking-name">{html.escape(self.ask_content.asking_name)}</strong> asked:</p>\n'
+                f'<div class="question"><div class="question-header"><strong class="asking-name">{html.escape(self.ask_content.asking_name)}</strong> asked:</div><div class="question-content">'
                 + "".join([block.to_html() for block in self.ask_blocks])
-                + "</div>"
+                + "</div></div>"
                 + ret
             )
 
