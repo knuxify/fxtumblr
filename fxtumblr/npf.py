@@ -1144,15 +1144,67 @@ class NPFContent(TumblrContentBase):
 
         return ret
 
-    def to_markdown(self, placeholders: bool = False):
+    def to_markdown(
+        self, placeholders: bool = False, skip_single_placeholders: bool = False
+    ):
         self._reset_annotations()
 
-        ret = "".join(
-            [
-                block.to_markdown(placeholders=placeholders)
-                for block in self.blocks[len(self.ask_blocks) :]
-            ]
-        )
+        block_counts = {"image": 0, "video": 0}
+        block_position = {"image": False, "video": False}
+
+        ret = ""
+        if placeholders and skip_single_placeholders:
+            n = 0
+            ret_unjoined = []
+
+            # TODO: This could be done in one loop, but it's easier to do it in two.
+
+            # Loop 1: make sure there is only one image or video block, not both and not
+            # more than 1 of each.
+            for block in self.blocks[len(self.ask_blocks) :]:
+                md = block.to_markdown(placeholders=True)
+                try:
+                    base = block.base_block
+                except AttributeError:
+                    base = block
+                if isinstance(base, NPFImageBlock) and md.strip() == "(image)":
+                    block_counts["image"] += 1
+                elif isinstance(base, NPFVideoBlock) and md.strip() == "(video)":
+                    block_counts["video"] += 1
+
+            if (block_counts["image"] == 1 or block_counts["video"] == 1) and not (
+                block_counts["image"] > 0 and block_counts["video"] > 0
+            ):
+                banned_type = type(None)
+                if block_counts["image"] == 1:
+                    banned_type = NPFImageBlock
+                elif block_counts["video"] == 1:
+                    banned_type = NPFVideoBlock
+
+                for block in self.blocks[len(self.ask_blocks) :]:
+                    md = block.to_markdown(placeholders=True)
+                    try:
+                        base = block.base_block
+                    except AttributeError:
+                        base = block
+                    if not isinstance(base, banned_type):
+                        ret += md
+            else:
+                ret = "".join(
+                    [
+                        block.to_markdown(placeholders=placeholders)
+                        for block in self.blocks[len(self.ask_blocks) :]
+                    ]
+                )
+
+        else:
+            ret = "".join(
+                [
+                    block.to_markdown(placeholders=placeholders)
+                    for block in self.blocks[len(self.ask_blocks) :]
+                ]
+            )
+
         if len(self.ask_blocks) > 0:
             ret = (
                 f"{self.ask_content.asking_name} asked:\n"
@@ -1278,8 +1330,12 @@ class TumblrPost(TumblrPostBase):
     def to_html(self, wrap_blocks=False) -> str:
         return self._content.to_html(wrap_blocks=wrap_blocks)
 
-    def to_markdown(self, placeholders: bool = False) -> str:
-        return self._content.to_markdown(placeholders=placeholders)
+    def to_markdown(
+        self, placeholders: bool = False, skip_single_placeholders: bool = False
+    ) -> str:
+        return self._content.to_markdown(
+            placeholders=placeholders, skip_single_placeholders=skip_single_placeholders
+        )
 
 
 class TumblrThreadInfo:
@@ -1452,18 +1508,20 @@ class TumblrThread:
 
         return sanitize_html(result)
 
-    def to_markdown(self, placeholders: bool = False) -> str:
-        return "".join(
-            [
-                "".join(
-                    [
-                        block.to_markdown(placeholders=placeholders)
-                        for block in post.blocks
-                    ]
+    def to_markdown(
+        self, placeholders: bool = False, skip_single_placeholders: bool = False
+    ) -> str:
+        ret = ""
+
+        for post in self.posts:
+            ret += "{post.blogname}:\n"
+            for block in post.blocks:
+                ret += block.to_markdown(
+                    placeholders=placeholders,
+                    skip_single_placeholders=skip_single_placeholders,
                 )
-                for post in self.posts
-            ]
-        )
+
+        return ret
 
     @property
     def ask_content(self) -> Optional[NPFAsk]:

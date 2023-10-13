@@ -43,14 +43,27 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     # Get embed description
     description = ""
-    for tpost in thread.posts:
-        if not tpost.to_markdown(placeholders=True).strip():
-            continue
-        post_content = tpost.to_markdown(placeholders=True)
-        post_content = "\n".join(l for l in post_content.split("\n") if l.strip())
-        description += f"\n\n▪ {tpost.blog_name}:\n" + post_content
+
+    # Reblogs show up as empty posts in the thread so we have to ignore them
+    tposts = [p for p in thread.posts if p.to_markdown(placeholders=True).strip()]
+    if len(tposts) == 1:
+        tpost = tposts[0]
+        post_content = tpost.to_markdown(
+            placeholders=True, skip_single_placeholders=True
+        )
+        post_content = (
+            "\n".join(l for l in post_content.split("\n") if l.strip())
+        ).strip()
+        print(post_content)
+        description += post_content
+    else:
+        for tpost in tposts:
+            post_content = tpost.to_markdown(placeholders=True)
+            post_content = "\n".join(l for l in post_content.split("\n") if l.strip())
+            description += f"\n\n▪ {tpost.blog_name}:\n" + post_content
+
     if "tags" in post and post["tags"]:
-        description += "\n(#" + " #".join(post["tags"]) + ")"
+        description += "\n\n(#" + " #".join(post["tags"]) + ")"
     description = description.strip()
 
     # Get image(s) for thread
