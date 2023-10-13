@@ -54,7 +54,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         post_content = (
             "\n".join(l for l in post_content.split("\n") if l.strip())
         ).strip()
-        print(post_content)
         description += post_content
     else:
         for tpost in tposts:
