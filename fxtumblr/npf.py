@@ -465,10 +465,24 @@ class NPFVideoBlock(NPFMediaBlock):
                 original_dimensions = media.original_dimensions
                 if not original_dimensions:
                     original_dimensions = (640, 640)
-                selected_size = media._pick_one_size(target_width=original_dimensions[0])
+                selected_size = media._pick_one_size(
+                    target_width=original_dimensions[0]
+                )
                 if selected_size and "media.tumblr.com" in selected_size["url"]:
-                    poster_url = urllib.parse.urlparse(selected_size["url"])._replace(netloc="64.media.tumblr.com").geturl().replace('.mp4', '_frame1.jpg')
-                    poster = [{"url": poster_url, "type": "image/jpg", "width": selected_size["width"], "height": selected_size["height"]}]
+                    poster_url = (
+                        urllib.parse.urlparse(selected_size["url"])
+                        ._replace(netloc="64.media.tumblr.com")
+                        .geturl()
+                        .replace(".mp4", "_frame1.jpg")
+                    )
+                    poster = [
+                        {
+                            "url": poster_url,
+                            "type": "image/jpg",
+                            "width": selected_size["width"],
+                            "height": selected_size["height"],
+                        }
+                    ]
 
         return NPFVideoBlock(
             media=[payload["media"]] if "media" in payload else [],
@@ -508,9 +522,7 @@ class NPFVideoBlock(NPFMediaBlock):
             selected_size = self.poster._pick_one_size(target_width)
 
         if selected_size:
-            img_tag = (
-                f"<img class=\"video-poster\" src=\"{selected_size['url']}\"/>"
-            )
+            img_tag = f"<img class=\"video-poster\" src=\"{selected_size['url']}\"/>"
         else:
             img_tag = '<div class="video-poster video-poster-dummy"></div>'
 
