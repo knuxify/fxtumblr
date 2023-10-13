@@ -176,39 +176,34 @@ class NPFSubtype:
     def __init__(self, subtype: str):
         self.subtype = subtype
 
-    def format_html(self, text: str):
+    def format_html(self, text: str, wrap_blocks=True):
         text_or_break = text if len(text) > 0 else "<br>"
         if self.subtype == "heading1":
-            text_or_break = text_or_break.replace("\n", "<br>")
-            return f"<p><h1>{text_or_break}</h1></p>"
+            ret = f"<p><h1>{text_or_break}</h1></p>"
         elif self.subtype == "heading2":
-            text_or_break = text_or_break.replace("\n", "<br>")
-            return f"<p><h2>{text_or_break}</h2></p>"
+            ret = f"<p><h2>{text_or_break}</h2></p>"
         elif self.subtype == "ordered-list-item":
-            text_or_break = text_or_break.replace("\n", "<br>")
-            return f"<li>{text}</li>"
+            ret = f"<li>{text}</li>"
         elif self.subtype == "unordered-list-item":
-            text_or_break = text_or_break.replace("\n", "<br>")
-            return f"<li>{text}</li>"
+            ret = f"<li>{text}</li>"
+        elif self.subtype == "indented":
+            ret = text
         # These match the standard classes used in Tumblr's CSS:
         elif self.subtype == "chat":
-            text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_chat">')
-            text_or_break = text_or_break.replace("\n", "<br>")
-            return f'<p class="npf_chat">{text_or_break}</p>'
+            ret = f'<p class="npf_chat">{text_or_break}</p>'
         elif self.subtype == "quote":
-            text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_quote">')
-            text_or_break = text_or_break.replace("\n", "<br>")
-            return f'<p class="npf_quote">{text_or_break}</p>'
+            ret = f'<p class="npf_quote">{text_or_break}</p>'
         elif self.subtype == "quirky":
-            text_or_break = text_or_break.replace("\n\n", '</p><p class="npf_quirky">')
-            text_or_break = text_or_break.replace("\n", "<br>")
-            return f'<p class="npf_quirky">{text_or_break}</p>'
+            ret = f'<p class="npf_quirky">{text_or_break}</p>'
         elif len(text) == 0:
             return ""
         else:
-            text_or_break = text_or_break.replace("\n\n", "</p><p>")
-            text_or_break = text_or_break.replace("\n", "<br>")
-            return f"<p>{text_or_break}</p>"
+            ret = f"<p>{text_or_break}</p>"
+
+        if self.subtype not in ("ordered-list-item", "unordered-list-item", "indented"):
+            ret = '<div class="text-block">' + ret + "</div>"
+
+        return ret
 
     def format_markdown(self, text: str):
         if not text:
@@ -434,7 +429,13 @@ class NPFImageBlock(NPFMediaBlock):
             f"<img src=\"{selected_size['url']}\"{original_dimensions_attrs_str}/>"
         )
 
-        figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{img_tag}</figure>'
+        alt_tag = ""
+        if 'gif' in selected_size['url']:
+            alt_tag = '<span class="tmblr-alt-text-helper">GIF</span>'
+        elif self.alt_text:
+            alt_tag = '<span class="tmblr-alt-text-helper">ALT</span>'
+
+        figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{img_tag}{alt_tag}</figure>'
 
         return figure_tag
 
@@ -474,8 +475,8 @@ class NPFVideoBlock(NPFMediaBlock):
 
         video_tag = f"<video "
         if selected_size_poster:
-            video_tag += "poster=\"{selected_size_poster['url']}\""
-        video_tag += 'controls="controls"{original_dimensions_attrs_str}><source src="{self.media.media[0][\'url\']}" type="video/mp4"></video>'
+            video_tag += f"poster=\"{selected_size_poster['url']}\""
+        video_tag += f'controls="controls"{original_dimensions_attrs_str}><source src="{self.media.media[0]["url"]}" type="video/mp4"></video>'
 
         figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{video_tag}</figure>'
 
@@ -879,7 +880,7 @@ class NPFContent(TumblrContentBase):
             bl.reset_annotations()
         self.blocks = self._make_blocks()
 
-    def _assign_html_indents(self):
+    def _assign_html_indents(self, wrap_blocks=False):
         # This is what the block is wrapped in. The actual contents of the
         # block itself are wrapped in the <p>, <li> elements as needed.
         subtype_wrappers = {
@@ -887,6 +888,14 @@ class NPFContent(TumblrContentBase):
             "ordered-list-item": "ol",
             "unordered-list-item": "ul",
         }
+
+        subtype_wrapper_classes = {}
+        if wrap_blocks:
+            subtype_wrapper_classes = {
+                "indented": "text-block text-indented",
+                "ordered-list-item": "text-list",
+                "unordered-list-item": "text-list",
+            }
 
         indent_level = 0
         type_stack = []
@@ -913,7 +922,13 @@ class NPFContent(TumblrContentBase):
                     # If the indent stays the same, and the subtype is changed,
                     # then we just need to add the prefix for the new tag (we
                     # added the closing tag for the previous type already).
-                    block.prefix = block.prefix + f"<{subtype_wrappers[subtype]}>"
+                    if subtype in subtype_wrapper_classes:
+                        block.prefix = (
+                            block.prefix
+                            + f'<{subtype_wrappers[subtype]} class="{subtype_wrapper_classes[subtype]}">'
+                        )
+                    else:
+                        block.prefix = block.prefix + f"<{subtype_wrappers[subtype]}>"
                     closing_tags.append(f"</{subtype_wrappers[subtype]}>")
                     type_stack.append(subtype)
 
@@ -956,13 +971,22 @@ class NPFContent(TumblrContentBase):
                 type_stack.pop()
             self.blocks[-1].suffix += _closing
 
-    def to_html(self):
+    def to_html(self, wrap_blocks=False):
         self._reset_annotations()
-        self._assign_html_indents()
+        self._assign_html_indents(wrap_blocks=wrap_blocks)
 
-        ret = "".join(
-            [block.to_html() for block in self.blocks[len(self.ask_blocks) :]]
-        )
+        if wrap_blocks:
+            ret = ""
+            for block in self.blocks[len(self.ask_blocks) :]:
+                if isinstance(block, NPFTextBlock):
+                    ret += block.to_html(wrap_blocks=True)
+                else:
+                    ret += block.to_html()
+        else:
+            ret = "".join(
+                [block.to_html() for block in self.blocks[len(self.ask_blocks) :]]
+            )
+
         if len(self.ask_blocks) > 0:
             ret = (
                 f'<div class="question"><p class="question-header"><strong class="asking-name">{html.escape(self.ask_content.asking_name)}</strong> asked:</p>\n'
@@ -1104,8 +1128,8 @@ class TumblrPost(TumblrPostBase):
     def genesis_post_id(self):
         return self._content.genesis_post_id
 
-    def to_html(self) -> str:
-        return self._content.to_html()
+    def to_html(self, wrap_blocks=False) -> str:
+        return self._content.to_html(wrap_blocks=wrap_blocks)
 
     def to_markdown(self, placeholders: bool = False) -> str:
         return self._content.to_markdown(placeholders=placeholders)

@@ -6,6 +6,7 @@ from . import app
 from .config import BASE_URL, config
 from .npf import TumblrThread
 from .tumblr import get_post
+import shutil
 
 browser = None
 
@@ -34,11 +35,19 @@ if config["renders_enable"]:
 
     @app.route("/renders/<blogname>-<postid>.png")
     async def get_render(blogname, postid):
-        if not os.path.exists(os.path.join(RENDERS_PATH, f"{blogname}-{postid}.png")):
+        if not os.path.exists(os.path.join(RENDERS_PATH, f"{blogname}-{postid}.png")) or config["renders_debug"]:
             post = get_post(blogname, postid)
             thread = TumblrThread.from_payload(post)
             await render_thread(thread)
         return await send_from_directory(RENDERS_PATH, f"{blogname}-{postid}.png")
+
+    @app.route("/renders/<blogname>-<postid>.html")
+    async def get_html_render(blogname, postid):
+        if not os.path.exists(os.path.join(RENDERS_PATH, f"{blogname}-{postid}.html")) or config["renders_debug"]:
+            post = get_post(blogname, postid)
+            thread = TumblrThread.from_payload(post)
+            await render_thread(thread)
+        return await send_from_directory(RENDERS_PATH, f"{blogname}-{postid}.html")
 
     async def render_thread(thread: TumblrThread, force_new_render: bool = False):
         """
@@ -64,9 +73,9 @@ if config["renders_enable"]:
                 )
 
                 if config["renders_debug"]:
-                    import shutil
-
                     shutil.copyfile(target_html.name, "latest-render.html")
+
+                shutil.copyfile(target_html.name, os.path.join(RENDERS_PATH, f"{thread.blog_name}-{thread.id}.html"))
 
                 page = await browser.newPage()
                 await page.setViewport({"width": 560, "height": 300})
