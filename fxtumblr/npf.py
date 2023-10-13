@@ -721,7 +721,7 @@ class NPFLinkBlock(NPFBlock, NPFNonTextBlockMixin):
 
         return html
 
-    def to_markdown(self) -> str:
+    def to_markdown(self, placeholders: bool = False) -> str:
         if self.title:
             return f"[{self.title}]({self.url})"
         elif self.display_url:
