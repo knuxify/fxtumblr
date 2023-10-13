@@ -9,6 +9,7 @@ from copy import deepcopy
 from markdownify import markdownify
 import html
 import nh3
+import urllib
 
 
 def _get_blogname_from_payload(post_payload):
@@ -453,14 +454,31 @@ class NPFImageBlock(NPFMediaBlock):
 class NPFVideoBlock(NPFMediaBlock):
     @staticmethod
     def from_payload(payload: dict) -> "NPFVideoBlock":
+        # Sometimes videos will not have a poster, but it's still possible to
+        # get the thumbnail by modifying the URL.
+        poster = []
+        if "poster" in payload:
+            poster = payload["poster"]
+        elif "media" in payload and payload["media"]:
+            media = NPFMediaList([payload["media"]])
+            if media.media:
+                original_dimensions = media.original_dimensions
+                if not original_dimensions:
+                    original_dimensions = (640, 640)
+                selected_size = media._pick_one_size(target_width=original_dimensions[0])
+                if selected_size and "media.tumblr.com" in selected_size["url"]:
+                    poster_url = urllib.parse.urlparse(selected_size["url"])._replace(netloc="64.media.tumblr.com").geturl().replace('.mp4', '_frame1.jpg')
+                    poster = [{"url": poster_url, "type": "image/jpg", "width": selected_size["width"], "height": selected_size["height"]}]
+
         return NPFVideoBlock(
             media=[payload["media"]] if "media" in payload else [],
             alt_text=payload.get("alt_text"),
-            poster=payload["poster"] if "poster" in payload else None,
+            poster=poster,
             embed_html=payload["embed_html"] if "embed_html" in payload else "",
         )
 
-    def to_html(self, target_width: int = 640) -> str:
+    def to_standard_html(self, target_width: int = 640) -> str:
+        # this is unused, but left in case it's ever useful to anyone
         if self.embed_html:
             return self.embed_html
 
@@ -481,6 +499,28 @@ class NPFVideoBlock(NPFMediaBlock):
         video_tag += f'controls="controls"{original_dimensions_attrs_str}><source src="{self.media.media[0]["url"]}" type="video/mp4"></video>'
 
         figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{video_tag}</figure>'
+
+        return figure_tag
+
+    def to_html(self, target_width: int = 640) -> str:
+        selected_size = None
+        if self.poster:
+            selected_size = self.poster._pick_one_size(target_width)
+
+        if selected_size:
+            img_tag = (
+                f"<img class=\"video-poster\" src=\"{selected_size['url']}\"/>"
+            )
+        else:
+            img_tag = '<div class="video-poster video-poster-dummy"></div>'
+
+        play_button_tag = '<span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__play-cropped"></use></svg></span>'
+
+        alt_tag = ""
+        if self.alt_text:
+            alt_tag = '<span class="tmblr-alt-text-helper">ALT</span>'
+
+        figure_tag = f'<figure class="tmblr-full video-block">{img_tag}{play_button_tag}{alt_tag}</figure>'
 
         return figure_tag
 

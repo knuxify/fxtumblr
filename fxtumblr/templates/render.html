@@ -154,6 +154,12 @@
 			object-fit: cover;
 		}
 
+		figure.tmblr-full > div.video-poster-dummy {
+			width: 100%;
+			height: 320px;
+			background-color: #000;
+		}
+
 		/* "ALT" indicator */
 		.tmblr-alt-text-helper {
 			position: absolute;
@@ -170,6 +176,20 @@
 			opacity: .5;
 			line-height: 1.5;
 		}
+
+		/* Dummy play button for video thumbnails */
+		.tmblr-play-button-helper {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 72px;
+			color: #fff;
+			background-color: rgba(0, 0, 0, .65);
+			padding: 20px;
+			border-radius: 100%;
+		}
+		.tmblr-play-button-helper svg { margin-left: 3px; margin-right: -1px; }
 
 		.post-content figure.tmblr-full + figure.tmblr-full {
 			margin-top: 4px;
