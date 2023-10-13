@@ -2,25 +2,15 @@
 Contains code for creating the embed.
 """
 
-import itertools
 import logging
-import pytumblr
 from quart import request, render_template, redirect
 
 from . import app
-from .cache import post_needs_caching, cache_post, get_cached_post
+from .cache import post_needs_caching
 from .config import APP_NAME, BASE_URL, config
-from .render import render_thread
 from .npf import TumblrThread
-
-app.config["EXPLAIN_TEMPLATE_LOADING"] = False
-
-tumblr = pytumblr.TumblrRestClient(
-    config["tumblr_consumer_key"],
-    config["tumblr_consumer_secret"],
-    None,
-    None,
-)
+from .render import render_thread
+from .tumblr import get_post
 
 if config.get("logging", False):
     logging.basicConfig(
@@ -35,19 +25,12 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     should_render = False
     needs_caching = post_needs_caching(blogname, postid)
+    post = get_post(blogname, postid)
+    if "error" in post:
+        return await parse_error(
+            post, post_url=f"https://www.tumblr.com/{blogname}/{postid}"
+        )
 
-    if needs_caching:
-        _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True, npf=True)
-        if not _post or "posts" not in _post or not _post["posts"]:
-            return await parse_error(
-                _post, post_url=f"https://www.tumblr.com/{blogname}/{postid}"
-            )
-
-        post = _post["posts"][0]
-        needs_caching = cache_post(blogname, postid, _post)
-    else:
-        _post = get_cached_post(blogname, postid)
-        post = _post["posts"][0]
 
     thread = TumblrThread.from_payload(post)
     thread_info = thread.thread_info
@@ -55,7 +38,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     # Get title and embed description (post content)
     title = thread_info.title
     try:
-        pfp = _post["blog"]["avatar"][0]["url"]
+        pfp = post["_fx_author_blog"]["avatar"][0]["url"]
     except (KeyError, IndexError):
         pfp = None
 

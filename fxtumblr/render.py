@@ -5,6 +5,7 @@ Contains code for post rendering functionality. See README.md for more info.
 from . import app
 from .config import BASE_URL, config
 from .npf import TumblrThread
+from .tumblr import get_post
 
 browser = None
 
@@ -31,9 +32,13 @@ if config["renders_enable"]:
             # keep alive by leaving blank page open
             await browser.newPage()
 
-    @app.route("/renders/<path:path>")
-    async def get_render(path):
-        return await send_from_directory(RENDERS_PATH, path)
+    @app.route("/renders/<blogname>-<postid>.png")
+    async def get_render(blogname, postid):
+        if not os.path.exists(os.path.join(RENDERS_PATH, f"{blogname}-{postid}.png")):
+            post = get_post(blogname, postid)
+            thread = TumblrThread.from_payload(post)
+            await render_thread(thread)
+        return await send_from_directory(RENDERS_PATH, f"{blogname}-{postid}.png")
 
     async def render_thread(thread: TumblrThread, force_new_render: bool = False):
         """

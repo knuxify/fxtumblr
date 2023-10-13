@@ -13,6 +13,7 @@ from .config import config
 
 # Initial setup to get things up and running
 app = Quart(__name__)  # Quart app
+app.config["EXPLAIN_TEMPLATE_LOADING"] = False  # workaround for jinja flask dependency?
 app.asgi_app = ProxyHeadersMiddleware(app.asgi_app, trusted_hosts=["127.0.0.1"])
 cors(app)
 
