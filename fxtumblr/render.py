@@ -48,7 +48,7 @@ if config["renders_enable"]:
         ):
             post = get_post(blogname, postid)
             if 'error' in post:
-                return (, 404)
+                return '', 404
             thread = TumblrThread.from_payload(post, unroll=unroll)
             await render_thread(thread)
         return await send_from_directory(RENDERS_PATH, target_filename)
@@ -68,7 +68,7 @@ if config["renders_enable"]:
         ):
             post = get_post(blogname, postid)
             if 'error' in post:
-                return (, 404)
+                return '', 404
             thread = TumblrThread.from_payload(post, unroll=unroll)
             await render_thread(thread)
         return await send_from_directory(RENDERS_PATH, target_filename)
