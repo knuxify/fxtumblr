@@ -87,7 +87,7 @@ if config["renders_enable"]:
                 )
 
                 page = await browser.newPage()
-                await page.setViewport({"width": 540, "height": 300})
+                await page.setViewport({"width": 540, "height": 100})
                 await page.goto(f"file://{target_html.name}")
                 await page.screenshot(
                     {
