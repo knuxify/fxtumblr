@@ -807,7 +807,7 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
 
     def to_markdown(self, placeholders: bool = False) -> str:
         return f"{self.question}\n *" + "\n *".join(
-            self.answer["answer_text"] for answer in self.answers
+            answer["answer_text"] for answer in self.answers
         )
 
 
