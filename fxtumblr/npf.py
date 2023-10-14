@@ -785,9 +785,13 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
         if end_time > now:
             time_remaining = datetime.datetime.now() - expire_delta
             if time_remaining.day > 0:
-                time_str = time_remaining.strftime("Remaining time: %d days %H hours %M minutes")
+                time_str = time_remaining.strftime(
+                    "Remaining time: %d days %H hours %M minutes"
+                )
             else:
-                time_str = time_remaining.strftime("Remaining time: %H hours %M minutes")
+                time_str = time_remaining.strftime(
+                    "Remaining time: %H hours %M minutes"
+                )
         else:
             time_str = "Final result"
             is_over = True
@@ -802,7 +806,9 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
         return html
 
     def to_markdown(self, placeholders: bool = False) -> str:
-        return f'{question}\n *' + "\n *".join(answer["answer_text"] for answer in self.answers)
+        return f"{self.question}\n *" + "\n *".join(
+            self.answer["answer_text"] for answer in self.answers
+        )
 
 
 class NPFLayout:
@@ -1258,10 +1264,7 @@ class NPFContent(TumblrContentBase):
                         del blocks[-1]
 
         ret = "".join(
-            [
-                block.to_markdown(placeholders=placeholders)
-                for block in blocks
-            ]
+            [block.to_markdown(placeholders=placeholders) for block in blocks]
         )
 
         if len(self.ask_blocks) > 0:
