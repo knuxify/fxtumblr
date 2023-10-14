@@ -1004,7 +1004,7 @@ class NPFContent(TumblrContentBase):
         self._truncated = False
         if not unroll:
             for layout_entry in self.layout:
-                if layout_entry.truncate_after:
+                if isinstance(layout_entry, NPFLayoutRows) and layout_entry.truncate_after:
                     self._truncated = True
                     break
 
