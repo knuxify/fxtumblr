@@ -10,6 +10,8 @@ from markdownify import markdownify
 import html
 import nh3
 import urllib
+import datetime
+import dateutil.parser
 
 
 def _get_blogname_from_payload(post_payload):
@@ -238,6 +240,8 @@ class NPFBlock(TumblrContentBlockBase):
             return NPFAudioBlock.from_payload(payload)
         elif payload.get("type") == "link":
             return NPFLinkBlock.from_payload(payload)
+        elif payload.get("type") == "poll":
+            return NPFPollBlock.from_payload(payload)
         else:
             raise ValueError(payload.get("type"))
 
@@ -724,6 +728,81 @@ class NPFLinkBlock(NPFBlock, NPFNonTextBlockMixin):
         elif self.display_url:
             return f"[{self.display_url}]({self.url})"
         return f"[{self.url}]({self.url})"
+
+
+class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
+    # Poll blocks are completely undocumented, and the API is apparently
+    # still unstable. Also, NPF does not carry data about the actual vote
+    # percentages or total amount of votes.
+
+    # TODO: Get information about poll results. Make sure to do it only
+    # for finished polls (and if we do this with non-finished polls, force
+    # a re-render every time).
+
+    @staticmethod
+    def from_payload(payload: dict) -> "NPFPollBlock":
+        return NPFPollBlock(
+            question=payload["question"],
+            answers=payload["answers"],
+            created_at=payload["created_at"],
+            settings=payload["settings"],
+        )
+
+    def __init__(
+        self,
+        question: str,
+        answers: dict,
+        created_at: str,
+        settings: dict,
+    ):
+        self._question = question
+        self._answers = answers
+        self._created_at = created_at
+        self._settings = settings
+
+    @property
+    def question(self):
+        return self._question
+
+    @property
+    def answers(self):
+        return self._answers
+
+    @property
+    def created_at(self):
+        return self._created_at
+
+    @property
+    def settings(self):
+        return self._settings
+
+    def to_html(self) -> str:
+        created_at = dateutil.parser.parse(self.created_at)
+        expire_delta = datetime.timedelta(seconds=self.settings["expire_after"])
+        end_time = created_at + expire_delta
+        now = datetime.datetime.now(datetime.timezone.utc)
+        is_over = False
+        if end_time > now:
+            time_remaining = datetime.datetime.now() - expire_delta
+            if time_remaining.day > 0:
+                time_str = time_remaining.strftime("Remaining time: %d days %H hours %M minutes")
+            else:
+                time_str = time_remaining.strftime("Remaining time: %H hours %M minutes")
+        else:
+            time_str = "Final result"
+            is_over = True
+
+        html = f'<div class="poll-block{" poll-over" if is_over else ""}"><span class="poll-question">{self.question}</span>'
+
+        for answer in self.answers:
+            html += f'<div class="poll-answer">{answer["answer_text"]}</div>'
+
+        html += f'<span class="poll-meta">{time_str}</span></div>'
+
+        return html
+
+    def to_markdown(self, placeholders: bool = False) -> str:
+        return f'{question}\n *' + "\n *".join(answer["answer_text"] for answer in self.answers)
 
 
 class NPFLayout:
@@ -1341,7 +1420,6 @@ class TumblrThreadInfo:
         images = []
         videos = []
         audio = []
-        # polls = []
         other_blocks = []
         has_formatting = False
         for post in posts:
@@ -1355,6 +1433,8 @@ class TumblrThreadInfo:
                         has_formatting = True
                 elif isinstance(block, NPFLinkBlock):
                     other_blocks.append(block)
+                elif isinstance(block, NPFPollBlock):
+                    other_blocks.append(block)
                 elif block.media:
                     if isinstance(block, NPFImageBlock):
                         images.append(block.media)
@@ -1364,8 +1444,6 @@ class TumblrThreadInfo:
                         audio.append((block.media, block.poster))
                     else:
                         other_blocks.append(block)
-                # elif isinstance(block, NPFPollBlock):
-                # 	polls.append(block)
                 else:
                     other_blocks.append(block)
 

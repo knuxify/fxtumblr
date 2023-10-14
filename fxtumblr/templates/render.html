@@ -330,7 +330,53 @@
 			-webkit-line-clamp: 1;
 		}
 
-		/* Audio player dummy */
+		.poll-block {
+			margin-left: 20px;
+			margin-right: 20px;
+			margin-bottom: 20px;
+		}
+
+		.poll-block .poll-question {
+			min-height: 0;
+			margin-bottom: 20px;
+			font-size: 27px;
+			font-weight: 500;
+			line-height: 34px;
+			display: block;
+		}
+
+		.poll-block .poll-answer {
+			border: 2px solid RGB(0, 184, 255);
+			border-radius: 18px;
+			color: RGB(0, 184, 255);
+			overflow-wrap: anywhere;
+			max-width: 100%;
+			padding: 7px 0;
+			font-weight: 700;
+			text-align: center;
+			box-sizing: border-box;
+			text-align: center;
+			align-items: center;
+			justify-content: center;
+			min-height: 36px;
+			margin-bottom: 10px;
+			padding: 0 15px;
+			font-size: 16px;
+			line-height: 20px;
+			display: flex;
+			position: relative;
+			overflow-x: hidden;
+		}
+
+		.poll-block .poll-meta {
+			color: rgba(0, 0, 0, .65);
+			text-align: center;
+			margin-top: 18px;
+			font-size: 12.5px;
+			line-height: normal;
+			display: block;
+		}
+
 		.audio-player { height: 85px; display: flex; background-color: RGB(124, 92, 255); color: #fff; margin-bottom: 10px; }
 		.audio-player .play-button svg { margin: 0 25px; }
 		.audio-player .audio-info, .audio-player .play-button { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
