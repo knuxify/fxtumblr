@@ -817,7 +817,7 @@ class NPFReadMoreBlock(NPFBlock, NPFNonTextBlockMixin):
         pass
 
     def to_html(self) -> str:
-        return "<div class=\"read-more\">Keep reading</div>"
+        return '<div class="read-more">Keep reading</div>'
 
     def to_markdown(self, placeholders: bool = False) -> str:
         return "\n(keep reading)"
@@ -1004,7 +1004,10 @@ class NPFContent(TumblrContentBase):
         self._truncated = False
         if not unroll:
             for layout_entry in self.layout:
-                if isinstance(layout_entry, NPFLayoutRows) and layout_entry.truncate_after:
+                if (
+                    isinstance(layout_entry, NPFLayoutRows)
+                    and layout_entry.truncate_after
+                ):
                     self._truncated = True
                     break
 
@@ -1032,7 +1035,12 @@ class NPFContent(TumblrContentBase):
             for layout_entry in self.layout:
                 if layout_entry.layout_type == "rows":
                     for row_ixs in layout_entry.rows:
-                        if not self.unroll and (layout_entry.truncate_after + 1) in row_ixs:
+                        if (
+                            not self.unroll
+                            and isinstance(layout_entry, NPFLayoutRows)
+                            and layout_entry.truncate_after
+                            and (layout_entry.truncate_after + 1) in row_ixs
+                        ):
                             truncated = True
                             break
                         # note: this doesn't properly handle multi-column rows
@@ -1587,7 +1595,9 @@ class TumblrThread:
 
         timestamp = payload["timestamp"]
 
-        return TumblrThread(id, blog_name, posts, timestamp, thread_info, reblog_info, unroll)
+        return TumblrThread(
+            id, blog_name, posts, timestamp, thread_info, reblog_info, unroll
+        )
 
     @staticmethod
     def _format_post_as_quoting_previous(
