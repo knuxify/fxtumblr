@@ -34,26 +34,40 @@ if config["renders_enable"]:
             await browser.newPage()
 
     @app.route("/renders/<blogname>-<postid>.png")
-    async def get_render(blogname, postid):
+    @app.route("/renders/<blogname>-<postid>-<suffix>.png")
+    async def get_render(blogname, postid, suffix=False):
+        unroll = True if suffix == 'unroll' else False
+        if unroll:
+            target_filename = f"{blogname}-{postid}-unroll.png"
+        else:
+            target_filename = f"{blogname}-{postid}.png"
+
         if (
-            not os.path.exists(os.path.join(RENDERS_PATH, f"{blogname}-{postid}.png"))
+            not os.path.exists(os.path.join(RENDERS_PATH, target_filename))
             or config["renders_debug"]
         ):
             post = get_post(blogname, postid)
-            thread = TumblrThread.from_payload(post)
+            thread = TumblrThread.from_payload(post, unroll=unroll)
             await render_thread(thread)
-        return await send_from_directory(RENDERS_PATH, f"{blogname}-{postid}.png")
+        return await send_from_directory(RENDERS_PATH, target_filename)
 
     @app.route("/renders/<blogname>-<postid>.html")
-    async def get_html_render(blogname, postid):
+    @app.route("/renders/<blogname>-<postid>-<suffix>.html")
+    async def get_html_render(blogname, postid, suffix=False):
+        unroll = True if suffix == 'unroll' else False
+        if unroll:
+            target_filename = f"{blogname}-{postid}-unroll.html"
+        else:
+            target_filename = f"{blogname}-{postid}.html"
+
         if (
-            not os.path.exists(os.path.join(RENDERS_PATH, f"{blogname}-{postid}.html"))
+            not os.path.exists(os.path.join(RENDERS_PATH, target_filename))
             or config["renders_debug"]
         ):
             post = get_post(blogname, postid)
-            thread = TumblrThread.from_payload(post)
+            thread = TumblrThread.from_payload(post, unroll=unroll)
             await render_thread(thread)
-        return await send_from_directory(RENDERS_PATH, f"{blogname}-{postid}.html")
+        return await send_from_directory(RENDERS_PATH, target_filename)
 
     async def render_thread(thread: TumblrThread, force_new_render: bool = False):
         """
@@ -61,7 +75,13 @@ if config["renders_enable"]:
         the thread into a picture. Returns a URL to the generated image.
         """
         global browser
-        target_filename = f"{thread.blog_name}-{thread.id}.png"
+        unroll = thread.unroll
+        if unroll:
+            target_filename = f"{thread.blog_name}-{thread.id}-unroll.png"
+            target_filename_html = f"{thread.blog_name}-{thread.id}-unroll.html"
+        else:
+            target_filename = f"{thread.blog_name}-{thread.id}.png"
+            target_filename_html = f"{thread.blog_name}-{thread.id}.html"
 
         if (
             config["renders_debug"]
@@ -83,7 +103,7 @@ if config["renders_enable"]:
 
                 shutil.copyfile(
                     target_html.name,
-                    os.path.join(RENDERS_PATH, f"{thread.blog_name}-{thread.id}.html"),
+                    os.path.join(RENDERS_PATH, target_filename_html),
                 )
 
                 page = await browser.newPage()

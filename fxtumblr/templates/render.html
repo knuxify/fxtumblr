@@ -62,9 +62,9 @@
 
 		.tags {
 			padding: 0 20px;
-			margin: 0 -6px;
 			margin-bottom: 15px;
 			margin-top: 12px;
+			margin-left: -6px;
 			font-size: 1rem;
 			font-weight: 400;
 			line-height: 1.5;
@@ -375,6 +375,25 @@
 			font-size: 12.5px;
 			line-height: normal;
 			display: block;
+		}
+
+		.read-more {
+			color: RGB(0, 184, 255);;
+			padding: 6px 10px;
+			font-size: 1rem;
+			font-weight: 700;
+			line-height: 1.5;
+			text-decoration: none;
+			width: 100%;
+			text-align: center;
+			box-sizing: border-box;
+		}
+		.read-more::after {
+			content: "Hint: you can unroll the post by appending \"?unroll\" to the link.";
+			display: block;
+			font-size: 0.875rem;
+			color: rgba(0, 0, 0, .65);
+			font-weight: 400;
 		}
 
 		.audio-player { height: 85px; display: flex; background-color: RGB(124, 92, 255); color: #fff; margin-bottom: 10px; }

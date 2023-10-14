@@ -31,7 +31,11 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
             post, post_url=f"https://www.tumblr.com/{blogname}/{postid}"
         )
 
-    thread = TumblrThread.from_payload(post)
+    unroll = False
+    if "unroll" in request.args:
+        unroll = True
+
+    thread = TumblrThread.from_payload(post, unroll=unroll)
     thread_info = thread.thread_info
 
     # Get title and embed description (post content)
@@ -144,7 +148,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         image = await render_thread(thread, force_new_render=needs_caching)
         card_type = "summary_large_image"
         if video:
-            description = f'TIP: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video'
+            description = f'Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video'
         else:
             description = ""
         video = None

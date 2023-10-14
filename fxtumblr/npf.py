@@ -811,6 +811,18 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
         )
 
 
+class NPFReadMoreBlock(NPFBlock, NPFNonTextBlockMixin):
+    # Dummy "Read more" block for truncated threads
+    def __init__(self):
+        pass
+
+    def to_html(self) -> str:
+        return "<div class=\"read-more\">Keep reading</div>"
+
+    def to_markdown(self, placeholders: bool = False) -> str:
+        return "\n(keep reading)"
+
+
 class NPFLayout:
     @property
     def layout_type(self):
@@ -977,6 +989,7 @@ class NPFContent(TumblrContentBase):
         id: Optional[int] = None,
         genesis_post_id: Optional[int] = None,
         post_url: Optional[str] = None,
+        unroll: bool = False,
     ):
         self.raw_blocks = [
             block if isinstance(block, NPFBlockAnnotated) else NPFBlockAnnotated(block)
@@ -987,6 +1000,13 @@ class NPFContent(TumblrContentBase):
         self.id = id
         self.genesis_post_id = genesis_post_id
         self._post_url = post_url
+        self.unroll = unroll
+        self._truncated = False
+        if not unroll:
+            for layout_entry in self.layout:
+                if layout_entry.truncate_after:
+                    self._truncated = True
+                    break
 
         self.blocks = self._make_blocks()
 
@@ -1005,13 +1025,16 @@ class NPFContent(TumblrContentBase):
         if len(self.layout) == 0:
             return self.raw_blocks
         else:
-            # TODO: figure out how to handle truncate_after
+            truncated = False
             ordered_block_ixs = []
             ask_ixs = set()
             ask_ixs_to_layouts = {}
             for layout_entry in self.layout:
                 if layout_entry.layout_type == "rows":
                     for row_ixs in layout_entry.rows:
+                        if not self.unroll and (layout_entry.truncate_after + 1) in row_ixs:
+                            truncated = True
+                            break
                         # note: this doesn't properly handle multi-column rows
                         # TODO: handle multi-column rows
 
@@ -1034,12 +1057,17 @@ class NPFContent(TumblrContentBase):
             if all([layout_entry.layout_type == "ask" for layout_entry in self.layout]):
                 extras = [ix for ix in range(len(self.raw_blocks)) if ix not in ask_ixs]
                 ordered_block_ixs.extend(extras)
-            return [
+            ret = [
                 self.raw_blocks[ix].as_ask_block(ask_layout=ask_ixs_to_layouts[ix])
                 if ix in ask_ixs
                 else self.raw_blocks[ix]
                 for ix in ordered_block_ixs
             ]
+
+            if truncated:
+                ret.append(NPFBlockAnnotated(base_block=NPFReadMoreBlock()))
+
+            return ret
 
     @property
     def ask_blocks(self) -> List[NPFBlockAnnotated]:
@@ -1055,9 +1083,13 @@ class NPFContent(TumblrContentBase):
     def has_ask(self) -> bool:
         return len(self.ask_blocks) > 0
 
+    @property
+    def truncated(self) -> bool:
+        return self._truncated
+
     @staticmethod
     def from_payload(
-        payload: dict, raise_on_unimplemented: bool = False
+        payload: dict, raise_on_unimplemented: bool = False, unroll: bool = False
     ) -> "NPFContent":
         blocks = []
         for bl in payload["content"]:
@@ -1102,6 +1134,7 @@ class NPFContent(TumblrContentBase):
             id=id,
             genesis_post_id=genesis_post_id,
             post_url=post_url,
+            unroll=unroll,
         )
 
     def _reset_annotations(self):
@@ -1438,6 +1471,8 @@ class TumblrThreadInfo:
                     other_blocks.append(block)
                 elif isinstance(block, NPFPollBlock):
                     other_blocks.append(block)
+                elif isinstance(block, NPFReadMoreBlock):
+                    other_blocks.append(block)
                 elif block.media:
                     if isinstance(block, NPFImageBlock):
                         images.append(block.media)
@@ -1488,6 +1523,7 @@ class TumblrThread:
         timestamp: int,
         thread_info: TumblrThreadInfo,
         reblog_info: Optional[TumblrReblogInfo],
+        unroll: bool,
     ):
         self._id = id
         self._blog_name = blog_name
@@ -1495,6 +1531,7 @@ class TumblrThread:
         self._timestamp = timestamp
         self._thread_info = thread_info
         self._reblog_info = reblog_info
+        self.unroll = unroll
 
     @property
     def posts(self):
@@ -1533,12 +1570,12 @@ class TumblrThread:
         return ""
 
     @staticmethod
-    def from_payload(payload: dict) -> "TumblrThread":
+    def from_payload(payload: dict, unroll: bool = False) -> "TumblrThread":
         post_payloads = payload.get("trail", []) + [payload]
         posts = [
             TumblrPost(
                 blog_name=_get_blogname_from_payload(post_payload),
-                content=NPFContent.from_payload(post_payload),
+                content=NPFContent.from_payload(post_payload, unroll=unroll),
                 tags=post_payload.get("tags", []),
             )
             for post_payload in post_payloads
@@ -1550,7 +1587,7 @@ class TumblrThread:
 
         timestamp = payload["timestamp"]
 
-        return TumblrThread(id, blog_name, posts, timestamp, thread_info, reblog_info)
+        return TumblrThread(id, blog_name, posts, timestamp, thread_info, reblog_info, unroll)
 
     @staticmethod
     def _format_post_as_quoting_previous(
