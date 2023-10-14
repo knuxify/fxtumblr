@@ -579,9 +579,6 @@ class NPFAudioBlock(NPFMediaBlock):
     def to_html(self) -> str:
         # This returns a (nonfunctional) official client-like view of an
         # audio track.
-        if self.embed_html:
-            return self.embed_html
-
         selected_size_poster = None
         if self.poster:
             selected_size_poster = self.poster._pick_one_size(85)
