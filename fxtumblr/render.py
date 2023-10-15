@@ -36,7 +36,7 @@ if config["renders_enable"]:
     @app.route("/renders/<blogname>-<postid>.png")
     @app.route("/renders/<blogname>-<postid>.<suffix>.png")
     async def get_render(blogname, postid, suffix=False):
-        unroll = True if suffix == 'unroll' else False
+        unroll = True if suffix == "unroll" else False
         if unroll:
             target_filename = f"{blogname}-{postid}.unroll.png"
         else:
@@ -47,8 +47,8 @@ if config["renders_enable"]:
             or config["renders_debug"]
         ):
             post = get_post(blogname, postid)
-            if 'error' in post:
-                return '', 404
+            if "error" in post:
+                return "", 404
             thread = TumblrThread.from_payload(post, unroll=unroll)
             await render_thread(thread)
         return await send_from_directory(RENDERS_PATH, target_filename)
@@ -56,7 +56,7 @@ if config["renders_enable"]:
     @app.route("/renders/<blogname>-<postid>.html")
     @app.route("/renders/<blogname>-<postid>.<suffix>.html")
     async def get_html_render(blogname, postid, suffix=False):
-        unroll = True if suffix == 'unroll' else False
+        unroll = True if suffix == "unroll" else False
         if unroll:
             target_filename = f"{blogname}-{postid}.unroll.html"
         else:
@@ -67,8 +67,8 @@ if config["renders_enable"]:
             or config["renders_debug"]
         ):
             post = get_post(blogname, postid)
-            if 'error' in post:
-                return '', 404
+            if "error" in post:
+                return "", 404
             thread = TumblrThread.from_payload(post, unroll=unroll)
             await render_thread(thread)
         return await send_from_directory(RENDERS_PATH, target_filename)

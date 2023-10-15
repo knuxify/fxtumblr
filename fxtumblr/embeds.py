@@ -26,10 +26,20 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     should_render = False
     needs_caching = post_needs_caching(blogname, postid)
     post = get_post(blogname, postid)
+
+    post_tumblr_url = f"https://www.tumblr.com/{blogname}/{postid}"
+    if summary:
+        post_tumblr_url += f"/{summary}"
+
     if "error" in post:
-        return await parse_error(
-            post, post_url=f"https://www.tumblr.com/{blogname}/{postid}"
-        )
+        return await parse_error(post, post_url=post_tumblr_url)
+
+    if blogname == "post":
+        try:
+            blogname = _post["blog"]["name"]
+        except KeyError:
+            blogname = _post["broken_blog_name"]
+        post_tumblr_url = post["post_url"]
 
     unroll = False
     if "unroll" in request.args:
@@ -163,7 +173,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         base_url=BASE_URL,
         motd=config.get("motd", ""),
         card_type=card_type,
-        posturl=post["post_url"],
+        posturl=post_tumblr_url,
         image=image,
         pfp=pfp,
         video=video,

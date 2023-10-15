@@ -20,11 +20,21 @@ def get_post(blogname: str, postid: str):
     post = None
 
     if needs_caching:
-        _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True, npf=True)
+        if blogname == "post":
+            _post = tumblr.posts(id=postid, reblog_info=True, npf=True)
+        else:
+            _post = tumblr.posts(
+                blogname=blogname, id=postid, reblog_info=True, npf=True
+            )
         if not _post or "posts" not in _post or not _post["posts"]:
             if "error" not in _post:
                 _post["error"] = True
             return _post
+
+        try:
+            blogname = _post["blog"]["name"]
+        except KeyError:
+            blogname = _post["broken_blog_name"]
 
         post = _post["posts"][0]
         needs_caching = cache_post(blogname, postid, _post)
