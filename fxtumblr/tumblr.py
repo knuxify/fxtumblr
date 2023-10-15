@@ -20,12 +20,10 @@ def get_post(blogname: str, postid: str):
     post = None
 
     if needs_caching:
-        if blogname == "post":
-            _post = tumblr.posts(id=postid, reblog_info=True, npf=True)
-        else:
-            _post = tumblr.posts(
-                blogname=blogname, id=postid, reblog_info=True, npf=True
-            )
+        # TODO: handle blogname = post
+        _post = tumblr.posts(
+            blogname=blogname, id=postid, reblog_info=True, npf=True
+        )
         if not _post or "posts" not in _post or not _post["posts"]:
             if "error" not in _post:
                 _post["error"] = True
