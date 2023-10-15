@@ -6,8 +6,15 @@
 	<meta property="og:site_name" content="{{ app_name }}"/>
 	<meta property="og:title" content="An error has occured"/>
     <meta property="og:description" content="{{ msg }}"/>
+
+	<style>
+		body { background-color: rgb(0, 25, 53); color: #fff; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: arial; height: 100vh; margin: 0; }
+		.small { color: rgba(255, 255, 255, .65); font-size: .875rem; font-weight: 400; }
+		.small a { color: rgba(255, 255, 255, .85); }
+		@media (prefers-color-scheme: dark) { body { background-color: rgb(0, 0, 0); color: #fff; } }
+	</style>
 </head>
 <body>
-{{ msg }}
+<div><p>An error has occured.</p><p class="small">{{ msg }}</p><div>
 </body>
 </html>
