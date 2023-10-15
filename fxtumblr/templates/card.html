@@ -47,9 +47,16 @@
     <meta property="og:description" content="{{ desc }}" />
 
     <link rel="alternate" href="{{ base_url }}/oembed.json?{% if video %}desc={{ desc | urlencode }}&op={{ miniheader | urlencode }}%20%7C%20{{ header | urlencode }}{% else %}desc={{ miniheader | urlencode }}&op={{ header | urlencode }}{% endif %}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ miniheader }}">
-    <meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />
+    <!--<meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />-->
+
+	<style>
+		body { background-color: rgb(0, 25, 53); color: #fff; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: arial; height: 100vh; margin: 0; }
+		.small { color: rgba(255, 255, 255, .65); font-size: .875rem; font-weight: 400; }
+		.small a { color: rgba(255, 255, 255, .85); }
+		@media (prefers-color-scheme: dark) { body { background-color: rgb(0, 0, 0); color: #fff; } }
+	</style>
 </head>
 <body>
-Redirecting you to the post in a moment. <a href="{{ posturl }}">Or click here.</a>
+<div><p>Redirecting you to the post in a moment.</p><p class="small">In case your browser doesn't redirect you automatically, <a href="{{ posturl }}">click here to go to the post.</a></p></div>
 </body>
 </html>
