@@ -47,7 +47,7 @@
     <meta property="og:description" content="{{ desc }}" />
 
     <link rel="alternate" href="{{ base_url }}/oembed.json?{% if video %}desc={{ desc | urlencode }}&op={{ miniheader | urlencode }}%20%7C%20{{ header | urlencode }}{% else %}desc={{ miniheader | urlencode }}&op={{ header | urlencode }}{% endif %}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ miniheader }}">
-    <!--<meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />-->
+    <meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />
 
 	<style>
 		body { background-color: rgb(0, 25, 53); color: #fff; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: arial; height: 100vh; margin: 0; }
