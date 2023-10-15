@@ -193,11 +193,11 @@ class NPFSubtype:
             ret = text
         # These match the standard classes used in Tumblr's CSS:
         elif self.subtype == "chat":
-            ret = f'<p class="npf_chat">{text_or_break}</p>'
+            ret = f'<span class="npf_chat">{text_or_break}</span>'
         elif self.subtype == "quote":
-            ret = f'<p class="npf_quote">{text_or_break}</p>'
+            ret = f'<span class="npf_quote">{text_or_break}</span>'
         elif self.subtype == "quirky":
-            ret = f'<p class="npf_quirky">{text_or_break}</p>'
+            ret = f'<span class="npf_quirky">{text_or_break}</span>'
         elif len(text) == 0:
             return ""
         else:
