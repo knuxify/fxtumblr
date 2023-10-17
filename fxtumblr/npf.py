@@ -1443,7 +1443,7 @@ class TumblrPost(TumblrPostBase):
         return self._content.genesis_post_id
 
     def to_html(self, wrap_blocks=False) -> str:
-        return self._content.to_html(wrap_blocks=wrap_blocks)
+        return sanitize_html(self._content.to_html(wrap_blocks=wrap_blocks))
 
     def to_markdown(
         self, placeholders: bool = False, skip_single_placeholders: bool = False
