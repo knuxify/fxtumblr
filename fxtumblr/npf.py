@@ -13,6 +13,7 @@ import urllib
 import datetime
 import dateutil.parser
 
+from .tumblr import tumblr
 
 def _get_blogname_from_payload(post_payload):
     """retrieves payload --> broken_blog_name, or payload --> blog --> name"""
@@ -986,6 +987,7 @@ class NPFContent(TumblrContentBase):
         blocks: List[NPFBlock],
         layout: List[NPFLayout],
         blog_name: str,
+        avatar: str,
         id: Optional[int] = None,
         genesis_post_id: Optional[int] = None,
         post_url: Optional[str] = None,
@@ -997,6 +999,7 @@ class NPFContent(TumblrContentBase):
         ]
         self.layout = layout
         self.blog_name = blog_name
+        self.avatar = avatar
         self.id = id
         self.genesis_post_id = genesis_post_id
         self._post_url = post_url
@@ -1121,6 +1124,14 @@ class NPFContent(TumblrContentBase):
 
         blog_name = _get_blogname_from_payload(payload)
 
+        from pprint import pprint
+        pprint(payload)
+
+        avatar = 'https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png'
+        if 'blog' in payload and 'avatar' in payload['blog']:
+            avatar_media = NPFMediaList(payload['blog']['avatar'])
+            avatar = avatar_media._pick_one_size(32)['url']
+
         if "id" in payload:
             id = payload["id"]
         elif "post" in payload:
@@ -1139,6 +1150,7 @@ class NPFContent(TumblrContentBase):
             blocks=blocks,
             layout=layout,
             blog_name=blog_name,
+            avatar=avatar,
             id=id,
             genesis_post_id=genesis_post_id,
             post_url=post_url,
@@ -1527,6 +1539,7 @@ class TumblrThread:
         self,
         id: str,
         blog_name: str,
+        avatar: str,
         posts: List[TumblrPost],
         timestamp: int,
         thread_info: TumblrThreadInfo,
@@ -1535,6 +1548,7 @@ class TumblrThread:
     ):
         self._id = id
         self._blog_name = blog_name
+        self._avatar = avatar
         self._posts = posts
         self._timestamp = timestamp
         self._thread_info = thread_info
@@ -1552,6 +1566,10 @@ class TumblrThread:
     @property
     def blog_name(self):
         return self._blog_name
+
+    @property
+    def avatar(self):
+        return self._avatar
 
     @property
     def timestamp(self):
@@ -1593,10 +1611,23 @@ class TumblrThread:
         thread_info = TumblrThreadInfo.from_payload(payload, posts)
         reblog_info = TumblrReblogInfo.from_payload(payload)
 
+        # TODO: for some reason, thread info does not carry the avatar for the reblogger's pfp,
+        # so we have to get it ourselves:
+
+        avatar = 'https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png'
+        if 'blog' in payload:
+            if 'avatar' in payload['blog']:
+                avatar_media = NPFMediaList(payload['blog']['avatar'])
+                avatar = avatar_media._pick_one_size(32)['url']
+            else:
+                avatar_data = tumblr.avatar(payload['blog']['name'])
+                if 'avatar_url' in avatar_data:
+                    avatar = avatar_data['avatar_url']
+
         timestamp = payload["timestamp"]
 
         return TumblrThread(
-            id, blog_name, posts, timestamp, thread_info, reblog_info, unroll
+            id, blog_name, avatar, posts, timestamp, thread_info, reblog_info, unroll
         )
 
     @staticmethod
