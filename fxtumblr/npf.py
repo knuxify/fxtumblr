@@ -22,6 +22,19 @@ def _get_blogname_from_payload(post_payload):
     return post_payload["blog"]["name"]
 
 
+def _get_avatar_from_payload(post_payload: dict) -> str:
+    avatar = 'https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png'
+    if 'blog' in post_payload:
+        if 'avatar' in post_payload['blog']:
+            avatar_media = NPFMediaList(post_payload['blog']['avatar'])
+            avatar = avatar_media._pick_one_size(32)['url']
+        else:
+            avatar_data = tumblr.avatar(post_payload['blog']['name'])
+            if 'avatar_url' in avatar_data:
+                avatar = avatar_data['avatar_url']
+    return avatar
+
+
 def sanitize_html(html: str) -> str:
     """
     Sanitizes HTML to only include elements we add; second line of defense
@@ -51,6 +64,10 @@ def sanitize_html(html: str) -> str:
             "audio",
             "video",
             "source",
+            "svg",
+            "path",
+            "aside",
+            "use"
         },
         attributes={
             "*": {"class", "id"},
@@ -69,6 +86,8 @@ def sanitize_html(html: str) -> str:
             },
             "source": {"src", "type"},
             "audio": {"class", "id", "poster", "src", "controls", "muted"},
+            "svg": {"class", "id", "xmlns", "height", "width", "role", "style"},
+            "use": {"class", "id", "href"},
         },
     )
 
@@ -1124,13 +1143,7 @@ class NPFContent(TumblrContentBase):
 
         blog_name = _get_blogname_from_payload(payload)
 
-        from pprint import pprint
-        pprint(payload)
-
-        avatar = 'https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png'
-        if 'blog' in payload and 'avatar' in payload['blog']:
-            avatar_media = NPFMediaList(payload['blog']['avatar'])
-            avatar = avatar_media._pick_one_size(32)['url']
+        avatar = _get_avatar_from_payload(payload)
 
         if "id" in payload:
             id = payload["id"]
@@ -1608,21 +1621,9 @@ class TumblrThread:
         ]
         id = payload["id"]
         blog_name = _get_blogname_from_payload(payload)
+        avatar = _get_avatar_from_payload(payload)
         thread_info = TumblrThreadInfo.from_payload(payload, posts)
         reblog_info = TumblrReblogInfo.from_payload(payload)
-
-        # TODO: for some reason, thread info does not carry the avatar for the reblogger's pfp,
-        # so we have to get it ourselves:
-
-        avatar = 'https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png'
-        if 'blog' in payload:
-            if 'avatar' in payload['blog']:
-                avatar_media = NPFMediaList(payload['blog']['avatar'])
-                avatar = avatar_media._pick_one_size(32)['url']
-            else:
-                avatar_data = tumblr.avatar(payload['blog']['name'])
-                if 'avatar_url' in avatar_data:
-                    avatar = avatar_data['avatar_url']
 
         timestamp = payload["timestamp"]
 
