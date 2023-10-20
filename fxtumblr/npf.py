@@ -202,9 +202,9 @@ class NPFSubtype:
     def format_html(self, text: str, wrap_blocks=True):
         text_or_break = text if len(text) > 0 else "<br>"
         if self.subtype == "heading1":
-            ret = f"<p><h1>{text_or_break}</h1></p>"
+            ret = f"<h1>{text_or_break}</h1>"
         elif self.subtype == "heading2":
-            ret = f"<p><h2>{text_or_break}</h2></p>"
+            ret = f"<h2>{text_or_break}</h2>"
         elif self.subtype == "ordered-list-item":
             ret = f"<li>{text}</li>"
         elif self.subtype == "unordered-list-item":
