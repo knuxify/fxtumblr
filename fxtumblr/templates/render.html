@@ -201,13 +201,19 @@
 		figure.tmblr-full > img {
 			width: 100%;
 			height: 100%;
-			object-fit: cover;
+			object-fit: contain;
+		}
+
+		figure.tmblr-full.video-block > img {
+			max-height: 540px;
+			background-color: #000;
 		}
 
 		figure.tmblr-full > div.video-poster-dummy {
 			width: 100%;
 			height: 320px;
 			background-color: #000;
+			max-height: 500px;
 		}
 
 		/* "ALT" indicator */
