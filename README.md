@@ -32,9 +32,3 @@ Unfortunately, standard embeds are too limited to fully display an entire Tumblr
 In order to make use of it, set `renders_enable` in your config. A copy of Chrome should be downloaded automatically on first launch.
 
 You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md. You should also get a system font that has emoji suport (like Noto Emoji).
-
-## TODO
-
-This is still a very early proof-of-concept, but it's good enough to kinda sorta work. Still, there are many quality-of-life improvements to be made:
-
-- Start a flagship instance (I hope nobody steals the domain from me...)
