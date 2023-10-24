@@ -15,6 +15,7 @@ import dateutil.parser
 
 from .tumblr import tumblr
 
+
 def _get_blogname_from_payload(post_payload):
     """retrieves payload --> broken_blog_name, or payload --> blog --> name"""
     if "broken_blog_name" in post_payload:
@@ -23,15 +24,15 @@ def _get_blogname_from_payload(post_payload):
 
 
 def _get_avatar_from_payload(post_payload: dict) -> str:
-    avatar = 'https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png'
-    if 'blog' in post_payload:
-        if 'avatar' in post_payload['blog']:
-            avatar_media = NPFMediaList(post_payload['blog']['avatar'])
-            avatar = avatar_media._pick_one_size(32)['url']
+    avatar = "https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png"
+    if "blog" in post_payload:
+        if "avatar" in post_payload["blog"]:
+            avatar_media = NPFMediaList(post_payload["blog"]["avatar"])
+            avatar = avatar_media._pick_one_size(32)["url"]
         else:
-            avatar_data = tumblr.avatar(post_payload['blog']['name'])
-            if 'avatar_url' in avatar_data:
-                avatar = avatar_data['avatar_url']
+            avatar_data = tumblr.avatar(post_payload["blog"]["name"])
+            if "avatar_url" in avatar_data:
+                avatar = avatar_data["avatar_url"]
     return avatar
 
 
@@ -67,7 +68,7 @@ def sanitize_html(html: str) -> str:
             "svg",
             "path",
             "aside",
-            "use"
+            "use",
         },
         attributes={
             "*": {"class", "id"},
@@ -1046,7 +1047,13 @@ class NPFContent(TumblrContentBase):
                         # note: deduplication here is needed b/c of april 2021 tumblr npf ask bug
                         if not self.unroll:
                             deduped_ixs = [
-                                ix for ix in row_ixs if ix not in ordered_block_ixs and (not layout_entry.truncate_after or ix <= layout_entry.truncate_after)
+                                ix
+                                for ix in row_ixs
+                                if ix not in ordered_block_ixs
+                                and (
+                                    not layout_entry.truncate_after
+                                    or ix <= layout_entry.truncate_after
+                                )
                             ]
                         else:
                             deduped_ixs = [
@@ -1259,15 +1266,13 @@ class NPFContent(TumblrContentBase):
             row_lengths = {}
             row_end = []
             for lay in self.layout:
-                if lay.layout_type != 'rows':
+                if lay.layout_type != "rows":
                     continue
                 for row in lay.rows:
                     if len(row) > 1:
                         row_start.append(row[0])
                         row_lengths[row[0]] = len(row)
                         row_end.append(row[-1])
-
-            print(row_start, row_end)
 
             n = len(self.ask_blocks)
             for block in self.blocks[len(self.ask_blocks) :]:
@@ -1278,7 +1283,7 @@ class NPFContent(TumblrContentBase):
                 else:
                     ret += block.to_html()
                 if n in row_end:
-                    ret += '</div>'
+                    ret += "</div>"
                 n += 1
         else:
             ret = "".join(
@@ -1358,12 +1363,14 @@ class NPFContent(TumblrContentBase):
 
 
 class NPFAsk(NPFContent):
-    def __init__(self, blocks: List[NPFBlock], ask_layout: NPFLayout, avatar: Optional[str] = None):
+    def __init__(
+        self,
+        blocks: List[NPFBlock],
+        ask_layout: NPFLayout,
+        avatar: Optional[str] = None,
+    ):
         super().__init__(
-            blocks=blocks,
-            layout=[],
-            blog_name=ask_layout.asking_name,
-            avatar=avatar
+            blocks=blocks, layout=[], blog_name=ask_layout.asking_name, avatar=avatar
         )
 
     @property
