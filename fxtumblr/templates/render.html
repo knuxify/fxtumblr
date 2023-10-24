@@ -201,12 +201,13 @@
 		figure.tmblr-full > img {
 			width: 100%;
 			height: 100%;
-			object-fit: contain;
+			object-fit: cover;
 		}
 
 		figure.tmblr-full.video-block > img {
 			max-height: 540px;
 			background-color: #000;
+			object-fit: contain;
 		}
 
 		figure.tmblr-full > div.video-poster-dummy {
@@ -229,7 +230,7 @@
 			background-color: hsla(0,0%,7%,.7);
 			color: #fff;
 			font-weight: 900;
-			opacity: .5;
+			opacity: .75;
 			line-height: 1.5;
 		}
 
@@ -376,6 +377,8 @@
 			margin-bottom: 20px;
 		}
 
+		div + .poll-block, figure + .poll-block { margin-top: 15px; }
+
 		.poll-block .poll-question {
 			min-height: 0;
 			margin-bottom: 20px;
@@ -435,6 +438,11 @@
 			color: rgba(0, 0, 0, .65);
 			font-weight: 400;
 		}
+
+		.row-multiple { display: grid; grid-template-columns: 33.3% 33.3% 33.3%; grid-gap: 4px; }
+		.row-multiple + .row-multiple { margin-top: 4px; }
+		.row-2 { grid-template-columns: 50% 50%; }
+		.row-multiple figure.tmblr-full { margin-top: 0 !important; }
 
 		.audio-player { height: 85px; display: flex; background-color: RGB(124, 92, 255); color: #fff; margin-bottom: 10px; }
 		.audio-player .play-button svg { margin: 0 25px; }

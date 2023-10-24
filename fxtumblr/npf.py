@@ -870,32 +870,10 @@ class NPFLayoutMode:
         return NPFLayoutMode(mode_type=payload["type"])
 
 
-class NPFRow:
-    def __init__(
-        self,
-        blocks: List[int],
-        mode: Optional[NPFLayoutMode] = None,
-    ):
-        self._blocks = blocks
-        self._mode = mode
-
-    @property
-    def blocks(self):
-        return self._blocks
-
-    @property
-    def mode(self):
-        return self._mode
-
-    @staticmethod
-    def from_payload(payload: dict) -> "NPFRow":
-        return NPFRow(blocks=payload["blocks"], mode=payload.get("mode"))
-
-
 class NPFLayoutRows(NPFLayout):
     def __init__(
         self,
-        rows: List[NPFRow],
+        rows: List[int],
         truncate_after: Optional[int] = None,
     ):
         self._rows = rows
@@ -1064,15 +1042,19 @@ class NPFContent(TumblrContentBase):
                             and (layout_entry.truncate_after + 1) in row_ixs
                         ):
                             truncated = True
-                            break
-                        # note: this doesn't properly handle multi-column rows
-                        # TODO: handle multi-column rows
 
                         # note: deduplication here is needed b/c of april 2021 tumblr npf ask bug
-                        deduped_ixs = [
-                            ix for ix in row_ixs if ix not in ordered_block_ixs
-                        ]
+                        if not self.unroll:
+                            deduped_ixs = [
+                                ix for ix in row_ixs if ix not in ordered_block_ixs and (not layout_entry.truncate_after or ix <= layout_entry.truncate_after)
+                            ]
+                        else:
+                            deduped_ixs = [
+                                ix for ix in row_ixs if ix not in ordered_block_ixs
+                            ]
                         ordered_block_ixs.extend(deduped_ixs)
+                        if truncated:
+                            break
                 elif layout_entry.layout_type == "ask":
                     # note: deduplication here is needed b/c of april 2021 tumblr npf ask bug
                     deduped_ixs = [
@@ -1272,11 +1254,32 @@ class NPFContent(TumblrContentBase):
 
         if wrap_blocks:
             ret = ""
+
+            row_start = []
+            row_lengths = {}
+            row_end = []
+            for lay in self.layout:
+                if lay.layout_type != 'rows':
+                    continue
+                for row in lay.rows:
+                    if len(row) > 1:
+                        row_start.append(row[0])
+                        row_lengths[row[0]] = len(row)
+                        row_end.append(row[-1])
+
+            print(row_start, row_end)
+
+            n = len(self.ask_blocks)
             for block in self.blocks[len(self.ask_blocks) :]:
+                if n in row_start:
+                    ret += f'<div class="row-multiple row-{row_lengths[n]}">'
                 if isinstance(block, NPFTextBlock):
                     ret += block.to_html(wrap_blocks=True)
                 else:
                     ret += block.to_html()
+                if n in row_end:
+                    ret += '</div>'
+                n += 1
         else:
             ret = "".join(
                 [block.to_html() for block in self.blocks[len(self.ask_blocks) :]]
@@ -1355,11 +1358,12 @@ class NPFContent(TumblrContentBase):
 
 
 class NPFAsk(NPFContent):
-    def __init__(self, blocks: List[NPFBlock], ask_layout: NPFLayout):
+    def __init__(self, blocks: List[NPFBlock], ask_layout: NPFLayout, avatar: Optional[str] = None):
         super().__init__(
             blocks=blocks,
             layout=[],
             blog_name=ask_layout.asking_name,
+            avatar=avatar
         )
 
     @property
