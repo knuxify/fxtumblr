@@ -12,8 +12,13 @@ import nh3
 import urllib
 import datetime
 import dateutil.parser
+import itertools
+import emoji
+import re
 
 from .tumblr import tumblr
+
+strip_tags = re.compile("<.*?>")
 
 
 def _get_blogname_from_payload(post_payload):
@@ -202,6 +207,7 @@ class NPFSubtype:
 
     def format_html(self, text: str, wrap_blocks=True):
         text_or_break = text if len(text) > 0 else "<br>"
+
         if self.subtype == "heading1":
             ret = f"<h1>{text_or_break}</h1>"
         elif self.subtype == "heading2":
@@ -219,6 +225,20 @@ class NPFSubtype:
             ret = f'<span class="npf_quote">{text_or_break}</span>'
         elif self.subtype == "quirky":
             ret = f'<span class="npf_quirky">{text_or_break}</span>'
+        elif len(text) > 0 and not text[0].isalnum():
+            # We get 4 items here since we need to check if there aren't more than 3
+            emoji_tuple = tuple(itertools.islice(emoji.analyze(text), 4))
+            emoji_and_char_tuple = tuple(
+                itertools.islice(
+                    emoji.analyze(re.sub(strip_tags, "", text), non_emoji=True), 4
+                )
+            )
+            if len(emoji_tuple) <= 3 and [e.chars for e in emoji_tuple] == [
+                e.chars for e in emoji_and_char_tuple
+            ]:
+                ret = f'<p class="emoji-large">{text}</p>'
+            else:
+                ret = f"<p>{text_or_break}</p>"
         elif len(text) == 0:
             return ""
         else:
