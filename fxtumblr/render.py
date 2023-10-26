@@ -7,13 +7,15 @@ from .config import BASE_URL, config
 from .npf import TumblrThread
 from .tumblr import get_post
 import shutil
+import time
 
 browser = None
+playwright_async = None
 
 if config["renders_enable"]:
     from quart import render_template, send_from_directory
     import tempfile
-    import pyppeteer
+    import playwright.async_api
 
     RENDERS_PATH = config["renders_path"]
 
@@ -28,10 +30,29 @@ if config["renders_enable"]:
     @app.before_serving
     async def setup_browser():
         global browser
+        global playwright_async
+
         if not browser:
-            browser = await pyppeteer.launch()
-            # keep alive by leaving blank page open
-            await browser.newPage()
+            playwright_async = await playwright.async_api.async_playwright().start()
+
+            browser_type_str = config.get('render_browser', 'chromium')
+            if browser_type_str == 'chromium':
+                browser_type = playwright_async.chromium
+            elif browser_type_str == 'firefox':
+                browser_type = playwright_async.firefox
+            elif browser_type_str == 'webkit':
+                browser_type = playwright_async.chromium
+            else:
+                raise ValueError("Incorrect browser type; must be one of chromium, firefox, webkit")
+
+            browser = await browser_type.launch()
+
+    @app.after_serving
+    async def destroy_browser():
+        global browser
+        global playwright_async
+        browser.close()
+        playwright_async.close()
 
     @app.route("/renders/<blogname>-<postid>.png")
     @app.route("/renders/<blogname>-<postid>.<suffix>.png")
@@ -110,15 +131,13 @@ if config["renders_enable"]:
                     os.path.join(RENDERS_PATH, target_filename_html),
                 )
 
-                page = await browser.newPage()
-                await page.setViewport({"width": 540, "height": 100})
+                page = await browser.new_page()
+                await page.set_viewport_size({"width": 540, "height": 100})
                 await page.goto(f"file://{target_html.name}")
                 await page.screenshot(
-                    {
-                        "path": os.path.join(RENDERS_PATH, target_filename),
-                        "fullPage": True,
-                        "omitBackground": True,
-                    }
+                    path=os.path.join(RENDERS_PATH, target_filename),
+                    full_page=True,
+                    omit_background=True,
                 )
                 await page.close()
 

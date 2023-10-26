@@ -11,6 +11,7 @@ cache_expiry: 43200 # 12 hours
 renders_enable: false
 renders_path: "./renders"
 renders_debug: false
+render_browser: "chromium"
 
 # Get these from your app's info at https://www.tumblr.com/oauth/apps
 tumblr_consumer_key: "FIXME"

@@ -27,8 +27,8 @@ You can try out the test instance, `fx.dithernet.org`. Note that this instance i
 
 ## Enabling thread rendering support
 
-Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless version of Chrome/Chromium using the `pyppeteer` package.
+Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless browser of your choosing (Chromium, Firefox or WebKit) using the `playwright` package.
 
-In order to make use of it, set `renders_enable` in your config. A copy of Chrome should be downloaded automatically on first launch.
+In order to make use of it, set `renders_enable` in your config. Then, run `playwright install` to initialize Playwright. A copy of each of the browsers should be downloaded automatically on first launch.
 
 You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md. You should also get a system font that has emoji suport (like Noto Emoji).
