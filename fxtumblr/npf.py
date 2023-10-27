@@ -1030,7 +1030,7 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
             all_votes = [votes for votes in self.data["results"].values()]
             total_votes = sum(all_votes)
             most_votes = max(all_votes)
-            time_str += f' from {total_votes} vote{"s" if total_votes != 1 else ""}'
+            time_str += f' from {total_votes:,} vote{"s" if total_votes != 1 else ""}'
 
             for answer in self.answers:
                 answer_count = self.data["results"][answer["client_id"]]

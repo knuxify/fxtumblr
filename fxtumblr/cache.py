@@ -57,7 +57,6 @@ def get_cached_post(blogname: str, postid: int) -> dict:
 
 def poll_needs_caching(blogname, postid, pollid) -> bool:
     if f"{blogname}-{postid}-{pollid}" not in cache["polls"]:
-        print("poll needs caching!")
         return True
 
     poll = cache["polls"][f"{blogname}-{postid}-{pollid}"]
