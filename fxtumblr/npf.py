@@ -1038,12 +1038,15 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
                     color = "var(--accent), .4"
                 else:
                     color = "var(--black), .1"
-                answer_percentage = (answer_count / total_votes) * 100
-                answer_percentage = (
-                    "{:.2f}".format(answer_percentage)
-                    if not str(answer_percentage).endswith(".0")
-                    else int(answer_percentage)
-                )
+                if total_votes:
+                    answer_percentage = (answer_count / total_votes) * 100
+                    answer_percentage = (
+                        "{:.2f}".format(answer_percentage)
+                        if not str(answer_percentage).endswith(".0")
+                        else int(answer_percentage)
+                    )
+                else:
+                    answer_percentage = 0
                 html += f'<div class="poll-answer{" poll-answer-win" if answer_count == most_votes else ""}"><div class="poll-answer-filler" style="width: {answer_percentage}%;"></div><span class="poll-answer-text">{answer["answer_text"]}</span><span class="poll-answer-percentage">{answer_percentage}%</span></div>'
         else:
             for answer in self.answers:
