@@ -1027,7 +1027,7 @@ class NPFContent(TumblrContentBase):
             for layout_entry in self.layout:
                 if (
                     isinstance(layout_entry, NPFLayoutRows)
-                    and layout_entry.truncate_after
+                    and layout_entry.truncate_after is not None
                 ):
                     self._truncated = True
                     break
@@ -1058,8 +1058,7 @@ class NPFContent(TumblrContentBase):
                     for row_ixs in layout_entry.rows:
                         if (
                             not self.unroll
-                            and isinstance(layout_entry, NPFLayoutRows)
-                            and layout_entry.truncate_after
+                            and layout_entry.truncate_after is not None
                             and (layout_entry.truncate_after + 1) in row_ixs
                         ):
                             truncated = True
@@ -1071,7 +1070,7 @@ class NPFContent(TumblrContentBase):
                                 for ix in row_ixs
                                 if ix not in ordered_block_ixs
                                 and (
-                                    not layout_entry.truncate_after
+                                    layout_entry.truncate_after is None
                                     or ix <= layout_entry.truncate_after
                                 )
                             ]
