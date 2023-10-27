@@ -34,13 +34,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     if "error" in post:
         return await parse_error(post, post_url=post_tumblr_url)
 
-    if blogname == "post":
-        try:
-            blogname = _post["blog"]["name"]
-        except KeyError:
-            blogname = _post["broken_blog_name"]
-        post_tumblr_url = post["post_url"]
-
     unroll = False
     if "unroll" in request.args:
         unroll = True
