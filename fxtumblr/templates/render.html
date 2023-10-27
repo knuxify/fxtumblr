@@ -562,7 +562,7 @@
 		{% if thread.reblog_info %}
 		<header class="main-header">
 			<div class="avatar-wrapper"><img class="avatar" src="{{ thread.avatar }}"><svg class="avatar-reblog-badge" xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__badge-reblog"></use></svg></div>
-			<span><span class="username reblogged-by">{{ thread.reblogged_by }}</span> reblogged <span class="username reblogged-from">{{ thread.reblogged_from }}</span></span>
+			<span><span class="username reblogged-by">{{ thread.reblogged_by }}</span> reblogged{% if thread.reblogged_by != thread.reblogged_from%} <span class="username reblogged-from">{{ thread.reblogged_from }}</span>{% endif %}</span>
 		</header>
 			{% endif %}
 		{% for post in thread.posts %}
