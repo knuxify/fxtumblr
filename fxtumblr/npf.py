@@ -433,6 +433,25 @@ class NPFBlock(TumblrContentBlockBase):
         elif payload.get("type") == "image":
             return NPFImageBlock.from_payload(payload)
         elif payload.get("type") == "video":
+            # Handle some known bad embeds by turning them into links:
+            if payload.get("provider") == "twitch_live":
+                return NPFLinkBlock.from_payload(
+                    {
+                        "url": payload["url"],
+                        "sitename": "twitch.tv",
+                        "title": payload["url"].replace('https://www.twitch.tv/', '') + ' on Twitch',
+                        "description": "Twitch is the world's leading video platform and community for gamers."
+                    }
+                )
+            elif payload.get("provider") == "instagram":
+                return NPFLinkBlock.from_payload(
+                    {
+                        "url": payload["url"],
+                        "sitename": "Instagram",
+                        "title": f'Video by {payload["attribution"]["display_text"]} on Instagram',
+                        "description": f"See Instagram photos and videos from @{payload['attribution']['display_text']}"
+                    }
+                )
             return NPFVideoBlock.from_payload(payload)
         elif payload.get("type") == "audio":
             return NPFAudioBlock.from_payload(payload)
