@@ -15,6 +15,7 @@ import dateutil.parser
 import itertools
 import emoji
 import re
+from urllib.parse import urlparse
 
 from .tumblr import tumblr
 
@@ -121,6 +122,150 @@ class LegacyBlock(TumblrContentBlockBase):
         return markdownify(self._body)
 
 
+class NPFAttributionBase:
+    def attribution_type(self):
+        raise NotImplementedError
+
+    def to_html(self) -> str:
+        raise NotImplementedError
+
+    def to_markdown(self, placeholders: bool = False) -> str:
+        raise NotImplementedError
+
+class NPFAttribution:
+    def from_payload(payload: dict):
+        if payload.get("type") == "post":
+            return NPFPostAttribution.from_payload(payload)
+        if payload.get("type") == "link":
+            return NPFLinkAttribution.from_payload(payload)
+        if payload.get("type") == "blog":
+            return NPFBlogAttribution.from_payload(payload)
+        if payload.get("type") == "app":
+            return NPFAppAttribution.from_payload(payload)
+        else:
+            raise ValueError(payload.get("type"))
+
+class NPFPostAttribution(NPFAttributionBase):
+    def __init__(self, url: str, blog: dict):
+        self._url = url
+        self._blog = blog
+
+    @staticmethod
+    def attribution_type():
+        return 'post'
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def blog(self):
+        return self._blog
+
+    def to_html(self):
+        return f'<div class="attribution post-attribution"><a href="{self.url}">GIF by <b>{self.blog["name"]}</b></a></div>'
+
+    @staticmethod
+    def from_payload(payload: dict) -> "NPFPostAttribution":
+        return NPFPostAttribution(
+            url=payload.get("url"),
+            blog=payload.get("blog"),
+        )
+
+class NPFLinkAttribution(NPFAttributionBase):
+    def __init__(self, url: str):
+        self._url = url
+
+    @staticmethod
+    def attribution_type():
+        return 'link'
+
+    @property
+    def url(self):
+        return self._url
+
+    def to_html(self):
+        caret_tag = '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
+
+        return f'<div class="attribution image-attribution"><a href="{self.url}">{urlparse(self.url).netloc}</a>{caret_tag}</div>'
+
+    @staticmethod
+    def from_payload(payload: dict) -> "NPFLinkAttribution":
+        return NPFLinkAttribution(
+            url=payload.get("url"),
+        )
+
+class NPFBlogAttribution(NPFAttributionBase):
+    def __init__(self, url: str, blog: dict):
+        self._url = url
+        self._blog = blog
+
+    @staticmethod
+    def attribution_type():
+        return 'blog'
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def blog(self):
+        return self._blog
+
+    def to_html(self):
+        return f'<div class="attribution blog-attribution"><a href="{self.url}">{self.blog["name"]}</a></div>'
+
+    @staticmethod
+    def from_payload(payload: dict) -> "NPFBlogAttribution":
+        return NPFBlogAttribution(
+            url=payload.get("url"),
+            blog=payload.get("blog"),
+        )
+
+class NPFAppAttribution(NPFAttributionBase):
+    def __init__(self, url: str, app_name: Optional[str] = None, display_text: Optional[str] = None):
+        self._url = url
+        self._app_name = app_name
+        self._display_text = display_text
+
+    @staticmethod
+    def attribution_type():
+        return 'app'
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def app_name(self):
+        return self._app_name
+
+    @property
+    def display_text(self):
+        return self._display_text
+
+    def to_html(self):
+        caret_tag = '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
+
+        if self.app_name and self.display_text and self.app_name != 'Twitter':
+            text = self.app_name + ' | ' + self.display_text
+        elif self.display_text:
+            text = self.display_text
+        elif self.app_name:
+            text = self.app_name
+        else:
+            text = urlparse(self.url).netloc
+
+        return f'<div class="attribution app-attribution"><a href="{self.url}">{text}</a>{caret_tag}</div>'
+
+    @staticmethod
+    def from_payload(payload: dict) -> "NPFAppAttribution":
+        return NPFAppAttribution(
+            url=payload.get("url"),
+            app_name=payload.get("app_name"),
+            display_text=payload.get("display_text"),
+        )
+
 class NPFFormattingRange:
     def __init__(
         self,
@@ -205,7 +350,7 @@ class NPFSubtype:
     def __init__(self, subtype: str):
         self.subtype = subtype
 
-    def format_html(self, text: str, wrap_blocks=True):
+    def format_html(self, text: str):
         text_or_break = text if len(text) > 0 else "<br>"
 
         if self.subtype == "heading1":
@@ -286,6 +431,9 @@ class NPFBlock(TumblrContentBlockBase):
         else:
             raise ValueError(payload.get("type"))
 
+    @property
+    def attribution(self):
+        return None
 
 class NPFTextBlock(NPFBlock):
     def __init__(
@@ -424,6 +572,7 @@ class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
         embed_html: Optional[str] = None,
         poster: Optional[dict] = [],
         data: Optional[dict] = {},
+        attribution: Optional[dict] = {},
     ):
         if not media and not embed_html:
             raise ValueError("Either media or embed_html must be provided")
@@ -432,6 +581,7 @@ class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
         self._embed_html = embed_html
         self._poster = NPFMediaList(poster) if poster else None
         self._data = data
+        self._attribution = NPFAttribution.from_payload(attribution) if attribution else None
 
     @property
     def media(self):
@@ -453,6 +603,10 @@ class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
     def data(self):
         return self._data
 
+    @property
+    def attribution(self):
+        return self._attribution
+
 
 class NPFImageBlock(NPFMediaBlock):
     @staticmethod
@@ -461,6 +615,7 @@ class NPFImageBlock(NPFMediaBlock):
             media=payload["media"],
             alt_text=payload.get("alt_text"),
             data={"caption": payload.get("caption")},
+            attribution=payload.get("attribution"),
         )
 
     def to_html(self, target_width: int = 640) -> str:
@@ -534,6 +689,7 @@ class NPFVideoBlock(NPFMediaBlock):
             alt_text=payload.get("alt_text"),
             poster=poster,
             embed_html=payload["embed_html"] if "embed_html" in payload else "",
+            attribution=payload.get("attribution"),
         )
 
     def to_standard_html(self, target_width: int = 640) -> str:
@@ -571,7 +727,7 @@ class NPFVideoBlock(NPFMediaBlock):
         else:
             img_tag = '<div class="video-poster video-poster-dummy"></div>'
 
-        play_button_tag = '<span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__play-cropped"></use></svg></span>'
+        play_button_tag = '<span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span>'
 
         alt_tag = ""
         if self.alt_text:
@@ -608,6 +764,7 @@ class NPFAudioBlock(NPFMediaBlock):
                 "artist": payload.get("artist", ""),
                 "album": payload.get("album", ""),
             },
+            attribution=payload.get("attribution"),
         )
 
     def to_standard_html(self) -> str:
@@ -1294,15 +1451,22 @@ class NPFContent(TumblrContentBase):
                         row_end.append(row[-1])
 
             n = len(self.ask_blocks)
+            in_row = False
             for block in self.blocks[len(self.ask_blocks) :]:
+                base_block = block.base_block if isinstance(block, NPFBlockAnnotated) else block
+
                 if n in row_start:
                     ret += f'<div class="row-multiple row-{row_lengths[n]}">'
-                if isinstance(block, NPFTextBlock):
-                    ret += block.to_html(wrap_blocks=True)
+                    in_row = True
+                if in_row and base_block.attribution:
+                    ret += '<div>' + block.to_html() + base_block.attribution.to_html() + '</div>'
                 else:
                     ret += block.to_html()
+                    if not in_row and base_block.attribution:
+                        ret += base_block.attribution.to_html()
                 if n in row_end:
                     ret += "</div>"
+                    in_row = False
                 n += 1
         else:
             ret = "".join(

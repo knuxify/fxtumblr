@@ -4,6 +4,7 @@
 	<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
 	<meta name="viewport" content="width=device-width">
 
+	<!-- Portions of this CSS and the SVG icons have been adapted from tumblr.com. Copyright Tumblr staff. -->
 	<style>
 		@font-face {
 			font-family: "Favorit";
@@ -66,7 +67,7 @@
 
 		.post-header, .main-header {
 			box-sizing: border-box;
-			padding: 15px 20px;
+			padding: 15px 16px;
 			font-size: .875rem;
 			font-weight: 700;
 			line-height: 1.42857;
@@ -95,7 +96,7 @@
 		}
 
 		.tags {
-			padding: 0 20px;
+			padding: 0 16px;
 			margin-bottom: 15px;
 			margin-top: 12px;
 			margin-left: -6px;
@@ -146,8 +147,8 @@
 			width: 100%;
 			min-height: 1.5em;
 
-			padding-left: 20px;
-			padding-right: 20px;
+			padding-left: 16px;
+			padding-right: 16px;
 			margin-top: 15px;
 			margin-bottom: 15px;
 
@@ -267,7 +268,7 @@
 			color: rgba(0, 0, 0, .65);
 			line-height: 1.42857;
 			margin-bottom: 20px;
-			padding: 0 20px;
+			padding: 0 16px;
 			font-size: .875rem;
 		}
 
@@ -278,7 +279,7 @@
 		.question-content .text-block:last-child, .question-content .text-block:last-child p { margin-bottom: 0; }
 
 		.link-embed {
-			margin: 0 20px;
+			margin: 0 16px;
 			margin-bottom: 15px;
 			box-sizing: border-box;
 		}
@@ -374,8 +375,8 @@
 		}
 
 		.poll-block {
-			margin-left: 20px;
-			margin-right: 20px;
+			margin-left: 16px;
+			margin-right: 16px;
 			margin-bottom: 20px;
 		}
 
@@ -454,12 +455,42 @@
 		.audio-player .audio-info .artist, .audio-player .audio-info .album { font-size: .875rem; font-weight: 400; color: rgba(255, 255, 255, .65); line-height: 1.42857; }
 		.audio-player .audio-image { width: 85px; height: 85px; flex-shrink: 0; }
 		.audio-player .audio-image img { object-fit: cover; width: 100%; height: 100%; display: block; }
+
+		.post-attribution {
+			box-sizing: border-box;
+			padding-left: 16px;
+			padding-right: 16px;
+			margin-top: 8px;
+			margin-bottom: 16px;
+			display: flex;
+		}
+		.post-attribution a {
+			color: rgba(0, 0, 0, .65);
+			word-break: break-all;
+			margin-left: auto;
+			font-size: 1rem;
+			font-weight: 400;
+			line-height: 1.5;
+			text-decoration: none;
+		}
+
+		.app-attribution, .image-attribution {
+			padding: 3px 16px;
+			background-color: rgba(0, 0, 0, .07);
+			color: rgba(0, 0, 0, .4);
+			display: flex; align-items: center;
+		}
+		.app-attribution a, .image-attribution a { width: 100%; display: block; color: inherit; text-decoration: none; }
+		.attribution-go-icon { float: right; }
 	</style>
 </head>
 <body>
 	<aside id="icons" style="width:0;height:0;overflow:hidden;display:none;">
 		<svg id="managed-icon__play-cropped" fill="var(--icon-color-primary, #ffffff)" viewBox="18 15 13 16">
 			<path d="M30.592 23.578L19.52 30.3a1 1 0 0 1-1.52-.854V16a1 1 0 0 1 1.519-.855l11.073 6.723a1 1 0 0 1 0 1.71z"></path>
+		</svg>
+		<svg id="managed-icon__caret-fat" fill="var(--icon-color-primary, currentcolor)" viewBox="0 0 13 20.1">
+		  <path d="M0 2.9l7.2 7.2-7.1 7.1L3 20.1l7.1-7.1 2.9-2.9L2.9 0 0 2.9"></path>
 		</svg>
 	</aside>
 	<div id="container">
