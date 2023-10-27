@@ -17,7 +17,7 @@ import emoji
 import re
 from urllib.parse import urlparse
 
-from .tumblr import tumblr
+from .tumblr import tumblr, get_poll
 
 strip_tags = re.compile("<.*?>")
 
@@ -79,6 +79,7 @@ def sanitize_html(html: str) -> str:
         attributes={
             "*": {"class", "id"},
             "a": {"class", "id", "href"},
+            "div": {"class", "id", "style"},
             "span": {"class", "id", "style"},
             "figure": {"class", "id", "data-orig-height", "data-orig-width"},
             "img": {"class", "id", "src", "data-orig-height", "data-orig-width"},
@@ -763,6 +764,7 @@ class NPFAudioBlock(NPFMediaBlock):
                 "title": payload.get("title", ""),
                 "artist": payload.get("artist", ""),
                 "album": payload.get("album", ""),
+                "provider": payload.get("provider")
             },
             attribution=payload.get("attribution"),
         )
@@ -788,10 +790,12 @@ class NPFAudioBlock(NPFMediaBlock):
         if selected_size_poster and "url" in selected_size_poster:
             poster_url = selected_size_poster["url"]
 
+        provider = self.data.get("provider")
+
         html = f"""
-                <div class="audio-player">
+                <div class="audio-player{' audio-' + provider if provider else ''}">
                     <div class="play-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__play-cropped"></use></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__{provider if provider in ("spotify", "soundcloud") else "play-cropped"}"></use></svg>
                     </div>
                     <div class="audio-info">
                         <div class="title">{self.title}</div>
@@ -929,21 +933,26 @@ class NPFLinkBlock(NPFBlock, NPFNonTextBlockMixin):
 
 
 class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
-    # Poll blocks are completely undocumented, and the API is apparently
-    # still unstable. Also, NPF does not carry data about the actual vote
-    # percentages or total amount of votes.
-
-    # TODO: Get information about poll results. Make sure to do it only
-    # for finished polls (and if we do this with non-finished polls, force
-    # a re-render every time).
-
     @staticmethod
     def from_payload(payload: dict) -> "NPFPollBlock":
+        data = {}
+        # Tumblr's poll API requires a blog name and ID to be passed,
+        # which we can't access at the block level, so this is fetched
+        # elsewhere (look up _fxtumblr_poll_results for the relevant code)
+        # and copied into the payload for parsing.
+        # Also, the poll data is missing like half of the actually useful
+        # information needed for a poll; so, we cache it here instead of
+        # when we get it. It's not nice, but it works to cache things,
+        # so oh well.
+        if '_fxtumblr_poll_results' in payload:
+            data = payload['_fxtumblr_poll_results']
+
         return NPFPollBlock(
             question=payload["question"],
             answers=payload["answers"],
             created_at=payload["created_at"],
             settings=payload["settings"],
+            data=data
         )
 
     def __init__(
@@ -952,11 +961,13 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
         answers: dict,
         created_at: str,
         settings: dict,
+        data: dict,
     ):
         self._question = question
         self._answers = answers
         self._created_at = created_at
         self._settings = settings
+        self._data = data
 
     @property
     def question(self):
@@ -973,6 +984,10 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
     @property
     def settings(self):
         return self._settings
+
+    @property
+    def data(self):
+        return self._data
 
     def to_html(self) -> str:
         created_at = dateutil.parser.parse(self.created_at)
@@ -996,8 +1011,25 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
 
         html = f'<div class="poll-block{" poll-over" if is_over else ""}"><span class="poll-question">{self.question}</span>'
 
-        for answer in self.answers:
-            html += f'<div class="poll-answer">{answer["answer_text"]}</div>'
+        total_votes = -1
+        if self.data and is_over:
+            all_votes = [votes for votes in self.data["results"].values()]
+            total_votes = sum(all_votes)
+            most_votes = max(all_votes)
+            time_str += f' from {total_votes} vote{"s" if total_votes != 1 else ""}'
+
+            for answer in self.answers:
+                answer_count = self.data["results"][answer["client_id"]]
+                if answer_count == most_votes:
+                    color = 'var(--accent), .4'
+                else:
+                    color = 'var(--black), .1'
+                answer_percentage = (answer_count / total_votes) * 100
+                answer_percentage = '{:.2f}'.format(answer_percentage) if not str(answer_percentage).endswith('.0') else int(answer_percentage)
+                html += f'<div class="poll-answer{" poll-answer-win" if answer_count == most_votes else ""}"><div class="poll-answer-filler" style="width: {answer_percentage}%;"></div><span class="poll-answer-text">{answer["answer_text"]}</span><span class="poll-answer-percentage">{answer_percentage}%</span></div>'
+        else:
+            for answer in self.answers:
+                html += f'<div class="poll-answer">{answer["answer_text"]}</div>'
 
         html += f'<span class="poll-meta">{time_str}</span></div>'
 
@@ -1286,8 +1318,29 @@ class NPFContent(TumblrContentBase):
     def from_payload(
         payload: dict, raise_on_unimplemented: bool = False, unroll: bool = False
     ) -> "NPFContent":
+        blog_name = _get_blogname_from_payload(payload)
+
+        avatar = _get_avatar_from_payload(payload)
+
+        if "id" in payload:
+            id = payload["id"]
+        elif "post" in payload:
+            # trail format
+            id = payload["post"]["id"]
+        else:
+            # broken trail item format
+            id = None
+        id = int(id) if id is not None else None
+
+        genesis_post_id = payload.get("genesis_post_id")
+        genesis_post_id = int(genesis_post_id) if genesis_post_id is not None else None
+
         blocks = []
         for bl in payload["content"]:
+            if bl.get("type") == 'poll' and id:
+                # FIXME: Tumblr's poll API sucks and is missing half of the useful information.
+                # So, we have to provide the entire block payload to copy the poll data from.
+                bl["_fxtumblr_poll_results"] = get_poll(blog_name, str(id), bl["client_id"], bl)
             try:
                 blocks.append(NPFBlock.from_payload(bl))
             except ValueError as e:
@@ -1305,23 +1358,6 @@ class NPFContent(TumblrContentBase):
             except ValueError as e:
                 if raise_on_unimplemented:
                     raise e
-
-        blog_name = _get_blogname_from_payload(payload)
-
-        avatar = _get_avatar_from_payload(payload)
-
-        if "id" in payload:
-            id = payload["id"]
-        elif "post" in payload:
-            # trail format
-            id = payload["post"]["id"]
-        else:
-            # broken trail item format
-            id = None
-        id = int(id) if id is not None else None
-
-        genesis_post_id = payload.get("genesis_post_id")
-        genesis_post_id = int(genesis_post_id) if genesis_post_id is not None else None
 
         post_url = payload.get("post_url")
         return NPFContent(
