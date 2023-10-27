@@ -4,7 +4,14 @@ Contains code for getting posts.
 
 import pytumblr
 
-from .cache import post_needs_caching, cache_post, get_cached_post, poll_needs_caching, cache_poll, get_cached_poll
+from .cache import (
+    post_needs_caching,
+    cache_post,
+    get_cached_post,
+    poll_needs_caching,
+    cache_poll,
+    get_cached_poll,
+)
 from .config import config
 
 tumblr = pytumblr.TumblrRestClient(
@@ -49,7 +56,9 @@ def get_poll(blog_name: str, post_id: str, poll_id: str, block: dict):
 
     if needs_caching:
         try:
-            poll = tumblr.send_api_request("get", f"/v2/polls/{blog_name}/{post_id}/{poll_id}/results")
+            poll = tumblr.send_api_request(
+                "get", f"/v2/polls/{blog_name}/{post_id}/{poll_id}/results"
+            )
             assert "error" not in poll
         except:
             return None

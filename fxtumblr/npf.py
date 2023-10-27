@@ -133,6 +133,7 @@ class NPFAttributionBase:
     def to_markdown(self, placeholders: bool = False) -> str:
         raise NotImplementedError
 
+
 class NPFAttribution:
     def from_payload(payload: dict):
         if payload.get("type") == "post":
@@ -146,6 +147,7 @@ class NPFAttribution:
         else:
             raise ValueError(payload.get("type"))
 
+
 class NPFPostAttribution(NPFAttributionBase):
     def __init__(self, url: str, blog: dict):
         self._url = url
@@ -153,7 +155,7 @@ class NPFPostAttribution(NPFAttributionBase):
 
     @staticmethod
     def attribution_type():
-        return 'post'
+        return "post"
 
     @property
     def url(self):
@@ -173,13 +175,14 @@ class NPFPostAttribution(NPFAttributionBase):
             blog=payload.get("blog"),
         )
 
+
 class NPFLinkAttribution(NPFAttributionBase):
     def __init__(self, url: str):
         self._url = url
 
     @staticmethod
     def attribution_type():
-        return 'link'
+        return "link"
 
     @property
     def url(self):
@@ -196,6 +199,7 @@ class NPFLinkAttribution(NPFAttributionBase):
             url=payload.get("url"),
         )
 
+
 class NPFBlogAttribution(NPFAttributionBase):
     def __init__(self, url: str, blog: dict):
         self._url = url
@@ -203,7 +207,7 @@ class NPFBlogAttribution(NPFAttributionBase):
 
     @staticmethod
     def attribution_type():
-        return 'blog'
+        return "blog"
 
     @property
     def url(self):
@@ -223,15 +227,21 @@ class NPFBlogAttribution(NPFAttributionBase):
             blog=payload.get("blog"),
         )
 
+
 class NPFAppAttribution(NPFAttributionBase):
-    def __init__(self, url: str, app_name: Optional[str] = None, display_text: Optional[str] = None):
+    def __init__(
+        self,
+        url: str,
+        app_name: Optional[str] = None,
+        display_text: Optional[str] = None,
+    ):
         self._url = url
         self._app_name = app_name
         self._display_text = display_text
 
     @staticmethod
     def attribution_type():
-        return 'app'
+        return "app"
 
     @property
     def url(self):
@@ -248,8 +258,8 @@ class NPFAppAttribution(NPFAttributionBase):
     def to_html(self):
         caret_tag = '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
 
-        if self.app_name and self.display_text and self.app_name != 'Twitter':
-            text = self.app_name + ' | ' + self.display_text
+        if self.app_name and self.display_text and self.app_name != "Twitter":
+            text = self.app_name + " | " + self.display_text
         elif self.display_text:
             text = self.display_text
         elif self.app_name:
@@ -266,6 +276,7 @@ class NPFAppAttribution(NPFAttributionBase):
             app_name=payload.get("app_name"),
             display_text=payload.get("display_text"),
         )
+
 
 class NPFFormattingRange:
     def __init__(
@@ -436,6 +447,7 @@ class NPFBlock(TumblrContentBlockBase):
     def attribution(self):
         return None
 
+
 class NPFTextBlock(NPFBlock):
     def __init__(
         self,
@@ -582,7 +594,9 @@ class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
         self._embed_html = embed_html
         self._poster = NPFMediaList(poster) if poster else None
         self._data = data
-        self._attribution = NPFAttribution.from_payload(attribution) if attribution else None
+        self._attribution = (
+            NPFAttribution.from_payload(attribution) if attribution else None
+        )
 
     @property
     def media(self):
@@ -764,7 +778,7 @@ class NPFAudioBlock(NPFMediaBlock):
                 "title": payload.get("title", ""),
                 "artist": payload.get("artist", ""),
                 "album": payload.get("album", ""),
-                "provider": payload.get("provider")
+                "provider": payload.get("provider"),
             },
             attribution=payload.get("attribution"),
         )
@@ -944,15 +958,15 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
         # information needed for a poll; so, we cache it here instead of
         # when we get it. It's not nice, but it works to cache things,
         # so oh well.
-        if '_fxtumblr_poll_results' in payload:
-            data = payload['_fxtumblr_poll_results']
+        if "_fxtumblr_poll_results" in payload:
+            data = payload["_fxtumblr_poll_results"]
 
         return NPFPollBlock(
             question=payload["question"],
             answers=payload["answers"],
             created_at=payload["created_at"],
             settings=payload["settings"],
-            data=data
+            data=data,
         )
 
     def __init__(
@@ -1021,11 +1035,15 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
             for answer in self.answers:
                 answer_count = self.data["results"][answer["client_id"]]
                 if answer_count == most_votes:
-                    color = 'var(--accent), .4'
+                    color = "var(--accent), .4"
                 else:
-                    color = 'var(--black), .1'
+                    color = "var(--black), .1"
                 answer_percentage = (answer_count / total_votes) * 100
-                answer_percentage = '{:.2f}'.format(answer_percentage) if not str(answer_percentage).endswith('.0') else int(answer_percentage)
+                answer_percentage = (
+                    "{:.2f}".format(answer_percentage)
+                    if not str(answer_percentage).endswith(".0")
+                    else int(answer_percentage)
+                )
                 html += f'<div class="poll-answer{" poll-answer-win" if answer_count == most_votes else ""}"><div class="poll-answer-filler" style="width: {answer_percentage}%;"></div><span class="poll-answer-text">{answer["answer_text"]}</span><span class="poll-answer-percentage">{answer_percentage}%</span></div>'
         else:
             for answer in self.answers:
@@ -1337,10 +1355,12 @@ class NPFContent(TumblrContentBase):
 
         blocks = []
         for bl in payload["content"]:
-            if bl.get("type") == 'poll' and id:
+            if bl.get("type") == "poll" and id:
                 # FIXME: Tumblr's poll API sucks and is missing half of the useful information.
                 # So, we have to provide the entire block payload to copy the poll data from.
-                bl["_fxtumblr_poll_results"] = get_poll(blog_name, str(id), bl["client_id"], bl)
+                bl["_fxtumblr_poll_results"] = get_poll(
+                    blog_name, str(id), bl["client_id"], bl
+                )
             try:
                 blocks.append(NPFBlock.from_payload(bl))
             except ValueError as e:
@@ -1489,13 +1509,20 @@ class NPFContent(TumblrContentBase):
             n = len(self.ask_blocks)
             in_row = False
             for block in self.blocks[len(self.ask_blocks) :]:
-                base_block = block.base_block if isinstance(block, NPFBlockAnnotated) else block
+                base_block = (
+                    block.base_block if isinstance(block, NPFBlockAnnotated) else block
+                )
 
                 if n in row_start:
                     ret += f'<div class="row-multiple row-{row_lengths[n]}">'
                     in_row = True
                 if in_row and base_block.attribution:
-                    ret += '<div>' + block.to_html() + base_block.attribution.to_html() + '</div>'
+                    ret += (
+                        "<div>"
+                        + block.to_html()
+                        + base_block.attribution.to_html()
+                        + "</div>"
+                    )
                 else:
                     ret += block.to_html()
                     if not in_row and base_block.attribution:

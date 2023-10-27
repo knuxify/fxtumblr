@@ -69,6 +69,7 @@ def poll_needs_caching(blogname, postid, pollid) -> bool:
 
     return not is_over
 
+
 def cache_poll(blogname: str, postid: int, poll: dict) -> bool:
     """Caches a poll. content parameter should contain HTML
     content of the poll. If the poll has already been cached
@@ -85,6 +86,7 @@ def cache_poll(blogname: str, postid: int, poll: dict) -> bool:
     save_cache()
 
     return ret
+
 
 def get_cached_poll(blogname: str, postid: int, pollid: str):
     return cache["polls"][f"{blogname}-{postid}-{pollid}"]
