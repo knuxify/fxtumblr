@@ -1038,15 +1038,18 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
         now = datetime.datetime.now(datetime.timezone.utc)
         is_over = False
         if end_time > now:
-            time_remaining = datetime.datetime.now() - expire_delta
-            if time_remaining.day > 0:
-                time_str = time_remaining.strftime(
-                    f"{(vote_str + ' • ') if vote_str else ''}Remaining time: %d days %H hours %M minutes"
-                )
+            time_remaining = end_time - now
+
+            # https://stackoverflow.com/questions/14190045/how-do-i-convert-datetime-timedelta-to-minutes-hours-in-python
+            days, seconds = time_remaining.days, time_remaining.seconds
+            hours = seconds // 3600
+            minutes = (seconds % 3600) // 60
+            seconds = seconds % 60
+
+            if days > 0:
+                time_str = f"{(vote_str + ' • ') if vote_str else ''}Remaining time: {days} days {hours} hours"
             else:
-                time_str = time_remaining.strftime(
-                    f"{(vote_str + ' • ') if vote_str else ''}Remaining time: %H hours %M minutes"
-                )
+                time_str = f"{(vote_str + ' • ') if vote_str else ''}Remaining time: {hours} hours {minutes} minutes"
         else:
             time_str = "Final result"
             is_over = True
