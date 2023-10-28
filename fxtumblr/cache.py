@@ -66,6 +66,9 @@ def poll_needs_caching(blogname, postid, pollid) -> bool:
     now = datetime.datetime.now(datetime.timezone.utc)
     is_over = end_time <= now
 
+    if is_over != poll["is_over"]:
+        return True
+
     return not is_over
 
 
@@ -74,12 +77,20 @@ def cache_poll(blogname: str, postid: int, poll: dict) -> bool:
     content of the poll. If the poll has already been cached
     and the contents haven't changed, returns True, else returns
     False."""
+    poll = poll.copy()
     pollid = poll["client_id"]
     ret = False
     if f"{blogname}-{postid}-{pollid}" not in cache["polls"]:
         ret = True
     elif cache["polls"][f"{blogname}-{postid}-{pollid}"] == poll:
         ret = True
+
+    created_at = dateutil.parser.parse(poll["created_at"])
+    expire_delta = datetime.timedelta(seconds=poll["settings"]["expire_after"])
+    end_time = created_at + expire_delta
+    now = datetime.datetime.now(datetime.timezone.utc)
+    is_over = end_time <= now
+    poll["is_over"] = is_over
 
     cache["polls"][f"{blogname}-{postid}-{pollid}"] = poll
     save_cache()

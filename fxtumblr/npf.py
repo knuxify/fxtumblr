@@ -439,8 +439,9 @@ class NPFBlock(TumblrContentBlockBase):
                     {
                         "url": payload["url"],
                         "sitename": "twitch.tv",
-                        "title": payload["url"].replace('https://www.twitch.tv/', '') + ' on Twitch',
-                        "description": "Twitch is the world's leading video platform and community for gamers."
+                        "title": payload["url"].replace("https://www.twitch.tv/", "")
+                        + " on Twitch",
+                        "description": "Twitch is the world's leading video platform and community for gamers.",
                     }
                 )
             elif payload.get("provider") == "instagram":
@@ -449,7 +450,7 @@ class NPFBlock(TumblrContentBlockBase):
                         "url": payload["url"],
                         "sitename": "Instagram",
                         "title": f'Video by {payload["attribution"]["display_text"]} on Instagram',
-                        "description": f"See Instagram photos and videos from @{payload['attribution']['display_text']}"
+                        "description": f"See Instagram photos and videos from @{payload['attribution']['display_text']}",
                     }
                 )
             return NPFVideoBlock.from_payload(payload)
@@ -1023,6 +1024,14 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
         return self._data
 
     def to_html(self) -> str:
+        total_votes = -1
+        vote_str = ""
+        if self.data:
+            all_votes = [votes for votes in self.data["results"].values()]
+            total_votes = sum(all_votes)
+            most_votes = max(all_votes)
+            vote_str = f'{total_votes:,} vote{"s" if total_votes != 1 else ""}'
+
         created_at = dateutil.parser.parse(self.created_at)
         expire_delta = datetime.timedelta(seconds=self.settings["expire_after"])
         end_time = created_at + expire_delta
@@ -1032,11 +1041,11 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
             time_remaining = datetime.datetime.now() - expire_delta
             if time_remaining.day > 0:
                 time_str = time_remaining.strftime(
-                    "Remaining time: %d days %H hours %M minutes"
+                    f"{(vote_str + ' • ') if vote_str else ''}Remaining time: %d days %H hours %M minutes"
                 )
             else:
                 time_str = time_remaining.strftime(
-                    "Remaining time: %H hours %M minutes"
+                    f"{(vote_str + ' • ') if vote_str else ''}Remaining time: %H hours %M minutes"
                 )
         else:
             time_str = "Final result"
@@ -1044,12 +1053,8 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
 
         html = f'<div class="poll-block{" poll-over" if is_over else ""}"><span class="poll-question">{self.question}</span>'
 
-        total_votes = -1
         if self.data and is_over:
-            all_votes = [votes for votes in self.data["results"].values()]
-            total_votes = sum(all_votes)
-            most_votes = max(all_votes)
-            time_str += f' from {total_votes:,} vote{"s" if total_votes != 1 else ""}'
+            time_str += f" from {vote_str}"
 
             for answer in self.answers:
                 answer_count = self.data["results"][answer["client_id"]]

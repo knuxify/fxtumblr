@@ -445,6 +445,15 @@
 			font-weight: 400;
 		}
 
+		.poll-block:not(.poll-over):after {
+			content: "Vote count may be out of date; check the original post for the latest information.";
+			display: block;
+			font-size: 0.75rem;
+			color: rgba(0, 0, 0, .65);
+			font-weight: 400;
+			text-align: center;
+		}
+
 		.row-multiple { display: grid; grid-template-columns: 33.3% 33.3% 33.3%; grid-gap: 4px; }
 		.row-multiple + .row-multiple { margin-top: 4px; }
 		.row-2 { grid-template-columns: 50% 50%; }
