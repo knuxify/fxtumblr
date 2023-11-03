@@ -709,6 +709,7 @@ class NPFVideoBlock(NPFMediaBlock):
                         ._replace(netloc="64.media.tumblr.com")
                         .geturl()
                         .replace(".mp4", "_frame1.jpg")
+                        .replace("_720_frame1", "_frame1")
                     )
                     poster = [
                         {
