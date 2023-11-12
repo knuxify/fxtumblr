@@ -210,6 +210,19 @@
 			object-fit: cover;
 		}
 
+		figure.tmblr-full.orig-size:not(.gif) > img {
+			width: auto;
+			height: auto;
+			padding: 0 16px;
+		}
+
+		/* overrides the above for rows */
+		.row-multiple figure.tmblr-full.orig-size:not(.gif) > img {
+			width: 100%;
+			height: 100%;
+			padding: 0;
+		}
+
 		figure.tmblr-full.video-block > img {
 			max-height: 540px;
 			background-color: #000;

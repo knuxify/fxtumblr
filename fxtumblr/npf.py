@@ -655,6 +655,7 @@ class NPFImageBlock(NPFMediaBlock):
 
     def to_html(self, target_width: int = 640) -> str:
         selected_size = self.media._pick_one_size(target_width)
+        width = selected_size["width"]
 
         original_dimensions_attrs_str = ""
         if self.media.original_dimensions is not None:
@@ -662,6 +663,7 @@ class NPFImageBlock(NPFMediaBlock):
             original_dimensions_attrs_str = (
                 f' data-orig-height="{orig_h}" data-orig-width="{orig_w}"'
             )
+            width = orig_w
 
         img_tag = (
             f"<img src=\"{selected_size['url']}\"{original_dimensions_attrs_str}/>"
@@ -673,7 +675,7 @@ class NPFImageBlock(NPFMediaBlock):
         elif self.alt_text:
             alt_tag = '<span class="tmblr-alt-text-helper">ALT</span>'
 
-        figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{img_tag}{alt_tag}</figure>'
+        figure_tag = f'<figure class="tmblr-full{ " orig-size" if width < 300 else "" }{ " gif" if "gif" in selected_size["url"] else ""}"{original_dimensions_attrs_str}>{img_tag}{alt_tag}</figure>'
 
         return figure_tag
 
@@ -697,6 +699,7 @@ class NPFVideoBlock(NPFMediaBlock):
         elif "media" in payload and payload["media"]:
             media = NPFMediaList([payload["media"]])
             if media.media:
+                print(payload["media"])
                 original_dimensions = media.original_dimensions
                 if not original_dimensions:
                     original_dimensions = (640, 640)
