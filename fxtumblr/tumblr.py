@@ -44,6 +44,8 @@ def get_post(blogname: str, postid: str):
     else:
         _post = get_cached_post(blogname, postid)
         post = _post["posts"][0]
+    if "blog" in _post:
+        post["_fx_author_blog"] = _post["blog"]
 
     return post
 
