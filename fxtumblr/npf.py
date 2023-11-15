@@ -1605,17 +1605,24 @@ class NPFContent(TumblrContentBase):
             if (block_counts["image"] == 1 or block_counts["video"] == 1) and not (
                 block_counts["image"] > 0 and block_counts["video"] > 0
             ):
-                banned_type = type(None)
-                if block_counts["image"] == 1:
-                    if isinstance(blocks[0], banned_type):
-                        del blocks[0]
-                    elif isinstance(blocks[-1], banned_type):
-                        del blocks[-1]
-                elif block_counts["video"] == 1:
-                    if isinstance(blocks[0], banned_type):
-                        del blocks[0]
-                    elif isinstance(blocks[-1], banned_type):
-                        del blocks[-1]
+                try:
+                    blocks[0].base_block
+                    blocks[-1].base_block
+                except AttributeError:
+                    pass
+                else:
+                    if block_counts["image"] == 1:
+                        banned_type = NPFImageBlock
+                        if isinstance(blocks[0].base_block, banned_type):
+                            del blocks[0]
+                        elif isinstance(blocks[-1].base_block, banned_type):
+                            del blocks[-1]
+                    elif block_counts["video"] == 1:
+                        banned_type = NPFVideoBlock
+                        if isinstance(blocks[0].base_block, banned_type):
+                            del blocks[0]
+                        elif isinstance(blocks[-1].base_block, banned_type):
+                            del blocks[-1]
 
         ret = "".join(
             [block.to_markdown(placeholders=placeholders) for block in blocks]
