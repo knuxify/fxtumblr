@@ -41,6 +41,14 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     thread = TumblrThread.from_payload(post, unroll=unroll)
     thread_info = thread.thread_info
 
+    # Get reblog information
+    reblog = {
+        "by": post.get(
+            "blog_name", post["blog"].get("name", post["blog"].get("broken_blog_name"))
+        ),
+        "from": post.get("reblogged_from_name"),
+    }
+
     # Get title and embed description (post content)
     title = thread_info.title
     try:
@@ -61,6 +69,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         post_content = (
             "\n".join(l for l in post_content.split("\n") if l.strip())
         ).strip()
+        if reblog["from"]:
+            description += f"▪ {tpost.blog_name}:\n"
         description += post_content
     else:
         for tpost in tposts:
@@ -117,20 +127,17 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         description = description[:max_desc_length] + truncate_placeholder
         should_render = True
 
-    reblog = {"by": "", "from": ""}
-    try:
-        reblog["from"] = post["reblogged_from_name"]
-        reblog["by"] = post["blog_name"]
-    except KeyError:
-        pass
+    miniheader = f'{post["note_count"]} notes'
 
-    op = thread.posts[0].blog_name
-    miniheader = op + f' ({post["note_count"]} notes)'
-
-    if reblog["from"]:
-        header = reblog["by"] + " 🔁 " + reblog["from"]
+    if reblog["by"] and reblog["from"]:
+        if reblog["by"] == reblog["from"]:
+            header = reblog["by"] + " 🔁"
+        else:
+            header = reblog["by"] + " 🔁 " + reblog["from"]
     else:
-        header = op
+        header = reblog[
+            "by"
+        ]  # this actually contains the op's blog name if there's no reblog
 
     if image and video:
         should_render = True
@@ -173,7 +180,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         video_thumbnail=video_thumbnail,
         header=header,
         miniheader=miniheader,
-        op=op,
+        op=reblog["by"],
         desc=description,
         is_rendered=should_render,
     )
