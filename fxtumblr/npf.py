@@ -699,7 +699,6 @@ class NPFVideoBlock(NPFMediaBlock):
         elif "media" in payload and payload["media"]:
             media = NPFMediaList([payload["media"]])
             if media.media:
-                print(payload["media"])
                 original_dimensions = media.original_dimensions
                 if not original_dimensions:
                     original_dimensions = (640, 640)
@@ -1114,7 +1113,9 @@ class NPFSubmissionBlock(NPFBlock, NPFNonTextBlockMixin):
         return f'<div class="submitted-by">Submitted by <span class="submitter-username">{self.submitted_by}</span></div>'
 
     def to_markdown(self, placeholders: bool = False) -> str:
-        return f"\n\n(Submitted by {self.submitted_by})"
+        # Handled in embed.py
+        # f"\n\n(Submitted by {self.submitted_by})"
+        return ""
 
 
 class NPFLayout:
@@ -1287,7 +1288,6 @@ class NPFContent(TumblrContentBase):
                     self._truncated = True
                     break
 
-        print("make blocks in init")
         self.blocks = self._make_blocks()
 
     @property
@@ -1449,7 +1449,6 @@ class NPFContent(TumblrContentBase):
         for bl in self.blocks:
             bl.reset_annotations()
         self.blocks = self._make_blocks()
-        print("annotations reset, blocks:", self.blocks)
 
     def _assign_html_indents(self, wrap_blocks=False):
         # This is what the block is wrapped in. The actual contents of the
@@ -1776,7 +1775,6 @@ class TumblrPost(TumblrPostBase):
 
     @is_submission.setter
     def is_submission(self, value: bool):
-        print("setting is_submission to value", value)
         self._content.is_submission = value
 
     @property
@@ -1975,7 +1973,6 @@ class TumblrThread:
         is_submission = payload.get("is_submission", False)
         submitted_by = payload.get("post_author", None)
         if is_submission and submitted_by:
-            print("setting submission params")
             posts[-1].is_submission = True
             posts[-1].submitted_by = submitted_by
 

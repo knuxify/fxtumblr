@@ -78,6 +78,9 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
             post_content = "\n".join(l for l in post_content.split("\n") if l.strip())
             description += f"\n\n▪ {tpost.blog_name}:\n" + post_content
 
+    if post.get("is_submission", False):
+        description += f"\n\n(Submitted by {post.get('post_author')}"
+
     if "tags" in post and post["tags"]:
         description += "\n\n(#" + " #".join(post["tags"]) + ")"
     description = description.strip()
