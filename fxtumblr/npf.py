@@ -1105,6 +1105,18 @@ class NPFReadMoreBlock(NPFBlock, NPFNonTextBlockMixin):
         return "\n(keep reading)"
 
 
+class NPFSubmissionBlock(NPFBlock, NPFNonTextBlockMixin):
+    # Dummy "Submitted by" block for submitted posts
+    def __init__(self, submitted_by):
+        self.submitted_by = submitted_by
+
+    def to_html(self) -> str:
+        return f'<div class="submitted-by">Submitted by <span class="submitter-username">{self.submitted_by}</span></div>'
+
+    def to_markdown(self, placeholders: bool = False) -> str:
+        return f"\n\n(Submitted by {self.submitted_by})"
+
+
 class NPFLayout:
     @property
     def layout_type(self):
@@ -1264,6 +1276,8 @@ class NPFContent(TumblrContentBase):
         self._post_url = post_url
         self.unroll = unroll
         self._truncated = False
+        self.is_submission = False
+        self.submitted_by = None
         if not unroll:
             for layout_entry in self.layout:
                 if (
@@ -1273,6 +1287,7 @@ class NPFContent(TumblrContentBase):
                     self._truncated = True
                     break
 
+        print("make blocks in init")
         self.blocks = self._make_blocks()
 
     @property
@@ -1287,10 +1302,10 @@ class NPFContent(TumblrContentBase):
         return f'<p><a class="tumblr_blog" href="{self.post_url}">{self.blog_name}</a>:</p>'
 
     def _make_blocks(self) -> List[NPFBlockAnnotated]:
+        truncated = False
         if len(self.layout) == 0:
-            return self.raw_blocks
+            ret = self.raw_blocks.copy()
         else:
-            truncated = False
             ordered_block_ixs = []
             ask_ixs = set()
             ask_ixs_to_layouts = {}
@@ -1343,10 +1358,15 @@ class NPFContent(TumblrContentBase):
                 for ix in ordered_block_ixs
             ]
 
-            if truncated:
-                ret.append(NPFBlockAnnotated(base_block=NPFReadMoreBlock()))
+        if self.is_submission:
+            ret.append(
+                NPFBlockAnnotated(base_block=NPFSubmissionBlock(self.submitted_by))
+            )
 
-            return ret
+        if truncated:
+            ret.append(NPFBlockAnnotated(base_block=NPFReadMoreBlock()))
+
+        return ret
 
     @property
     def ask_blocks(self) -> List[NPFBlockAnnotated]:
@@ -1429,6 +1449,7 @@ class NPFContent(TumblrContentBase):
         for bl in self.blocks:
             bl.reset_annotations()
         self.blocks = self._make_blocks()
+        print("annotations reset, blocks:", self.blocks)
 
     def _assign_html_indents(self, wrap_blocks=False):
         # This is what the block is wrapped in. The actual contents of the
@@ -1750,6 +1771,23 @@ class TumblrPost(TumblrPostBase):
         return self._content.id
 
     @property
+    def is_submission(self):
+        return self._content.is_submission
+
+    @is_submission.setter
+    def is_submission(self, value: bool):
+        print("setting is_submission to value", value)
+        self._content.is_submission = value
+
+    @property
+    def submitted_by(self):
+        return self._content.submitted_by
+
+    @submitted_by.setter
+    def submitted_by(self, value: bool):
+        self._content.submitted_by = value
+
+    @property
     def genesis_post_id(self):
         return self._content.genesis_post_id
 
@@ -1856,6 +1894,8 @@ class TumblrThread:
         thread_info: TumblrThreadInfo,
         reblog_info: Optional[TumblrReblogInfo],
         unroll: bool,
+        is_submission: bool,
+        submitted_by: Optional[str],
     ):
         self._id = id
         self._blog_name = blog_name
@@ -1865,6 +1905,8 @@ class TumblrThread:
         self._thread_info = thread_info
         self._reblog_info = reblog_info
         self.unroll = unroll
+        self._is_submission = is_submission
+        self._submitted_by = submitted_by
 
     @property
     def posts(self):
@@ -1906,6 +1948,14 @@ class TumblrThread:
             return self._reblog_info.reblogged_by
         return ""
 
+    @property
+    def is_submission(self):
+        return self._is_submission
+
+    @property
+    def submitted_by(self):
+        return self._submitted_by
+
     @staticmethod
     def from_payload(payload: dict, unroll: bool = False) -> "TumblrThread":
         post_payloads = payload.get("trail", []) + [payload]
@@ -1922,11 +1972,26 @@ class TumblrThread:
         avatar = _get_avatar_from_payload(payload)
         thread_info = TumblrThreadInfo.from_payload(payload, posts)
         reblog_info = TumblrReblogInfo.from_payload(payload)
+        is_submission = payload.get("is_submission", False)
+        submitted_by = payload.get("post_author", None)
+        if is_submission and submitted_by:
+            print("setting submission params")
+            posts[-1].is_submission = True
+            posts[-1].submitted_by = submitted_by
 
         timestamp = payload["timestamp"]
 
         return TumblrThread(
-            id, blog_name, avatar, posts, timestamp, thread_info, reblog_info, unroll
+            id,
+            blog_name,
+            avatar,
+            posts,
+            timestamp,
+            thread_info,
+            reblog_info,
+            unroll,
+            is_submission,
+            submitted_by,
         )
 
     @staticmethod
