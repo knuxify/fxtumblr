@@ -3,6 +3,7 @@ Contains code for creating the embed.
 """
 
 import logging
+import re
 from quart import request, render_template, redirect
 
 from . import app
@@ -66,16 +67,14 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         post_content = tpost.to_markdown(
             placeholders=True, skip_single_placeholders=True
         )
-        post_content = (
-            "\n".join(l for l in post_content.split("\n") if l.strip())
-        ).strip()
+        post_content = re.sub('^(\n)+', '\n', post_content)
         if reblog["from"]:
             description += f"▪ {tpost.blog_name}:\n"
         description += post_content
     else:
         for tpost in tposts:
             post_content = tpost.to_markdown(placeholders=True)
-            post_content = "\n".join(l for l in post_content.split("\n") if l.strip())
+            post_content = re.sub('^(\n)+', '\n', post_content)
             description += f"\n\n▪ {tpost.blog_name}:\n" + post_content
 
     if post.get("is_submission", False):

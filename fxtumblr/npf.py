@@ -1650,7 +1650,7 @@ class NPFContent(TumblrContentBase):
 
         if len(self.ask_blocks) > 0:
             ret = (
-                f"{self.ask_content.asking_name} asked:\n"
+                f"💬 {self.ask_content.asking_name} asked:"
                 + "".join(
                     [
                         block.to_markdown(placeholders=placeholders)
