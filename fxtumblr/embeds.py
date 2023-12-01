@@ -75,7 +75,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         for tpost in tposts:
             post_content = tpost.to_markdown(placeholders=True)
             post_content = re.sub('^(\n)+', '\n', post_content)
-            description += f"\n\n▪ {tpost.blog_name}:\n" + post_content
+            description += f"\n\n▪ {tpost.blog_name}:\n" + post_content.lstrip()
 
     if post.get("is_submission", False):
         description += f"\n\n(Submitted by {post.get('post_author')})"
