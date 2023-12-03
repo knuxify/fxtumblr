@@ -1,14 +1,47 @@
-# see https://flask.palletsprojects.com/en/2.3.x/deploying/nginx/
+# See https://flask.palletsprojects.com/en/2.3.x/deploying/nginx/
+# Replace example.com with your instance's domain!
+
+# Uncomment the following if you want to have support for subdomains.
+# (This server clause MUST go *before* the next one, since the next clause
+# overrides the www subdomain.)
+
+# server {
+#     listen 443 ssl http2;
+#     listen [::]:433 ssl http2;
+#     server_name ~^(?<blog>.*).example.com$;
+#
+#     rewrite ^(/post/)(.*)$ https://example.com/$blog/$2 last;
+#     return 301 https://example.com$request_uri;
+#
+#     ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+#     add_header Strict-Transport-Security "max-age=15768000; includeSubDomains;" always;
+# }
 
 server {
-    listen 80;
-    server_name _;
+    listen 443 ssl http2;
+    listen [::]:433 ssl http2;
+    # Add the www. subdomain here if you intend to use subdomains (see above):
+    # server_name www.example.com example.com;
+    server_name example.com;
 
     location / {
-        proxy_pass http://127.0.0.1:8000/; # feel free to change the port
+        proxy_pass http://127.0.0.1:7878/; # feel free to change the port
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Prefix /;
     }
+
+    # SSL certificate for domain goes here:
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    add_header Strict-Transport-Security "max-age=15768000; includeSubDomains;" always;
+}
+
+server {
+    listen 80;
+	listen [::]:80;
+    server_name *.example.com;
+	return 301 https://$host$request_uri;
 }
