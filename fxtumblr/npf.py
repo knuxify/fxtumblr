@@ -1832,7 +1832,7 @@ class TumblrThreadInfo:
             ]
             for block in raw_blocks:
                 if isinstance(block, NPFTextBlock):
-                    if block.formatting:
+                    if block.formatting or block.subtype_name != "no_subtype":
                         has_formatting = True
                 elif isinstance(block, NPFLinkBlock):
                     other_blocks.append(block)
