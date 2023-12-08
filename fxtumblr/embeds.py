@@ -67,14 +67,14 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         post_content = tpost.to_markdown(
             placeholders=True, skip_single_placeholders=True
         )
-        post_content = re.sub('^(\n)+', '\n', post_content)
+        post_content = re.sub("^(\n)+", "\n", post_content)
         if reblog["from"]:
             description += f"▪ {tpost.blog_name}:\n"
         description += post_content.strip()
     else:
         for tpost in tposts:
             post_content = tpost.to_markdown(placeholders=True)
-            post_content = re.sub('^(\n)+', '\n', post_content)
+            post_content = re.sub("^(\n)+", "\n", post_content)
             description += f"\n\n▪ {tpost.blog_name}:\n" + post_content.strip()
 
     if post.get("is_submission", False):
@@ -100,17 +100,23 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     video = None
     video_thumbnail = None
     if thread_info.videos:
-        video = thread_info.videos[0][0].media[0]
-        try:
-            video_thumbnail = thread_info.videos[0][1].media[0]["url"]
-        except (IndexError, AttributeError):
-            video_thumbnail = None
-
         if len(thread_info.videos) > 1:
             should_render = True
 
-        if "video" in request.args:
-            return redirect(video["url"])
+        try:
+            video = thread_info.videos[0][0].media[0]
+        except (IndexError, AttributeError):
+            # This usually happens when the video is an embed, in which case,
+            # we wanna render instead
+            should_render = True
+        else:
+            if "video" in request.args:
+                return redirect(video["url"])
+
+            try:
+                video_thumbnail = thread_info.videos[0][1].media[0]["url"]
+            except (IndexError, AttributeError):
+                video_thumbnail = None
 
     # Get audio for thread
     if thread_info.audio:
