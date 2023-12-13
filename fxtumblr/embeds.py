@@ -172,8 +172,11 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         if video:
             description = (
                 f'(Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video)\n'
-                + description
+                + ("\n" + description)
+                if description
+                else ""
             )
+
         video = None
     else:
         should_render = False
