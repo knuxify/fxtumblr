@@ -134,7 +134,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     if len(description) > max_desc_length:
         if config["renders_enable"]:
             should_render = True
-            if not "forcedescription" in request.args:
+            if "forcedescription" not in request.args:
                 description = ""
         else:
             description = description[:max_desc_length] + truncate_placeholder
