@@ -134,6 +134,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     if len(description) > max_desc_length:
         if config["renders_enable"]:
             should_render = True
+            if not "forcedescription" in request.args:
+                description = ""
         else:
             description = description[:max_desc_length] + truncate_placeholder
 
@@ -168,7 +170,10 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         image = await render_thread(thread, force_new_render=needs_caching)
         card_type = "summary_large_image"
         if video:
-            description = f'(Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video)\n' + description
+            description = (
+                f'(Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video)\n'
+                + description
+            )
         video = None
     else:
         should_render = False
