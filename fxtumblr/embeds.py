@@ -51,7 +51,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     }
 
     # Get title and embed description (post content)
-    title = thread_info.title
     try:
         pfp = post["_fx_author_blog"]["avatar"][0]["url"]
     except (KeyError, IndexError):
@@ -132,12 +131,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         max_desc_length = 349 - len(truncate_placeholder)
 
     if len(description) > max_desc_length:
-        if config["renders_enable"]:
-            should_render = True
-            if "forcedescription" not in request.args:
-                description = ""
-        else:
-            description = description[:max_desc_length] + truncate_placeholder
+        description = description[:max_desc_length] + truncate_placeholder
+        should_render = True
 
     miniheader = f'{post["note_count"]} notes'
 
@@ -167,15 +162,11 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         card_type = "video"
 
     if config["renders_enable"] and should_render:
+        description = ""
         image = await render_thread(thread, force_new_render=needs_caching)
         card_type = "summary_large_image"
         if video:
-            description = (
-                f'(Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video)\n'
-                + ("\n" + description)
-                if description
-                else ""
-            )
+            description = f'(Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video)'
 
         video = None
     else:
