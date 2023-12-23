@@ -3,6 +3,10 @@ base_url: "https://your-fxtumblr-instance.here"
 motd: ""
 logging: false
 
+redis_host: "localhost"
+redis_port: 6379
+redis_password: "foobared"
+
 max_images_in_thread: 30
 
 cache_path: './cache.json'

@@ -9,3 +9,4 @@ nh3
 pyppeteer
 python-dateutil
 emoji
+redis

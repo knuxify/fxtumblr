@@ -27,7 +27,6 @@ def get_post(blogname: str, postid: str):
     post = None
 
     if needs_caching:
-        # TODO: handle blogname = post
         _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True, npf=True)
         if not _post or "posts" not in _post or not _post["posts"]:
             if "error" not in _post:
@@ -40,7 +39,7 @@ def get_post(blogname: str, postid: str):
             blogname = _post["broken_blog_name"]
 
         post = _post["posts"][0]
-        needs_caching = cache_post(blogname, postid, _post)
+        cache_post(blogname, postid, _post)
     else:
         _post = get_cached_post(blogname, postid)
         post = _post["posts"][0]

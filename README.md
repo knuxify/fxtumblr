@@ -24,6 +24,7 @@ You can also try out the official instance at `tpmblr.com` (or `fx.dissonant.dev
 * Copy `config.yml.sample` to `config.yml`
 * Modify config according to your needs
 * Install nginx and Hypercorn, copy nginx config (`fxtumblr.nginx`) into your sites-available, modify it to use your domainn name, `ln -s` it into sites-enabled
+* Install Redis, set it up via `/etc/redis.conf`, apply the settings to the config file
 * Run `./run.sh`
 
 ## Enabling thread rendering support
