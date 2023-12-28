@@ -11,12 +11,15 @@ import redis
 from .config import config
 
 r = redis.Redis(
-    host=config["redis_host"], port=config["redis_port"], password=config["redis_password"], decode_responses=True
+    host=config["redis_host"],
+    port=config["redis_port"],
+    password=config["redis_password"],
+    decode_responses=True,
 )
 
 
 def post_needs_caching(blogname, postid) -> bool:
-    cached = r.hgetall(f"posts:{blogname}-{postid}")
+    cached = r.hgetall(f"fxtumblr-posts:{blogname}-{postid}")
     if not cached:
         return True
     if time.time() - float(cached["cache_time"]) >= config["cache_expiry"]:
@@ -27,24 +30,24 @@ def post_needs_caching(blogname, postid) -> bool:
 def cache_post(blogname: str, postid: int, post: dict) -> None:
     """Caches a post."""
     if (
-        r.hgetall(f"posts:{blogname}-{postid}")
+        r.hgetall(f"fxtumblr-posts:{blogname}-{postid}")
         and get_cached_post(blogname, postid) == post
     ):
         return
 
     r.hset(
-        f"posts:{blogname}-{postid}",
+        f"fxtumblr-posts:{blogname}-{postid}",
         mapping={"cache_time": time.time(), "post": json.dumps(post)},
     )
 
 
 def get_cached_post(blogname: str, postid: int) -> dict:
     """Returns a cached post, as received from Tumblr's API."""
-    return json.loads(r.hgetall(f"posts:{blogname}-{postid}")["post"])
+    return json.loads(r.hgetall(f"fxtumblr-posts:{blogname}-{postid}")["post"])
 
 
 def poll_needs_caching(blogname, postid, pollid) -> bool:
-    poll = r.get(f"polls:{blogname}-{postid}-{pollid}")
+    poll = r.get(f"fxtumblr-polls:{blogname}-{postid}-{pollid}")
     if not poll:
         return True
 
@@ -73,8 +76,8 @@ def cache_poll(blogname: str, postid: int, poll: dict) -> None:
     is_over = end_time <= now
     poll["is_over"] = is_over
 
-    r.set(f"polls:{blogname}-{postid}-{pollid}", json.dumps(poll))
+    r.set(f"fxtumblr-polls:{blogname}-{postid}-{pollid}", json.dumps(poll))
 
 
 def get_cached_poll(blogname: str, postid: int, pollid: str) -> dict:
-    return json.loads(r.get(f"polls:{blogname}-{postid}-{pollid}"))
+    return json.loads(r.get(f"fxtumblr-polls:{blogname}-{postid}-{pollid}"))
