@@ -25,12 +25,12 @@ You can also try out the official instance at `tpmblr.com` (or `fx.dissonant.dev
 * Modify config according to your needs
 * Install nginx and Hypercorn, copy nginx config (`fxtumblr.nginx`) into your sites-available, modify it to use your domainn name, `ln -s` it into sites-enabled
 * Install Redis, set it up via `/etc/redis.conf`, apply the settings to the config file
-* Run `./run.sh`
+* Run `./run.sh` (and simultaneously `./run-renderer.sh` if you want rendering support - see next section).
 
 ## Enabling thread rendering support
 
 Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless version of Chrome/Chromium using the `pyppeteer` package.
 
-In order to make use of it, set `renders_enable` in your config. A copy of Chrome should be downloaded automatically on first launch.
+In order to make use of it, set `renders_enable` in your config. Then, run `./run-renderer.sh` to start the renderer process. A copy of Chrome should be downloaded automatically on first launch.
 
 You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md. You should also get a system font that has emoji suport (like Noto Emoji).

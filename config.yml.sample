@@ -6,15 +6,15 @@ logging: false
 redis_host: "localhost"
 redis_port: 6379
 redis_password: "foobared"
+cache_expiry: 43200 # 12 hours
 
 max_images_in_thread: 30
 
-cache_path: './cache.json'
-cache_expiry: 43200 # 12 hours
-
 renders_enable: false
-renders_path: "./renders"
+renders_path: "/path/to/fxtumblr/renders"
 renders_debug: false
+renders_host: localhost
+renders_port: 6500
 
 # Get these from your app's info at https://www.tumblr.com/oauth/apps
 tumblr_consumer_key: "FIXME"
