@@ -11,6 +11,9 @@ from .cache import (
     poll_needs_caching,
     cache_poll,
     get_cached_poll,
+    cache_avatar,
+    get_cached_avatar,
+    avatar_needs_caching,
 )
 from .config import config
 
@@ -70,3 +73,19 @@ def get_poll(blog_name: str, post_id: str, poll_id: str, block: dict):
         poll = get_cached_poll(blog_name, post_id, poll_id)
 
     return poll
+
+
+def get_avatar(blog_name: str):
+    """Gets the URL of the avatar for the post from Tumblr's API."""
+    needs_caching = avatar_needs_caching(blog_name)
+
+    avatar_url = None
+    if needs_caching:
+        avatar_data = tumblr.avatar(blog_name)
+        if "avatar_url" in avatar_data:
+            avatar_url = avatar_data["avatar_url"]
+        cache_avatar(blog_name, avatar_url)
+    else:
+        avatar_url = get_cached_avatar(blog_name)
+
+    return avatar_url

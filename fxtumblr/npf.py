@@ -17,7 +17,7 @@ import emoji
 import re
 from urllib.parse import urlparse
 
-from .tumblr import tumblr, get_poll
+from .tumblr import tumblr, get_poll, get_avatar
 
 strip_tags = re.compile("<.*?>")
 
@@ -36,9 +36,7 @@ def _get_avatar_from_payload(post_payload: dict) -> str:
             avatar_media = NPFMediaList(post_payload["blog"]["avatar"])
             avatar = avatar_media._pick_one_size(32)["url"]
         else:
-            avatar_data = tumblr.avatar(post_payload["blog"]["name"])
-            if "avatar_url" in avatar_data:
-                avatar = avatar_data["avatar_url"]
+            avatar_data = get_avatar(post_payload["blog"]["name"])
     return avatar
 
 
