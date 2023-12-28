@@ -23,16 +23,9 @@ async def render_thread(blogname: str, post_id: int, modifiers: list = []) -> bo
         writer.write(bytes(json.dumps(to_send), "utf-8"))
         await writer.drain()
     except:
+        print("Error on render sendoff!")
         traceback.print_exc()
-        self.disconnect()
-        self.connect()
-        try:
-            writer.write(bytes(json.dumps(to_send), "utf-8"))
-            await writer.drain()
-        except:
-            print("Error on render sendoff!")
-            traceback.print_exc()
-            return False
+        return False
 
     while True:
         data = await reader.read(1024)
