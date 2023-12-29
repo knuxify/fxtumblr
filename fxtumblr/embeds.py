@@ -11,7 +11,8 @@ from .cache import post_needs_caching
 from .config import APP_NAME, BASE_URL, config
 from .npf import TumblrThread
 
-# from .render import render_thread
+from fxtumblr_render.paths import filename_for
+
 from .tumblr import get_post
 
 if config.get("logging", False):
@@ -164,7 +165,14 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     if config["renders_enable"] and should_render:
         description = ""
-        # image = await render_thread(thread, force_new_render=needs_caching)
+        modifiers = []
+        if unroll:
+            modifiers.append("unroll")
+        image = (
+            BASE_URL
+            + "/renders/"
+            + filename_for(blogname, postid, extension="png", modifiers=modifiers)
+        )
         card_type = "summary_large_image"
         if video:
             description = f'(Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video)'
