@@ -1,6 +1,5 @@
 import asyncio
 import json
-from uuid import uuid4
 import traceback
 
 from fxtumblr.config import config
@@ -11,7 +10,7 @@ async def render_thread(blogname: str, post_id: int, modifiers: list = []) -> bo
         config.get("renders_host", "localhost"), int(config.get("renders_port", 6500))
     )
 
-    work_id = str(uuid4())
+    work_id = f"{blogname}-{post_id}"
     to_send = {
         "blogname": blogname,
         "post_id": post_id,
