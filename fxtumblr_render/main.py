@@ -22,7 +22,9 @@ class RenderServer:
             self.workers.append(w)
 
         server = await asyncio.start_server(
-            self.handle_request, config.get("renders_host", "localhost"), int(config.get("renders_port", 6500))
+            self.handle_request,
+            config.get("renders_host", "localhost"),
+            int(config.get("renders_port", 6500)),
         )
         print("Render server ready.")
         async with server:
