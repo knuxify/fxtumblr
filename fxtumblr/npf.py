@@ -36,7 +36,7 @@ def _get_avatar_from_payload(post_payload: dict) -> str:
             avatar_media = NPFMediaList(post_payload["blog"]["avatar"])
             avatar = avatar_media._pick_one_size(32)["url"]
         else:
-            avatar_data = get_avatar(post_payload["blog"]["name"])
+            avatar = get_avatar(post_payload["blog"]["name"])
     return avatar
 
 
