@@ -68,6 +68,8 @@ class RenderServer:
                 post = get_post(blogname, post_id)
                 if not post:
                     raise ValueError
+                elif "errors" in post and post["errors"]:
+                    raise ValueError("Post has error:", post)
                 thread = TumblrThread.from_payload(post, unroll=("unroll" in modifiers))
             except:  # noqa: E722
                 print(
