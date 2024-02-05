@@ -605,8 +605,6 @@ class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
         data: Optional[dict] = {},
         attribution: Optional[dict] = {},
     ):
-        if not media and not embed_html:
-            raise ValueError("Either media or embed_html must be provided")
         self._media = NPFMediaList(media)
         self._alt_text = alt_text
         self._embed_html = embed_html
