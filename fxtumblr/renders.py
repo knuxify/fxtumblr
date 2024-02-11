@@ -24,10 +24,16 @@ async def get_render(filename: str):
 
     if not os.path.exists(path) or config.get("renders_debug", False):
         render_succeeded = False
-        async with asyncio.timeout(10):
-            render_succeeded = await render_thread(
-                path_split["blogname"], path_split["post_id"], path_split["modifiers"]
-            )
+        try:
+            async with asyncio.timeout(12):  # slightly longer than renderer itself
+                render_succeeded = await render_thread(
+                    path_split["blogname"],
+                    path_split["post_id"],
+                    path_split["modifiers"],
+                )
+        except TimeoutError:
+            render_succeeded = False
+
         if not render_succeeded:
             return "", 404
 

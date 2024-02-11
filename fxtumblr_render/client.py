@@ -52,7 +52,12 @@ async def render_thread(blogname: str, post_id: int, modifiers: list = []) -> bo
             await asyncio.sleep(0.5)
             if work_id not in _queue:
                 break
-        data = {"work_id": work_id, "return": os.path.exists(path_to(blogname, post_id, extension="png", modifiers=modifiers))}
+        data = {
+            "work_id": work_id,
+            "return": os.path.exists(
+                path_to(blogname, post_id, extension="png", modifiers=modifiers)
+            ),
+        }
 
     response = data.get("return", False)
 

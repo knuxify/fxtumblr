@@ -73,24 +73,41 @@ async def render_thread(
         with open(target_html_path, "w") as target_html:
             target_html.write(rendered_html)
 
+        ret = False
+
         async def do_render(target_filename: str):
+            ret = False
+
             page = await browser.newPage()
-            async with asyncio.timeout(10):
-                await page.setViewport({"width": 540, "height": 100})
-                await page.goto(f"file://{target_html_path}")
-                await page.screenshot(
-                    {
-                        "path": os.path.join(RENDERS_PATH, target_filename),
-                        "fullPage": True,
-                        "omitBackground": True,
-                    }
+            try:
+                async with asyncio.timeout(10):
+                    await page.setViewport({"width": 540, "height": 100})
+                    await page.goto(f"file://{target_html_path}")
+                    await page.screenshot(
+                        {
+                            "path": os.path.join(RENDERS_PATH, target_filename),
+                            "fullPage": True,
+                            "omitBackground": True,
+                        }
+                    )
+            except (TimeoutError, asyncio.exceptions.CancelledError):
+                print(f"Timed out while rendering post: {thread.blog_name}-{thread.id}")
+            except:
+                print(
+                    f"Exception while rendering {blogname}-{post_id} (work ID: {work_id}):"
                 )
+                traceback.print_exc()
+            else:
+                ret = True
+
             await page.close()
 
+            return ret
+
         try:
-            await do_render(target_filename)
+            ret = await do_render(target_filename)
         except:  # noqa: E722
             await setup_browser()
-            await do_render(target_filename)
+            ret = await do_render(target_filename)
 
-    return True
+    return ret
