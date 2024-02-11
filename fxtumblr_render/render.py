@@ -92,9 +92,9 @@ async def render_thread(
                     )
             except (TimeoutError, asyncio.exceptions.CancelledError):
                 print(f"Timed out while rendering post: {thread.blog_name}-{thread.id}")
-            except:
+            except:  # noqa: E722
                 print(
-                    f"Exception while rendering {blogname}-{post_id} (work ID: {work_id}):"
+                    f"Exception while rendering {thread.blog_name}-{thread.id}:"
                 )
                 traceback.print_exc()
             else:
@@ -106,6 +106,7 @@ async def render_thread(
 
         try:
             ret = await do_render(target_filename)
+            assert ret is True
         except:  # noqa: E722
             await setup_browser()
             ret = await do_render(target_filename)
