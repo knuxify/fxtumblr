@@ -62,6 +62,8 @@ async def render_thread(
     target_filename_html = filename_for(thread.blog_name, thread.id, "html", modifiers)
     target_html_path = os.path.join(RENDERS_PATH, target_filename_html)
 
+    ret = True
+
     if (
         config.get("renders_debug", False)
         or force_new_render
