@@ -17,6 +17,8 @@ async def render_thread(blogname: str, post_id: int, modifiers: list = []) -> bo
     )
 
     work_id = f"{blogname}-{post_id}"
+    if modifiers:
+        work_id += f"-{','.join(sorted(modifiers))}"
     if work_id not in _queue:
         _queue.add(work_id)
 
