@@ -32,12 +32,15 @@ class RenderServer:
 
     async def on_exit(self):
         print("Exiting...")
-        for w in self.workers:
-            w.cancel()
-            with suppress(asyncio.CancelledError):
-                await w
+        try:
+            for w in self.workers:
+                w.cancel()
+                with suppress(asyncio.CancelledError):
+                    await w
 
-        await self.queue.join()
+            await self.queue.join()
+        except AttributeError:
+            pass
         await close_browser()
 
     async def handle_request(self, reader, writer):
