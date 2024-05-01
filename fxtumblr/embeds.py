@@ -5,13 +5,14 @@ Contains code for creating the embed.
 import logging
 import re
 from quart import request, render_template, redirect
+import os.path
 
 from .app import app
 from .cache import post_needs_caching
 from .config import APP_NAME, BASE_URL, config
 from .npf import TumblrThread
 
-from fxtumblr_render.paths import filename_for
+from fxtumblr_render.paths import filename_for, path_to
 
 from .tumblr import get_post
 
@@ -92,7 +93,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
             target_width = thread_info.images[0].original_dimensions[0]
         else:
             target_width = 640  # pick whatever
-        image = thread_info.images[0]._pick_one_size(target_width)["url"]
+        image = thread_info.images[0]._pick_one_size(target_width)
 
         if len(thread_info.images) > 1:
             should_render = True
@@ -168,11 +169,12 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         modifiers = []
         if unroll:
             modifiers.append("unroll")
-        image = (
+        render_path = (
             BASE_URL
             + "/renders/"
             + filename_for(blogname, postid, extension="png", modifiers=modifiers)
         )
+        image = {"url": render_path, "width": 0, "height": 0}
         card_type = "summary_large_image"
         if video:
             description = f'(Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video)'
@@ -235,14 +237,18 @@ async def parse_error(info: dict, post_url: str = None):
 @app.route("/oembed.json")
 async def oembed_json():
     out = {
-        "type": request.args.get("ttype", None),
+        "type": request.args.get("type", "link"),
         "version": "1.0",
         "provider_name": "fxtumblr",
         "provider_url": "https://github.com/knuxify/fxtumblr",
-        "title": request.args.get("op", None),
-        "author_name": request.args.get("desc", None),
-        "author_url": request.args.get("link", None),
+        "title": request.args.get("title", None),
+        "author_name": request.args.get("author_name", None),
+        "author_url": request.args.get("author_url", None),
     }
+
+    for prop in ("url", "width", "height"):
+        if prop in request.args:
+            out[prop] = request.args[prop]
 
     if "motd" in config and config["motd"]:
         out["provider_name"] += " - " + config.get("motd", "")

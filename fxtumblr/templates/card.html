@@ -18,8 +18,10 @@
     {%- endif -%}
 
 	{%- if image -%}
-    	<meta name="twitter:image" content="{{ image }}" />
-	    <meta property="og:image" content="{{ image }}" />
+    	<meta name="twitter:image" content="{{ image.url }}" />
+	    <meta property="og:image" content="{{ image.url }}" />
+		{% if image.width %}<meta property="og:image:width" content="{{ image.width }}" />{% endif %}
+		{% if image.height %}<meta property="og:image:height" content="{{ image.height }}" />{% endif %}
 	{%- elif video_thumbnail -%}
     	<meta name="twitter:image" content="{{ video_thumbnail }}" />
 	    <meta property="og:image" content="{{ video_thumbnail }}" />
@@ -47,7 +49,31 @@
 
     <meta property="og:description" content="{{ desc }}" />
 
-    <link rel="alternate" href="{{ base_url }}/oembed.json?{% if video %}desc={{ desc | urlencode }}&op={{ header | urlencode }}%20%28{{ miniheader | urlencode }}%29{% else %}desc={{ miniheader | urlencode }}&op={{ header | urlencode }}{% endif %}&link={{ posturl | urlencode }}&ttype=video" type="application/json+oembed" title="{{ miniheader }}">
+	{% if video %}
+		<link rel="alternate" href="{{ base_url }}/oembed.json{#
+			#}?author_name={{ desc | urlencode }}{#
+			#}&title={{ header | urlencode }}%20%28{{ miniheader | urlencode }}%29{#
+			#}&author_url={{ posturl | urlencode }}{#
+			#}&type=video{#
+			#}&url={{ video.url }}{#
+			#}&width={{ video.width }}{#
+			#}&height={{ video.height }}" type="application/json+oembed" title="{{ miniheader }}">
+	{% elif image %}
+		<link rel="alternate" href="{{ base_url }}/oembed.json?{#
+			#}author_name={{ miniheader | urlencode }}{#
+			#}&title={{ header | urlencode }}{#
+			#}&author_url={{ posturl | urlencode }}{#
+			#}&type=photo{#
+			#}&url={{ image.url }}{#
+			#}{% if image.width %}&width={{ image.width }}{% endif %}{#
+			#}{% if image.height %}&height={{ image.height }}{% endif %}" type="application/json+oembed" title="{{ miniheader }}">
+	{% else %}
+		<link rel="alternate" href="{{ base_url }}/oembed.json?{#
+			#}author_name={{ miniheader | urlencode }}{#
+			#}&title={{ header | urlencode }}{#
+			#}&author_url={{ posturl | urlencode }}{#
+			#}&type=link" type="application/json+oembed" title="{{ miniheader }}">
+	{% endif %}
     <meta http-equiv = "refresh" content = "0; url = {{ posturl }}" />
 
 	<style>
