@@ -19,8 +19,9 @@ You can also try out the official instance at `tpmblr.com` (or `fx.dissonant.dev
 ## Setting up for self-hosting
 
 * Install Python 3
-* Create a venv for the packages: `python3 -m venv venv`, then `. venv/bin/activate`
-* Get all the dependencies with `pip3 install -r requirements.txt`
+* Create a venv for the packages:
+  * The preferred way to do this is to use Poetry - install Poetry, and run the later shell scripts through `poetry run ./run-xxx.sh`
+  * If you don't want to use Poetry, run `python3 -m venv venv`, then `. venv/bin/activate`; then get all the dependencies with `pip3 install -r requirements.txt`
 * Copy `config.yml.sample` to `config.yml`
 * Modify config according to your needs
 * Install nginx and Hypercorn, copy nginx config (`fxtumblr.nginx`) into your sites-available, modify it to use your domainn name, `ln -s` it into sites-enabled
