@@ -42,6 +42,10 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     if "unroll" in request.args:
         unroll = True
 
+    dark = False
+    if "dark" in request.args:
+        dark = True
+
     thread = TumblrThread.from_payload(post, unroll=unroll)
     thread_info = thread.thread_info
 
@@ -169,6 +173,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         modifiers = []
         if unroll:
             modifiers.append("unroll")
+        if dark:
+            modifiers.append("dark")
         render_path = (
             BASE_URL
             + "/renders/"

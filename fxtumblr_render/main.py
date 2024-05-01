@@ -65,7 +65,7 @@ class RenderServer:
             writer, blogname, post_id, modifiers, work_id = await self.queue.get()
             ret = False
 
-            print(f"[{name}] Rendering post {blogname}-{post_id} (work ID: {work_id})")
+            print(f"[{name}] Rendering post {blogname}-{post_id} with modifiers {modifiers} (work ID: {work_id})")
 
             try:
                 post = get_post(blogname, post_id)
