@@ -31,6 +31,6 @@ You can also try out the official instance at `tpmblr.com` (or `fx.dissonant.dev
 
 Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless version of Chrome/Chromium using the `pyppeteer` package.
 
-In order to make use of it, set `renders_enable` in your config. Then, run `./run-renderer.sh` to start the renderer process. A copy of Chrome should be downloaded automatically on first launch.
+In order to make use of it, set `renders_enable` in your config. Then, run `./run-renderer.sh` to start the renderer process. A copy of Chrome will be downloaded automatically on first launch; you'll probably want to replace it with your own system-wide installation of Chromium. To do so, take the path it printed (` $HOME/.local/share/pyppeteer/local-chromium/xxxxxxx`), from that folder remove `chrome-linux/chrome` and replace it with a symlink to `/usr/bin/chromium`: `ln -s /usr/bin/chromium HOME/.local/share/pyppeteer/local-chromium/xxxxxxx/chrome-linux/chrome`.
 
 You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md. You should also get a system font that has emoji suport (like Noto Emoji).
