@@ -527,14 +527,11 @@ div + .poll-block, figure + .poll-block { margin-top: 15px; }
 .attribution-go-icon { float: right; }
 
 .poll-over .poll-answer {
-	background-color: rgba(var(--black), attr(poll-answers %));
-}
-.poll-over .poll-answer {
 	position: relative;
 	border-radius: 8px;
 	border: none;
 	background-color: rgba(var(--black), .07);
-	color: #000;
+	color: rgb(var(--black));
 	display: flex; align-items: center;
 	text-align: left;
 }
