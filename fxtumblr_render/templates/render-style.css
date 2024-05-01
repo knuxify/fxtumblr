@@ -443,6 +443,10 @@ div + .poll-block, figure + .poll-block { margin-top: 15px; }
 	overflow-x: hidden;
 }
 
+.poll-block .poll-answer .poll-answer-percentage {
+	font-weight: 400;
+}
+
 .poll-block .poll-meta {
 	color: rgba(var(--black), .65);
 	text-align: center;
