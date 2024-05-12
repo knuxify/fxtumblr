@@ -10,3 +10,4 @@ pyppeteer
 python-dateutil
 emoji
 redis
+aiosqlite
