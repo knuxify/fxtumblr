@@ -1348,9 +1348,11 @@ class NPFContent(TumblrContentBase):
                 extras = [ix for ix in range(len(self.raw_blocks)) if ix not in ask_ixs]
                 ordered_block_ixs.extend(extras)
             ret = [
-                self.raw_blocks[ix].as_ask_block(ask_layout=ask_ixs_to_layouts[ix])
-                if ix in ask_ixs
-                else self.raw_blocks[ix]
+                (
+                    self.raw_blocks[ix].as_ask_block(ask_layout=ask_ixs_to_layouts[ix])
+                    if ix in ask_ixs
+                    else self.raw_blocks[ix]
+                )
                 for ix in ordered_block_ixs
             ]
 

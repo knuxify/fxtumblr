@@ -3,6 +3,9 @@ base_url: "https://your-fxtumblr-instance.here"
 motd: ""
 logging: false
 
+statistics: false
+stats_db: "stats.db"
+
 redis_host: "localhost"
 redis_port: 6379
 redis_password: "foobared"

@@ -20,9 +20,15 @@ pyppeteer = "^2.0.0"
 python-dateutil = "^2.9.0.post0"
 emoji = "^2.11.1"
 redis = "^5.0.4"
+aiosqlite = "^0.20.0"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^7.0.0"
+
+
+[tool.poetry.group.statstool.dependencies]
+matplotlib = "^3.8.4"
+
 
 [build-system]
 requires = ["poetry-core"]

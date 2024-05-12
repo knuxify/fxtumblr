@@ -1,6 +1,7 @@
 """
 Contains code for parsing the config file.
 """
+
 import yaml
 
 with open("config.yml") as config_file:

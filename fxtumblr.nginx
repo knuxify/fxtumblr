@@ -1,6 +1,14 @@
 # See https://flask.palletsprojects.com/en/2.3.x/deploying/nginx/
 # Replace example.com with your instance's domain!
 
+# Access log condition: don't log if status code is 2xx or 3xx
+# (for privacy reasons). If you need logging, setting logging: true
+# in the config is usually enough.
+map $status $loggable {
+    ~^[23]  0;
+    default 1;
+}
+
 # Uncomment the following if you want to have support for subdomains.
 # (This server clause MUST go *before* the next one, since the next clause
 # overrides the www subdomain.)
@@ -16,6 +24,8 @@
 #     ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
 #     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
 #     add_header Strict-Transport-Security "max-age=15768000; includeSubDomains;" always;
+#
+#     access_log /var/log/nginx/fxtumblr-access.log combined if=$loggable;
 # }
 
 server {
@@ -37,11 +47,15 @@ server {
     ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
     add_header Strict-Transport-Security "max-age=15768000; includeSubDomains;" always;
+
+    access_log /var/log/nginx/fxtumblr-access.log combined if=$loggable;
 }
 
 server {
     listen 80;
-	listen [::]:80;
+    listen [::]:80;
     server_name *.example.com;
-	return 301 https://$host$request_uri;
+    return 301 https://$host$request_uri;
+
+    access_log /var/log/nginx/fxtumblr-access.log combined if=$loggable;
 }

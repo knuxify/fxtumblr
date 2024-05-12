@@ -9,6 +9,7 @@ from fxtumblr.npf import TumblrThread
 
 from .render import setup_browser, close_browser, render_thread
 
+LOG_ENABLED = config.get("logging", False)
 
 class RenderServer:
     async def main_loop(self):
@@ -65,7 +66,8 @@ class RenderServer:
             writer, blogname, post_id, modifiers, work_id = await self.queue.get()
             ret = False
 
-            print(f"[{name}] Rendering post {blogname}-{post_id} with modifiers {modifiers} (work ID: {work_id})")
+            if LOG_ENABLED:
+                print(f"[{name}] Rendering post {blogname}-{post_id} with modifiers {modifiers} (work ID: {work_id})")
 
             try:
                 post = get_post(blogname, post_id)
@@ -76,7 +78,7 @@ class RenderServer:
                 thread = TumblrThread.from_payload(post, unroll=("unroll" in modifiers))
             except:  # noqa: E722
                 print(
-                    f"[{name}] Exception while fetching {blogname}-{post_id} (work ID: {work_id}):"
+                    f"[{name}] Exception while fetching {blogname}-{post_id} with modifiers {modifiers} (work ID: {work_id}):"
                 )
                 traceback.print_exc()
             else:
@@ -87,13 +89,14 @@ class RenderServer:
                         ret = await render_thread(thread, modifiers=modifiers)
                     except:  # noqa: E722
                         print(
-                            f"[{name}] Exception while rendering {blogname}-{post_id} (work ID: {work_id}):"
+                            f"[{name}] Exception while rendering {blogname}-{post_id} with modifiers {modifiers} (work ID: {work_id}):"
                         )
                         traceback.print_exc()
 
-            print(
-                f"[{name}] Result for {blogname}-{post_id} (work ID: {work_id}): {ret}"
-            )
+            if LOG_ENABLED:
+                print(
+                    f"[{name}] Result for {blogname}-{post_id} with modifiers {modifiers} (work ID: {work_id}): {ret}"
+                )
 
             writer.write(
                 bytes(json.dumps({"work_id": work_id, "return": ret}), "utf-8")

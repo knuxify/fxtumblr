@@ -21,3 +21,6 @@ build/
 renders
 
 cache.json
+
+stats.db
+stats.py

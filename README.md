@@ -16,11 +16,28 @@ Simply replace `www.tumblr.com` in your URL with the URL of the fxtumblr instanc
 
 You can also try out the official instance at `tpmblr.com` (or `fx.dissonant.dev`). For Discord users - you can post a tumblr.com link, then in the next message type `s/u/p`; this will automatically replace `tumblr.com` in the previous message with `tpmblr.com`.
 
+## Privacy
+
+The only information used by fxtumblr is the post URL that is passed to it; no other data is collected by the software itself. By default, this data is not logged anywhere, but there are two optional mechanisms available to set in the `config.yml` file by the instance admin:
+
+- `logging` prints a message with the post URL and modifiers every time a post is requested. This is mostly meant for debugging purposes, and should generally not be used in production (except for figuring out issues with the server). **Note that in the event of a failure, the post that caused the failure is always printed, even if this option is disabled.**
+- `statistics` enabled anonymous statistics, which are saved in the cache and can be read by the instance admin using the `statstool.py` script.
+
+For anonymous statistics, the following information is logged:
+
+- The time of the request, rounded down to every 10 minutes (so e.g. 16:24 becomes 16:20);
+- The modifiers passed to the post ("unroll", "dark");
+- Hash (sha256) of the OP's blog name and post ID. This hash **cannot** be reversed back into the original URL.
+
+Full disclosure - **the official instance at tpmblr.com has anonymous statistics enabled**. These are used only to keep traffic under control and act accordingly in the event of sudden failure or an increase in requests.
+
+Admins may still be able to track requests, e.g. through nginx access logs (disabled on tpmblr.com) or by checking the renders folder.
+
 ## Setting up for self-hosting
 
 * Install Python 3
 * Create a venv for the packages:
-  * The preferred way to do this is to use Poetry - install Poetry, and run the later shell scripts through `poetry run ./run-xxx.sh`
+  * The preferred way to do this is to use Poetry - install Poetry, run `poetry install --no-root` and run the later shell scripts through `poetry run ./run-xxx.sh`
   * If you don't want to use Poetry, run `python3 -m venv venv`, then `. venv/bin/activate`; then get all the dependencies with `pip3 install -r requirements.txt`
 * Copy `config.yml.sample` to `config.yml`
 * Modify config according to your needs

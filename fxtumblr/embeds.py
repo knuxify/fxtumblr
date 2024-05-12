@@ -2,7 +2,9 @@
 Contains code for creating the embed.
 """
 
+import asyncio
 import logging
+import traceback
 import re
 from quart import request, render_template, redirect
 import os.path
@@ -10,23 +12,61 @@ import os.path
 from .app import app
 from .cache import post_needs_caching
 from .config import APP_NAME, BASE_URL, config
+from .stats import register_hit
 from .npf import TumblrThread
 
 from fxtumblr_render.paths import filename_for, path_to
 
 from .tumblr import get_post
 
-if config.get("logging", False):
-    logging.basicConfig(
-        level=logging.INFO, format="[%(asctime)s] %(name)s:%(levelname)s %(message)s"
-    )
+LOG_ENABLED = config.get("logging", False)
+STATS_ENABLED = config.get("statistics", False)
+
+logging.basicConfig(
+    level=logging.INFO, format="[%(asctime)s] %(name)s:%(levelname)s %(message)s"
+)
+
+stats_tasks = set()
 
 
 @app.route("/<string:blogname>/<int:postid>")
 @app.route("/<string:blogname>/<int:postid>/<string:summary>")
-async def generate_embed(blogname: str, postid: int, summary: str = None):
-    app.logger.info(f"parsing post: https://www.tumblr.com/{blogname}/{postid}")
+async def generate_embed_route(blogname: str, postid: int, summary: str = None):
+    global stats_tasks
 
+    if LOG_ENABLED:
+        app.logger.info(f"parsing post: https://www.tumblr.com/{blogname}/{postid}")
+
+    if STATS_ENABLED:
+        modifiers = []
+        for mod in ("unroll", "dark"):
+            if mod in request.args:
+                modifiers.append(mod)
+
+    try:
+        ret = await generate_embed(blogname, postid, summary)
+    except:
+        app.logger.info(
+            f"Failed to parse post https://www.tumblr.com/{blogname}/{postid}:"
+        )
+        traceback.printexc()
+        if STATS_ENABLED:
+            task = asyncio.create_task(
+                register_hit(blogname, postid, modifiers, failed=True)
+            )
+            stats_tasks.add(task)
+            task.add_done_callback(stats_tasks.discard)
+    else:
+        if STATS_ENABLED:
+            task = asyncio.create_task(
+                register_hit(blogname, postid, modifiers, failed=False)
+            )
+            stats_tasks.add(task)
+            task.add_done_callback(stats_tasks.discard)
+        return ret
+
+
+async def generate_embed(blogname: str, postid: int, summary: str = None):
     should_render = False
     needs_caching = post_needs_caching(blogname, postid)
     post = get_post(blogname, postid)
@@ -36,6 +76,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         post_tumblr_url += f"/{summary}"
 
     if "error" in post:
+        if LOG_ENABLED:
+            app.logger.info(f"parsing post: https://www.tumblr.com/{blogname}/{postid}")
         return await parse_error(post, post_url=post_tumblr_url)
 
     unroll = False
@@ -168,9 +210,10 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     elif video and not image:
         card_type = "video"
 
+    modifiers = []
+
     if config["renders_enable"] and should_render:
         description = ""
-        modifiers = []
         if unroll:
             modifiers.append("unroll")
         if dark:
@@ -189,7 +232,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     else:
         should_render = False
 
-    app.logger.info(f"parsed post {blogname}/{postid}, rendered: {should_render}")
+    if LOG_ENABLED:
+        app.logger.info(f"parsed post {blogname}/{postid}, rendered: {should_render}")
 
     return await render_template(
         "card.html",
