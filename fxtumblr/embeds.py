@@ -304,3 +304,9 @@ async def oembed_json():
         out["provider_name"] += " - " + config.get("motd", "")
 
     return out
+
+# Without the favicon in place, 404 requests from browsers get logged.
+# This allows us to use Tumblr's favicon without bundling it in the repo.
+@app.route("/favicon.ico")
+async def favicon():
+    return redirect("https://www.tumblr.com/favicon.ico")
