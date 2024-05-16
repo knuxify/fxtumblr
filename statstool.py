@@ -44,6 +44,11 @@ plot_parser.add_argument(
     help="Instead of generating plot, print the data",
     action="store_true",
 )
+plot_parser.add_argument(
+    "-m",
+    "--modifiers",
+    help="Only print cases where the provided modifiers (comma-separated) are used"
+)
 
 args = parser.parse_args()
 try:
@@ -79,6 +84,10 @@ if mode == "plot":
     start_date_epoch = int(start_date.strftime("%s"))
     end_date_epoch = int((end_date + datetime.timedelta(days=1)).strftime("%s")) - 1
 
+    modifiers = []
+    if args.modifiers:
+        modifiers = args.modifiers.split(",")
+
     hit_tuple = namedtuple("hit_tuple", "id time post modifiers failed")
     hits = []
     data = {}
@@ -99,6 +108,14 @@ if mode == "plot":
                 hit_parsed = hit_tuple(*hit)._asdict()
                 if args.unique and hit_parsed["post"] in posts:
                     continue
+                if modifiers:
+                    skip = False
+                    for mod in modifiers:
+                        if mod not in hit_parsed["modifiers"].split(","):
+                            skip = True
+                            break
+                    if skip:
+                        continue
                 posts.add(hit_parsed["post"])
                 hits_for_day.append(hit_parsed)
 
