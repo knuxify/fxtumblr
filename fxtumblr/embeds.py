@@ -49,7 +49,7 @@ async def generate_embed_route(blogname: str, postid: int, summary: str = None):
         app.logger.info(
             f"Failed to parse post https://www.tumblr.com/{blogname}/{postid}:"
         )
-        traceback.printexc()
+        traceback.print_exc()
         if STATS_ENABLED:
             task = asyncio.create_task(
                 register_hit(blogname, postid, modifiers, failed=True)
