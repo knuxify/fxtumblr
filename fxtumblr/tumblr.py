@@ -63,6 +63,7 @@ def get_poll(blog_name: str, post_id: str, poll_id: str, block: dict):
             poll = tumblr.send_api_request(
                 "get", f"/v2/polls/{blog_name}/{post_id}/{poll_id}/results"
             )
+            assert "errors" not in poll
             assert "error" not in poll
         except:
             return None
