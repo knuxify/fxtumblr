@@ -24,6 +24,8 @@ tumblr = pytumblr.TumblrRestClient(
     None,
 )
 
+DEFAULT_AVATAR = "https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png"
+
 
 def get_post(blogname: str, postid: str):
     needs_caching = post_needs_caching(blogname, postid)
@@ -85,6 +87,8 @@ def get_avatar(blog_name: str):
         avatar_data = tumblr.avatar(blog_name)
         if "avatar_url" in avatar_data:
             avatar_url = avatar_data["avatar_url"]
+        if not avatar_url:
+            avatar_url = DEFAULT_AVATAR
         cache_avatar(blog_name, avatar_url)
     else:
         avatar_url = get_cached_avatar(blog_name)

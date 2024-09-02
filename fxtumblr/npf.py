@@ -17,10 +17,9 @@ import emoji
 import re
 from urllib.parse import urlparse
 
-from .tumblr import tumblr, get_poll, get_avatar
+from .tumblr import tumblr, get_poll, get_avatar, DEFAULT_AVATAR
 
 strip_tags = re.compile("<.*?>")
-
 
 def _get_blogname_from_payload(post_payload):
     """retrieves payload --> broken_blog_name, or payload --> blog --> name"""
@@ -30,13 +29,15 @@ def _get_blogname_from_payload(post_payload):
 
 
 def _get_avatar_from_payload(post_payload: dict) -> str:
-    avatar = "https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png"
+    avatar = None
     if "blog" in post_payload:
         if "avatar" in post_payload["blog"]:
             avatar_media = NPFMediaList(post_payload["blog"]["avatar"])
             avatar = avatar_media._pick_one_size(32)["url"]
         else:
             avatar = get_avatar(post_payload["blog"]["name"])
+    if not avatar:
+        avatar = DEFAULT_AVATAR
     return avatar
 
 

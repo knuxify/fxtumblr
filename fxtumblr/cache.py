@@ -96,16 +96,16 @@ def cache_avatar(blogname: str, avatar_url: str) -> None:
     """Caches a avatar."""
     if (
         r.hgetall(f"fxtumblr-avatars:{blogname}")
-        and get_cached_avatar(blogname) == avatar_url
+        and get_cached_avatar(blogname) == (avatar_url or "")
     ):
         return
 
     r.hset(
         f"fxtumblr-avatars:{blogname}",
-        mapping={"cache_time": time.time(), "avatar_url": avatar_url},
+        mapping={"cache_time": time.time(), "avatar_url": avatar_url or ""},
     )
 
 
 def get_cached_avatar(blogname: str) -> dict:
     """Returns a cached avatar, as received from Tumblr's API."""
-    return r.hgetall(f"fxtumblr-avatars:{blogname}")["avatar_url"]
+    return r.hgetall(f"fxtumblr-avatars:{blogname}")["avatar_url"] or None
