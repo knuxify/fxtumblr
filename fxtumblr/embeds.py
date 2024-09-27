@@ -290,7 +290,7 @@ async def oembed_json():
         "type": request.args.get("type", "link"),
         "version": "1.0",
         "provider_name": "fxtumblr",
-        "provider_url": "https://github.com/knuxify/fxtumblr",
+        "provider_url": config.get("motd_url", "https://github.com/knuxify/fxtumblr"),
         "title": request.args.get("title", None),
         "author_name": request.args.get("author_name", None),
         "author_url": request.args.get("author_url", None),
