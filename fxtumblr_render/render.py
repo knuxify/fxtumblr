@@ -32,7 +32,7 @@ async def setup_browser() -> None:
             await browser.close()
         except:  # noqa: E722
             pass
-    browser = await pyppeteer.launch(executablePath=config.get("render_chromium_path", "/usr/bin/chromium"))
+    browser = await pyppeteer.launch(executablePath=config.get("render_chromium_path", "/usr/bin/chromium"), args=["--headless=old"])
     # keep alive by leaving blank page open
     await browser.newPage()
 
