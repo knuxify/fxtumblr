@@ -54,7 +54,7 @@ server {
 server {
     listen 80;
     listen [::]:80;
-    server_name *.example.com;
+    server_name *.example.com example.com;
     return 301 https://$host$request_uri;
 
     access_log /var/log/nginx/fxtumblr-access.log combined if=$loggable;
