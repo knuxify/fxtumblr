@@ -6,35 +6,42 @@ Statistic counting code.
 from .config import config
 
 import aiosqlite
+import asyncio
 import time
 import datetime
 from typing import List
+import traceback
 import hashlib
 import uuid
 
 STATS_DB = config.get("stats_db", "stats.db")
+STATS_LOCK = asyncio.Lock()
 TABLE_EXISTS = False
 
 def hash_post(blogname: str, postid: str):
     return hashlib.sha256(str.encode(f"{blogname}-{postid}")).hexdigest()
 
 async def register_hit(blogname: str, postid: str, modifiers: List[str] = [], failed: bool = False):
-    now = datetime.datetime.now()
-    # Round time down to closest 10 minutes
-    now = now.replace(minute=((now.minute // 10) * 10), second=0)
+    async with STATS_LOCK:
+        now = datetime.datetime.now()
+        # Round time down to closest 10 minutes
+        now = now.replace(minute=((now.minute // 10) * 10), second=0)
 
-    data = {
-        "id": str(uuid.uuid4()),
-        "time": int(now.timestamp()),
-        "post": hash_post(blogname, postid),
-        "modifiers": ",".join(modifiers),
-        "failed": failed
-    }
+        data = {
+            "id": str(uuid.uuid4()),
+            "time": int(now.timestamp()),
+            "post": hash_post(blogname, postid),
+            "modifiers": ",".join(modifiers),
+            "failed": failed
+        }
 
-    async with aiosqlite.connect(STATS_DB) as db:
-        await setup_db(db)
-        await db.execute("INSERT INTO fxtumblr_stats (id, time, post, modifiers, failed) VALUES (:id, :time, :post, :modifiers, :failed);", data)
-        await db.commit()
+        try:
+            async with aiosqlite.connect(STATS_DB) as db:
+                await setup_db(db)
+                await db.execute("INSERT INTO fxtumblr_stats (id, time, post, modifiers, failed) VALUES (:id, :time, :post, :modifiers, :failed);", data)
+                await db.commit()
+        except:
+            traceback.print_exc()
 
 async def setup_db(db):
     """
