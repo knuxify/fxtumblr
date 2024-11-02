@@ -15,6 +15,7 @@ import hashlib
 import uuid
 
 STATS_DB = config.get("stats_db", "stats.db")
+STATS_IGNORE = config.get("stats_ignore", [])
 STATS_LOCK = asyncio.Lock()
 TABLE_EXISTS = False
 
@@ -22,6 +23,8 @@ def hash_post(blogname: str, postid: str):
     return hashlib.sha256(str.encode(f"{blogname}-{postid}")).hexdigest()
 
 async def register_hit(blogname: str, postid: str, modifiers: List[str] = [], failed: bool = False):
+    if f"{blogname}-{postid}" in STATS_IGNORE:
+        return
     async with STATS_LOCK:
         now = datetime.datetime.now()
         # Round time down to closest 10 minutes

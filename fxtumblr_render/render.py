@@ -67,6 +67,7 @@ async def render_thread(
     if (
         config.get("renders_debug", False)
         or force_new_render
+        or f"{thread.blog_name}-{thread.id}" in config.get("renders_ignore_cache", [])
         or not os.path.exists(os.path.join(RENDERS_PATH, target_filename))
     ):
         rendered_html = render_template.render(
