@@ -25,7 +25,8 @@ async def get_render(filename: str):
     if (
         not os.path.exists(path)
         or config.get("renders_debug", False)
-        or filename in config.get("renders_ignore_cache", [])
+        or path_split["blogname"] + "-" + str(path_split["post_id"])
+        in config.get("renders_ignore_cache", [])
     ):
         render_succeeded = False
         try:
