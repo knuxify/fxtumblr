@@ -22,7 +22,11 @@ async def get_render(filename: str):
     path = os.path.join(RENDERS_PATH, filename)
     path_split = fxtumblr_render.paths.from_filename(filename)
 
-    if not os.path.exists(path) or config.get("renders_debug", False):
+    if (
+        not os.path.exists(path)
+        or config.get("renders_debug", False)
+        or filename in config.get("renders_ignore_cache", [])
+    ):
         render_succeeded = False
         try:
             async with asyncio.timeout(12):  # slightly longer than renderer itself
