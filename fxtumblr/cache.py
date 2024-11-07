@@ -33,6 +33,10 @@ def cache_post(blogname: str, postid: int, post: dict) -> None:
         r.hgetall(f"fxtumblr-posts:{blogname}-{postid}")
         and get_cached_post(blogname, postid) == post
     ):
+        r.hset(
+            f"fxtumblr-posts:{blogname}-{postid}",
+            mapping={"cache_time": time.time()},
+        )
         return
 
     r.hset(
@@ -98,6 +102,10 @@ def cache_avatar(blogname: str, avatar_url: str) -> None:
         r.hgetall(f"fxtumblr-avatars:{blogname}")
         and get_cached_avatar(blogname) == (avatar_url or "")
     ):
+        r.hset(
+            f"fxtumblr-avatars:{blogname}",
+            mapping={"cache_time": time.time()},
+        )
         return
 
     r.hset(
