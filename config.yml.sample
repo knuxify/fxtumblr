@@ -22,3 +22,9 @@ renders_port: 6500
 # Get these from your app's info at https://www.tumblr.com/oauth/apps
 tumblr_consumer_key: "FIXME"
 tumblr_consumer_secret: "FIXME"
+
+# If you have more users, you can instead add multiple keys to rotate through
+# (this will ignore the above options):
+# tumblr_api_keys:
+#   - ["key1", "secret1"]
+#   - ["key2", "secret2"]

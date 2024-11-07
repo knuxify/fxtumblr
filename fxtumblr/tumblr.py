@@ -3,6 +3,13 @@ Contains code for getting posts.
 """
 
 import pytumblr
+from pytumblr.request import TumblrRequest
+
+# needed by FxTumblrRequest
+import requests
+import urllib.parse
+from requests_oauthlib import OAuth1
+from requests.exceptions import TooManyRedirects, HTTPError
 
 from .cache import (
     post_needs_caching,
@@ -17,21 +24,212 @@ from .cache import (
 )
 from .config import config
 
-tumblr = pytumblr.TumblrRestClient(
-    config["tumblr_consumer_key"],
-    config["tumblr_consumer_secret"],
-    None,
-    None,
-)
+from typing import List
+
+# needed by FxTumblrRequest
+PY3 = True
+
+
+class FxTumblrRequest:
+    """
+    Custom fork of pytumblr.request.TumblrRequest that automatically rotates
+    between multiple API keys.
+
+    The original code can be found here: https://github.com/tumblr/pytumblr/blob/master/pytumblr/request.py
+    and is licensed under the Apache 2.0 license.
+
+    Please keep this up-to-date with upstream.
+    """
+
+    # __version = pytumblr.request.TumblrRequest.__version
+    __version = "0.1.2"
+
+    def __init__(self, credentials: List[List[str]]):
+        """
+        Initialize the FxTumblrRequest object.
+        :param credentials: List of credentials as tuples of (key, secret).
+        """
+
+        self.host = "https://api.tumblr.com"
+
+        self.requests = [
+            TumblrRequest(consumer_key=cred[0], consumer_secret=cred[1], host=self.host)
+            for cred in credentials
+        ]
+        #: Credentials to use. Incremented whenever one of the API keys gets ratelimited.
+        self.current_cred = 0
+        self._key_switches_since_fail = 0
+
+    @property
+    def headers(self):
+        return self.requests[self.current_cred].headers
+
+    @property
+    def oauth(self):
+        return self.requests[self.current_cred].oauth
+
+    @property
+    def consumer_key(self):
+        return self.requests[self.current_cred].consumer_key
+
+    def next_key(self) -> bool:
+        """
+        Switches over to the next key.
+
+        Returns True if such a key was available, False if we run out of keys.
+        """
+        if self._key_switches_since_fail > len(self.requests):
+            self._key_switches_since_fail = 0
+            return False
+
+        if (self.current_cred + 1) == len(self.requests):
+            self_current_cred = 0
+        else:
+            self.current_cred += 1
+
+        self._key_switches_since_fail += 1
+
+        return True
+
+    ### TumblrRequest code start ###
+
+    def get(self, url, params):
+        """
+        Issues a GET request against the API, properly formatting the params
+
+        :param url: a string, the url you are requesting
+        :param params: a dict, the key-value of all the paramaters needed
+                       in the request
+        :returns: a dict parsed of the JSON response
+        """
+        url = self.host + url
+        if params:
+            url = url + "?" + urllib.parse.urlencode(params)
+
+        try:
+            resp = requests.get(
+                url, allow_redirects=False, headers=self.headers, auth=self.oauth
+            )
+        except TooManyRedirects as e:
+            resp = e.response
+
+        # FxTumblrRequest modification start
+        if resp.status_code == 429:
+            if self.next_key():
+                return self.get(url, params)
+        else:
+            self._key_switches_since_fail = 0
+        # FxTumblrRequest modification end
+
+        return self.json_parse(resp)
+
+    def post(self, url, params={}, files=[]):
+        """
+        Issues a POST request against the API, allows for multipart data uploads
+
+        :param url: a string, the url you are requesting
+        :param params: a dict, the key-value of all the parameters needed
+                       in the request
+        :param files: a list, the list of tuples of files
+
+        :returns: a dict parsed of the JSON response
+        """
+        url = self.host + url
+        try:
+            if files:
+                return self.post_multipart(url, params, files)
+            else:
+                data = urllib.parse.urlencode(params)
+                if not PY3:
+                    data = str(data)
+                resp = requests.post(
+                    url, data=data, headers=self.headers, auth=self.oauth
+                )
+
+                # FxTumblrRequest modification start
+                if resp.status_code == 429:
+                    if self.next_key():
+                        return self.post(url, params, files)
+                else:
+                    self._key_switches_since_fail = 0
+                # FxTumblrRequest modification end
+
+                return self.json_parse(resp)
+        except HTTPError as e:
+            # FxTumblrRequest modification start
+            if e.response.status_code == 429:
+                if self.next_key():
+                    return self.post(url, params, files)
+            else:
+                self._key_switches_since_fail = 0
+            # FxTumblrRequest modification end
+            return self.json_parse(e.response)
+
+    def delete(self, url, params):
+        """
+        Issues a DELETE request against the API, properly formatting the params
+
+        :param url: a string, the url you are requesting
+        :param params: a dict, the key-value of all the paramaters needed
+                       in the request
+        :returns: a dict parsed of the JSON response
+        """
+        url = self.host + url
+        if params:
+            url = url + "?" + urllib.parse.urlencode(params)
+
+        try:
+            resp = requests.delete(
+                url, allow_redirects=False, headers=self.headers, auth=self.oauth
+            )
+        except TooManyRedirects as e:
+            resp = e.response
+
+        # FxTumblrRequest modification start
+        if resp.status_code == 429:
+            if self.next_key():
+                return self.delete(url, params)
+        else:
+            self._key_switches_since_fail = 0
+        # FxTumblrRequest modification end
+
+        return self.json_parse(resp)
+
+    ### TumblrRequest code end ###
+
+    def json_parse(self, response):
+        return TumblrRequest.json_parse(self, response)
+
+    def post_multipart(self, url, params, files):
+        return TumblrRequest.post_multipart(self, url, params, files)
+
+
+if config.get("tumblr_api_keys", []):
+    tumblr = pytumblr.TumblrRestClient(
+        "",
+        "",
+        None,
+        None,
+    )
+    tumblr.request = FxTumblrRequest(credentials=config["tumblr_api_keys"])
+else:
+    tumblr = pytumblr.TumblrRestClient(
+        config["tumblr_consumer_key"],
+        config["tumblr_consumer_secret"],
+        None,
+        None,
+    )
 
 DEFAULT_AVATAR = "https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png"
 
 
 def get_post(blogname: str, postid: str):
     needs_caching = post_needs_caching(blogname, postid)
+    print(blogname, postid, needs_caching)
     post = None
 
     if needs_caching:
+        print("cache miss")
         _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True, npf=True)
         if not _post or "posts" not in _post or not _post["posts"]:
             if "error" not in _post:
