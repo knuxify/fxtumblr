@@ -225,11 +225,9 @@ DEFAULT_AVATAR = "https://assets.tumblr.com/pop/src/assets/images/avatar/anonymo
 
 def get_post(blogname: str, postid: str):
     needs_caching = post_needs_caching(blogname, postid)
-    print(blogname, postid, needs_caching)
     post = None
 
     if needs_caching:
-        print("cache miss")
         _post = tumblr.posts(blogname=blogname, id=postid, reblog_info=True, npf=True)
         if not _post or "posts" not in _post or not _post["posts"]:
             if "error" not in _post:
