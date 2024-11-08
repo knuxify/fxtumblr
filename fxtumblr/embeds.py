@@ -76,8 +76,9 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         post_tumblr_url += f"/{summary}"
 
     if "error" in post:
-        app.logger.info(f"error while parsing post: https://www.tumblr.com/{blogname}/{postid}")
-        app.logger.info(post)
+        if post.get("meta", {}).get("status", 0) != 404:
+            app.logger.info(f"error while parsing post: https://www.tumblr.com/{blogname}/{postid}")
+            app.logger.info(post)
         return await parse_error(post, post_url=post_tumblr_url)
 
     unroll = False
