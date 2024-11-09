@@ -10,6 +10,7 @@ import requests
 import urllib.parse
 from requests_oauthlib import OAuth1
 from requests.exceptions import TooManyRedirects, HTTPError
+import sys
 
 from .cache import (
     post_needs_caching,
@@ -198,6 +199,25 @@ class FxTumblrRequest:
     ### TumblrRequest code end ###
 
     def json_parse(self, response):
+        if not response:
+            print(
+                "Error when parsing Tumblr JSON response: no response", file=sys.stderr
+            )
+        else:
+            try:
+                response.json()
+            except ValueError:
+                try:
+                    print(
+                        f"Error when parsing Tumblr JSON response: status code {response.status_code}, content:\n{response.text}",
+                        file=sys.stderr,
+                    )
+                except:
+                    print(
+                        f"Error when parsing Tumblr JSON response: malformed response object {response}",
+                        file=sys.stderr,
+                    )
+
         return TumblrRequest.json_parse(self, response)
 
     def post_multipart(self, url, params, files):
