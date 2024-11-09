@@ -77,7 +77,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     if "error" in post:
         if post.get("meta", {}).get("status", 0) != 404:
-            app.logger.info(f"error while parsing post: https://www.tumblr.com/{blogname}/{postid}")
+            app.logger.info(f"Error while parsing post https://www.tumblr.com/{blogname}/{postid}:")
             app.logger.info(post)
         return await parse_error(post, post_url=post_tumblr_url)
 
@@ -257,9 +257,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
 async def parse_error(info: dict, post_url: str = None):
     """Parses error returned by Tumblr API."""
-    app.logger.error(f"Error while parsing post {post_url}:")
-    app.logger.error(info)
-
     if not info or "meta" not in info:
         return (
             await render_template(
