@@ -114,6 +114,25 @@ class FxTumblrRequest:
         except TooManyRedirects as e:
             resp = e.response
 
+        # WORKAROUND: Tumblr API bug: getting a banned(?) post ("This content has been
+        # hidden due to its potentially sensitive nature" message) from a blog hidden
+        # due to mature content returns a regular Tumblr 404 page instead of a
+        # valid 404 JSON response.
+        # We manually fix it up to return a 404, but this should probably be reported
+        # to Tumblr and fixed on their end.
+        if resp.status_code == 404 and "<!DOCTYPE html>" in resp.text:
+            return {
+                "meta": {"status": 404, "msg": "Not Found"},
+                "errors": [
+                    {
+                        "title": "Not Found",
+                        "code": 0,
+                        "detail": "Tumblr bug: post has been evaporated and API returns 404 page.",
+                    }
+                ],
+                "response": [],
+            }
+
         # FxTumblrRequest modification start
         if resp.status_code == 429:
             if self.next_key():
@@ -199,7 +218,7 @@ class FxTumblrRequest:
     ### TumblrRequest code end ###
 
     def json_parse(self, response):
-        if not response:
+        if response is None:
             print(
                 "Error when parsing Tumblr JSON response: no response", file=sys.stderr
             )
