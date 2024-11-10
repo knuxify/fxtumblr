@@ -30,7 +30,9 @@ stats_tasks = set()
 
 
 @app.route("/<string:blogname>/<int:postid>")
+@app.route("/<string:blogname>/<int:postid>/")
 @app.route("/<string:blogname>/<int:postid>/<string:summary>")
+@app.route("/<string:blogname>/<int:postid>/<string:summary>/")
 async def generate_embed_route(blogname: str, postid: int, summary: str = None):
     global stats_tasks
 
@@ -253,7 +255,6 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         desc=description,
         is_rendered=should_render,
     )
-
 
 async def parse_error(info: dict, post_url: str = None):
     """Parses error returned by Tumblr API."""
