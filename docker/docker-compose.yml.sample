@@ -1,0 +1,40 @@
+# Docker Compose file for running fxtumblr. **Please read docker/README.md first.**
+# (This file expects to be moved into the main fxtumblr source code directory!)
+
+services:
+  # Redis is used for the post cache, which is shared between the main fxtumblr
+  # container and the renderer container.
+  redis:
+    image: redis:alpine
+
+  # -- Start of renderer section. --
+  # If you do not want to enable the renderer, remove the following:
+  fxtumblr-render:
+    image: fxtumblr-render:latest
+    build:
+      context: .
+      dockerfile: docker/fxtumblr-render/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./fonts:/opt/fxtumblr/fonts
+      - ./config.yml:/opt/fxtumblr/config.yml
+      - renders:/opt/fxtumblr/renders
+  # -- End of renderer section. --
+
+  fxtumblr:
+    image: fxtumblr:latest
+    build:
+      context: .
+      dockerfile: docker/fxtumblr/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./stats.db:/opt/fxtumblr/stats.db
+      - ./config.yml:/opt/fxtumblr/config.yml
+      - renders:/opt/fxtumblr/renders
+    ports:
+      # host:container. You can change the host port if you need.
+      # This needs to be routed to a reverse proxy.
+      - "7878:7878"
+
+volumes:
+  renders:

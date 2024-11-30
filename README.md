@@ -45,6 +45,10 @@ Admins may still be able to track requests, e.g. through nginx access logs (disa
 * Install Redis, set it up via `/etc/redis.conf`, apply the settings to the config file
 * Run `./run.sh` (and simultaneously `./run-renderer.sh` if you want rendering support - see next section).
 
+### Running in Docker
+
+It is also possible to run fxtumblr in a Docker container; see docker/README.md for more information.
+
 ## Enabling thread rendering support
 
 Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless version of Chrome/Chromium using the `pyppeteer` package.
@@ -54,3 +58,4 @@ In order to make use of it, set `renders_enable` in your config. Then, run `./ru
 By default, the renderer will try to use the system install of Chromium (`/usr/bin/chromium`). If your Chromium location is different set the `renders_chromium_path` config option to the path of the Chromium executable.
 
 You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md. You should also get a system font that has emoji suport (like Noto Emoji).
+

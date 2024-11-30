@@ -11,9 +11,9 @@ import redis
 from .config import config
 
 r = redis.Redis(
-    host=config["redis_host"],
-    port=config["redis_port"],
-    password=config["redis_password"],
+    host=config.get("redis_host", "localhost"),
+    port=config.get("redis_port", 6379),
+    password=config.get("redis_password", None),
     decode_responses=True,
 )
 

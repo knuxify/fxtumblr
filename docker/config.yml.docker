@@ -1,0 +1,40 @@
+app_name: "fxtumblr"
+base_url: "https://your-fxtumblr-instance.here"
+motd: ""
+logging: false
+
+statistics: false
+
+cache_expiry: 43200 # 12 hours
+
+max_images_in_thread: 30
+
+renders_enable: false
+renders_debug: false
+
+# Get these from your app's info at https://www.tumblr.com/oauth/apps
+tumblr_consumer_key: "FIXME"
+tumblr_consumer_secret: "FIXME"
+
+# If you have more users, you can instead add multiple keys to rotate through
+# (this will ignore the above options):
+# tumblr_api_keys:
+#   - ["key1", "secret1"]
+#   - ["key2", "secret2"]
+
+## DOCKER-ONLY:
+# The following settings are set up as they are in the containers.
+# Unless you're willing to modify the container build files directly,
+# do not change these!
+
+stats_db: "stats.db"
+
+redis_host: "redis"
+redis_port: 6379
+
+renders_path: "/opt/fxtumblr/renders"
+renders_host: fxtumblr-render
+renders_port: 6500
+renders_chromium_args:
+  - '--no-sandbox'
+  - '--disable-setuid-sandbox'
