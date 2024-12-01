@@ -4,9 +4,7 @@
 
 ## Why?
 
-Because Tumblr embeds suck, that's why. If you're a Tumblr user and you keep sending funny posts to your non-Tumblr friends on places like Discord, you probably know. If you're the non-Tumblr friend in question (like me) then you doubly so know.
-
-I got so annoyed at the status quo that I made this to fix it. The initial version was quickly written in one day, and improvements are still being made.
+Because Tumblr embeds suck, that's why. If you're a Tumblr user and you keep sending funny posts to your non-Tumblr friends on places like Discord, you probably know. If you're the non-Tumblr friend in question (like me) then you doubly so know. I got so annoyed at the status quo that I made this to fix it.
 
 This is heavily inspired by fxtwitter.com, vxtwitter.com, twxtter/`s/i/x` and so on, but it works with Tumblr instead.
 
@@ -53,7 +51,7 @@ It is also possible to run fxtumblr in a Docker container; see docker/README.md 
 
 Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless web browser.
 
-In order to make use of it, set `renders_enable` in your config. Then, run `./run-renderer.sh` to start the renderer process. You can also try to mod
+In order to make use of it, set `renders_enable` in your config. Then, run `./run-renderer.sh` to start the renderer process.
 
 The available backends (selectable with `renders_browser` in the config) are:
 
