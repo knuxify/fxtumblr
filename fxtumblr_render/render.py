@@ -95,30 +95,6 @@ async def render_thread(
                     )
             except (TimeoutError, asyncio.exceptions.CancelledError):
                 print(f"Timed out while rendering post: {thread.blog_name}-{thread.id}")
-            except:  # noqa: E722
-                close_browser()
-                setup_browser()
-                # Restart browser and try again
-                try:
-                    async with asyncio.timeout(10):
-                        await page.setViewport({"width": 540, "height": 100})
-                        await page.goto(f"file://{target_html_path}")
-                        await page.screenshot(
-                            {
-                                "path": os.path.join(RENDERS_PATH, target_filename),
-                                "fullPage": True,
-                                "omitBackground": True,
-                            }
-                        )
-                except (TimeoutError, asyncio.exceptions.CancelledError):
-                    print(f"Timed out while rendering post: {thread.blog_name}-{thread.id}")
-                except:  # noqa: E722
-                    print(
-                        f"Exception while rendering {thread.blog_name}-{thread.id}:"
-                    )
-                    traceback.print_exc()
-            else:
-                ret = True
 
             await page.close()
 
@@ -128,6 +104,7 @@ async def render_thread(
             ret = await do_render(target_filename)
             assert ret is True
         except:  # noqa: E722
+            await close_browser()
             await setup_browser()
             ret = await do_render(target_filename)
 
