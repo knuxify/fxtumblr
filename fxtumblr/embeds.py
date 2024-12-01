@@ -79,7 +79,9 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
 
     if "error" in post:
         if post.get("meta", {}).get("status", 0) != 404:
-            app.logger.info(f"Error while parsing post https://www.tumblr.com/{blogname}/{postid}:")
+            app.logger.info(
+                f"Error while parsing post https://www.tumblr.com/{blogname}/{postid}:"
+            )
             app.logger.info(post)
         return await parse_error(post, post_url=post_tumblr_url)
 
@@ -256,6 +258,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         is_rendered=should_render,
     )
 
+
 async def parse_error(info: dict, post_url: str = None):
     """Parses error returned by Tumblr API."""
     if not info or "meta" not in info:
@@ -306,6 +309,7 @@ async def oembed_json():
         out["provider_name"] += " - " + config.get("motd", "")
 
     return out
+
 
 # Without the favicon in place, 404 requests from browsers get logged.
 # This allows us to use Tumblr's favicon without bundling it in the repo.

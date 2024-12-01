@@ -98,9 +98,8 @@ def avatar_needs_caching(blogname) -> bool:
 
 def cache_avatar(blogname: str, avatar_url: str) -> None:
     """Caches a avatar."""
-    if (
-        r.hgetall(f"fxtumblr-avatars:{blogname}")
-        and get_cached_avatar(blogname) == (avatar_url or "")
+    if r.hgetall(f"fxtumblr-avatars:{blogname}") and get_cached_avatar(blogname) == (
+        avatar_url or ""
     ):
         r.hset(
             f"fxtumblr-avatars:{blogname}",

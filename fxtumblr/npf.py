@@ -21,6 +21,7 @@ from .tumblr import tumblr, get_poll, get_avatar, DEFAULT_AVATAR
 
 strip_tags = re.compile("<.*?>")
 
+
 def _get_blogname_from_payload(post_payload):
     """retrieves payload --> broken_blog_name, or payload --> blog --> name"""
     if "broken_blog_name" in post_payload:

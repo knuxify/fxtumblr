@@ -11,6 +11,7 @@ from .render import setup_browser, close_browser, render_thread
 
 LOG_ENABLED = config.get("logging", False)
 
+
 class RenderServer:
     async def main_loop(self):
         """Main loop for the renderer."""
@@ -67,7 +68,9 @@ class RenderServer:
             ret = False
 
             if LOG_ENABLED:
-                print(f"[{name}] Rendering post {blogname}-{post_id} with modifiers {modifiers} (work ID: {work_id})")
+                print(
+                    f"[{name}] Rendering post {blogname}-{post_id} with modifiers {modifiers} (work ID: {work_id})"
+                )
 
             try:
                 post = get_post(blogname, post_id)
