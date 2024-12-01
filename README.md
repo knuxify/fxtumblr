@@ -51,11 +51,21 @@ It is also possible to run fxtumblr in a Docker container; see docker/README.md 
 
 ## Enabling thread rendering support
 
-Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless version of Chrome/Chromium using the `pyppeteer` package.
+Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless web browser.
 
-In order to make use of it, set `renders_enable` in your config. Then, run `./run-renderer.sh` to start the renderer process.
+In order to make use of it, set `renders_enable` in your config. Then, run `./run-renderer.sh` to start the renderer process. You can also try to mod
 
-By default, the renderer will try to use the system install of Chromium (`/usr/bin/chromium`). If your Chromium location is different set the `renders_chromium_path` config option to the path of the Chromium executable.
+The available backends (selectable with `renders_browser` in the config) are:
 
-You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md. You should also get a system font that has emoji suport (like Noto Emoji).
+- `pyppeteer` (default) - uses pyppeteer package and system install of Chromium.
+- `playwright-chromium`- uses Playwright and Chromium.
+- `playwright-firefox`- uses Playwright and Firefox.
+- `playwright-webkit`- uses Playwright and WebKit.
+
+Pyppeteer is the simplest. Playwright is the most accurate, up-to-date and supports more platforms (and will likely become the default in the near future). Which one works best is up to you.
+
+By default, the Chromium-based renderers will try to use the system install of Chromium (`/usr/bin/chromium`). If your Chromium location is different set the `renders_chromium_path` config option to the path of the Chromium executable. (For Playwright, if you want to use its pre-build Chromium install, run `playwright install chromium` to download it and set `renders_chromium_path` to null.)
+
+You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md. You should also get a 
+system font that has emoji suport (like Noto Emoji).
 

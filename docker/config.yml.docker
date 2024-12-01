@@ -38,3 +38,6 @@ renders_port: 6500
 renders_chromium_args:
   - '--no-sandbox'
   - '--disable-setuid-sandbox'
+# You can try using pyppeteer, but it causes an issue where the renders
+# loop every few hundred pixels on most renders. Playwright resolves this.
+renders_browser: playwright-chromium
