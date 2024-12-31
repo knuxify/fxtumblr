@@ -12,3 +12,5 @@ python-dateutil
 emoji
 redis
 aiosqlite
+psycopg[binary]
+matplotlib

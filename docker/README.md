@@ -6,7 +6,7 @@ With this setup, fxtumblr and the renderer are run in separate containers. The f
 
 Note that this setup requires a reverse-proxy. I use nginx on the host for this, but something like Caddy should work as well.
 
-# Using docker-compose
+## Using docker-compose
 
 - Copy `docker-compose.yml.sample` into **the root of fxtumblr's source code**:
   ```
@@ -20,3 +20,12 @@ Note that this setup requires a reverse-proxy. I use nginx on the host for this,
   ```
 - Set the configuration options as needed.
 - Run with regular docker compose options: `docker compose up` to start, `docker compose down` to stop.
+
+To update the container:
+
+- `git pull` the latest version of fxtumblr.
+- Pass the `--build` flag to `docker compose up` and let it rebuild the containers.
+
+### Running statstool
+
+You can run statstool with `docker compose run fxtumblr /opt/fxtumblr/statstool.py`.

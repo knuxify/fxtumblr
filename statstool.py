@@ -8,11 +8,26 @@ import argparse
 from collections import namedtuple
 import datetime
 
-import sqlite3
-
 from fxtumblr import config
 
-STATS_DB = config.get("stats_db", "stats.db")
+STATS_DB_TYPE = config.get("stats_db_type", "sqlite")
+if STATS_DB_TYPE == "sqlite":
+    import sqlite3
+
+    STATS_DB = config.get("stats_db", "stats.db")
+elif STATS_DB_TYPE == "postgres":
+    import psycopg
+
+    PSQL_DSN = ' '.join([
+                            f"host={config['stats_db_host']}",
+                            f"port={config['stats_db_port']}",
+                            f"user={config['stats_db_user']}",
+                            f"password={config['stats_db_password']}",
+                            f"dbname={config['stats_db_name']}",
+                        ])
+
+else:
+    raise ValueError("stats_db_type must be one of: sqlite, postgres")
 
 # Argument parsing
 parser = argparse.ArgumentParser(
@@ -91,35 +106,43 @@ if mode == "plot":
     hit_tuple = namedtuple("hit_tuple", "id time post modifiers failed")
     hits = []
     data = {}
-    with sqlite3.connect(STATS_DB) as db:
-        for i in range(delta.days + 1):
-            checked_date = start_date + datetime.timedelta(days=i)
-            checked_date_start_epoch = int(checked_date.strftime("%s"))
-            checked_date_end_epoch = (
-                int((checked_date + datetime.timedelta(days=1)).strftime("%s")) - 1
-            )
+    for i in range(delta.days + 1):
+        checked_date = start_date + datetime.timedelta(days=i)
+        checked_date_start_epoch = int(checked_date.strftime("%s"))
+        checked_date_end_epoch = (
+            int((checked_date + datetime.timedelta(days=1)).strftime("%s")) - 1
+        )
 
-            hits_for_day = []
-            posts = set()
-            fetch = db.execute(
-                f"SELECT * FROM fxtumblr_stats WHERE time BETWEEN {checked_date_start_epoch} AND {checked_date_end_epoch};"
-            ).fetchall()
-            for hit in fetch:
-                hit_parsed = hit_tuple(*hit)._asdict()
-                if args.unique and hit_parsed["post"] in posts:
+        hits_for_day = []
+        posts = set()
+        if STATS_DB_TYPE == "sqlite":
+            with sqlite3.connect(STATS_DB) as db:
+                fetch = db.execute(
+                    f"SELECT * FROM fxtumblr_stats WHERE time BETWEEN {checked_date_start_epoch} AND {checked_date_end_epoch};"
+                ).fetchall()
+        elif STATS_DB_TYPE == "postgres":
+            with psycopg.connect(PSQL_DSN) as conn:
+                with conn.cursor() as cur:
+                    fetch = cur.execute(
+                        f"SELECT * FROM fxtumblr_stats WHERE time BETWEEN {checked_date_start_epoch} AND {checked_date_end_epoch};"
+                ).fetchall()
+
+        for hit in fetch:
+            hit_parsed = hit_tuple(*hit)._asdict()
+            if args.unique and hit_parsed["post"] in posts:
+                continue
+            if modifiers:
+                skip = False
+                for mod in modifiers:
+                    if mod not in hit_parsed["modifiers"].split(","):
+                        skip = True
+                        break
+                if skip:
                     continue
-                if modifiers:
-                    skip = False
-                    for mod in modifiers:
-                        if mod not in hit_parsed["modifiers"].split(","):
-                            skip = True
-                            break
-                    if skip:
-                        continue
-                posts.add(hit_parsed["post"])
-                hits_for_day.append(hit_parsed)
+            posts.add(hit_parsed["post"])
+            hits_for_day.append(hit_parsed)
 
-            data[checked_date.strftime("%Y-%m-%d")] = len(hits_for_day)
+        data[checked_date.strftime("%Y-%m-%d")] = len(hits_for_day)
 
     if args.print_only:
         for date, hits in data.items():

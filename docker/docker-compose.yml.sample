@@ -6,6 +6,7 @@ services:
   # container and the renderer container.
   redis:
     image: redis:alpine
+    restart: unless-stopped
 
   # -- Start of renderer section. --
   # If you do not want to enable the renderer, remove the following:
@@ -20,6 +21,17 @@ services:
       - ./config.yml:/opt/fxtumblr/config.yml
       - renders:/opt/fxtumblr/renders
   # -- End of renderer section. --
+
+  # -- Start of stats section. --
+  # If you do not want to enable statistics, remove the following:
+  stats-db:
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=fxtumblr
+      - POSTGRES_PASSWORD=fxtumblr
+      - POSTGRES_DB=fxtumblr_stats
+  # -- End of stats section. --
 
   fxtumblr:
     image: fxtumblr:latest

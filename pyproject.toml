@@ -21,6 +21,7 @@ python-dateutil = "^2.9.0.post0"
 emoji = "^2.11.1"
 redis = "^5.0.4"
 aiosqlite = "^0.20.0"
+psycopg = "^3.2.3"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^7.0.0"

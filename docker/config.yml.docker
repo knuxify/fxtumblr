@@ -1,9 +1,12 @@
+# Make sure to update the base_url!
 app_name: "fxtumblr"
 base_url: "https://your-fxtumblr-instance.here"
 motd: ""
 logging: false
 
-statistics: false
+# Set this to false and remove the stats section in the docker-compose file
+# to disable statistics
+statistics: true
 
 cache_expiry: 43200 # 12 hours
 
@@ -27,7 +30,7 @@ tumblr_consumer_secret: "FIXME"
 # Unless you're willing to modify the container build files directly,
 # do not change these!
 
-stats_db: "stats.db"
+stats_db_type: postgres
 
 redis_host: "redis"
 redis_port: 6379
@@ -41,3 +44,10 @@ renders_chromium_args:
 # You can try using pyppeteer, but it causes an issue where the renders
 # loop every few hundred pixels on most renders. Playwright resolves this.
 renders_browser: playwright-chromium
+
+stats_db_type: postgres
+stats_db_host: "stats-db"
+stats_db_port: 5432
+stats_db_name: "fxtumblr_stats"
+stats_db_user: "fxtumblr"
+stats_db_password: "fxtumblr"
