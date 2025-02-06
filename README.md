@@ -47,9 +47,9 @@ Admins may still be able to track requests, e.g. through nginx access logs (disa
 
 It is also possible to run fxtumblr in a Docker container; see docker/README.md for more information.
 
-## Enabling thread rendering support
+### Enabling thread rendering support
 
-Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless web browser.
+Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless web browser. (Renders are enabled on the official instance.)
 
 In order to make use of it, set `renders_enable` in your config. Then, run `./run-renderer.sh` to start the renderer process.
 
@@ -67,3 +67,11 @@ By default, the Chromium-based renderers will try to use the system install of C
 You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md. You should also get a 
 system font that has emoji suport (like Noto Emoji).
 
+By default, renders are only generated if any of the following is true:
+
+- The post is too long to fit in a standard embed
+- The post contains any kind of formatting (bold/italic/custom font/etc.)
+- The post contains more than 1 image/more than 1 video
+- The post contains a poll or other exotic block type
+
+If you'd like to generate renders for all posts unconditionally on the server, set `renders_always_render` to `true`. Otherwise, users can force a render on a post by appending `?forcerender` to the embed URL.

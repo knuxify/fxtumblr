@@ -93,6 +93,9 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
     if "dark" in request.args:
         dark = True
 
+    if "forcerender" in request.args or config.get("renders_always_render", False):
+        should_render = True
+
     thread = TumblrThread.from_payload(post, unroll=unroll)
     thread_info = thread.thread_info
 
