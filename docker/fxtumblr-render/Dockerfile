@@ -29,6 +29,7 @@ RUN apt install -y fonts-noto-color-emoji
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install -r requirements.txt
+RUN playwright install-deps chromium
 
 # Add fxtumblr user
 ARG UID=10001
@@ -38,7 +39,7 @@ RUN useradd -m -u ${UID} -g fxtumblr-render fxtumblr-render
 
 # Let Playwright install Chromium
 USER fxtumblr-render
-RUN playwright install --with-deps chromium
+RUN playwright install chromium
 USER root
 
 # Copy the source code into the container
