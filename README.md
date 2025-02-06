@@ -56,13 +56,15 @@ In order to make use of it, set `renders_enable` in your config. Then, run `./ru
 The available backends (selectable with `renders_browser` in the config) are:
 
 - `pyppeteer` (default) - uses pyppeteer package and system install of Chromium.
-- `playwright-chromium`- uses Playwright and Chromium.
-- `playwright-firefox`- uses Playwright and Firefox.
-- `playwright-webkit`- uses Playwright and WebKit.
+- `playwright-chromium` - uses Playwright and Chromium.
+- `playwright-firefox` - uses Playwright and Firefox.
+- `playwright-webkit` - uses Playwright and WebKit.
 
 Pyppeteer is the simplest. Playwright is the most accurate, up-to-date and supports more platforms (and will likely become the default in the near future). Which one works best is up to you.
 
-By default, the Chromium-based renderers will try to use the system install of Chromium (`/usr/bin/chromium`). If your Chromium location is different set the `renders_chromium_path` config option to the path of the Chromium executable. (For Playwright, if you want to use its pre-build Chromium install, run `playwright install chromium` to download it and set `renders_chromium_path` to null.)
+Run `playwright install chromium` to let Playwright download its own Chromium build.
+
+If you want to use a custom Chromium build instead of the one provided by Playwright, set the `renders_chromium_path` config option to the path of the Chromium executable.
 
 You will also have to download Tumblr's web fonts for the best experience - see fonts/README.md. You should also get a 
 system font that has emoji suport (like Noto Emoji).

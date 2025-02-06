@@ -52,7 +52,7 @@ async def setup_browser() -> None:
 
         if BROWSER_TYPE == "playwright-chromium":
             browser_type = playwright_async.chromium
-            browser = await browser_type.launch(executable_path=config.get("renders_chromium_path", "/usr/bin/chromium"))
+            browser = await browser_type.launch(executable_path=config.get("renders_chromium_path", None))
         elif BROWSER_TYPE == "playwright-firefox":
             browser_type = playwright_async.firefox
             browser = await browser_type.launch()
