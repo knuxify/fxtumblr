@@ -85,9 +85,8 @@ class RenderServer:
                 )
                 traceback.print_exc()
             else:
-                async with asyncio.timeout(
-                    11
-                ):  # slightly longer than render_thread timeout
+                # slightly longer than render_thread timeout, x2 for error handling
+                async with asyncio.timeout(22):
                     try:
                         ret = await render_thread(thread, modifiers=modifiers)
                     except:  # noqa: E722

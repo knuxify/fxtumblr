@@ -18,7 +18,9 @@ if BROWSER_TYPE == "pyppeteer":
 elif BROWSER_TYPE.startswith("playwright"):
     import playwright.async_api
 else:
-    raise ValueError("Invalid value for renders_browser config option; must be one of pyppeteer, playwright-chromium, playwright-firefox, playwright-webkit")
+    raise ValueError(
+        "Invalid value for renders_browser config option; must be one of pyppeteer, playwright-chromium, playwright-firefox, playwright-webkit"
+    )
 
 # https://stackoverflow.com/questions/2632199/how-do-i-get-the-path-of-the-current-executed-file-in-python
 FXTUMBLR_PATH = os.path.dirname(
@@ -31,6 +33,7 @@ render_template = template_env.get_template("render.html")
 
 browser = None
 playwright_async = None
+
 
 async def setup_browser() -> None:
     global browser
@@ -52,7 +55,9 @@ async def setup_browser() -> None:
 
         if BROWSER_TYPE == "playwright-chromium":
             browser_type = playwright_async.chromium
-            browser = await browser_type.launch(executable_path=config.get("renders_chromium_path", None))
+            browser = await browser_type.launch(
+                executable_path=config.get("renders_chromium_path", None)
+            )
         elif BROWSER_TYPE == "playwright-firefox":
             browser_type = playwright_async.firefox
             browser = await browser_type.launch()
@@ -60,8 +65,9 @@ async def setup_browser() -> None:
             browser_type = playwright_async.webkit
             browser = await browser_type.launch()
         else:
-            raise ValueError("Incorrect playwright browser type; must be one of playwright-{chromium,firefox,webkit}")
-
+            raise ValueError(
+                "Incorrect playwright browser type; must be one of playwright-{chromium,firefox,webkit}"
+            )
 
 
 async def close_browser() -> None:
@@ -112,6 +118,7 @@ async def render_thread(
         ret = False
 
         if BROWSER_TYPE == "pyppeteer":
+
             async def do_render(target_filename: str):
                 ret = False
 
@@ -127,8 +134,12 @@ async def render_thread(
                                 "omitBackground": True,
                             }
                         )
-                except (TimeoutError, asyncio.exceptions.CancelledError):
-                    print(f"Timed out while rendering post: {thread.blog_name}-{thread.id}")
+                except (TimeoutError, asyncio.exceptions.CancelledError) as e:
+                    print(
+                        f"Timed out while rendering post: {thread.blog_name}-{thread.id}"
+                    )
+                    await page.close()
+                    raise TimeoutError from e
                 except:
                     traceback.print_exc()
                     ret = False
@@ -140,6 +151,7 @@ async def render_thread(
                 return ret
 
         elif BROWSER_TYPE.startswith("playwright"):
+
             async def do_render(target_filename: str):
                 ret = False
 
@@ -151,10 +163,14 @@ async def render_thread(
                         await page.screenshot(
                             path=os.path.join(RENDERS_PATH, target_filename),
                             full_page=True,
-                            omit_background=True
+                            omit_background=True,
                         )
-                except (TimeoutError, asyncio.exceptions.CancelledError):
-                    print(f"Timed out while rendering post: {thread.blog_name}-{thread.id}")
+                except (TimeoutError, asyncio.exceptions.CancelledError) as e:
+                    print(
+                        f"Timed out while rendering post: {thread.blog_name}-{thread.id}"
+                    )
+                    await page.close()
+                    raise TimeoutError from e
                 except:
                     traceback.print_exc()
                     ret = False
@@ -171,6 +187,11 @@ async def render_thread(
         try:
             ret = await do_render(target_filename)
             assert ret is True
+        except TimeoutError:
+            await setup_browser()
+            # restart browser, but don't bother regenerating - clients that
+            # need the render only fetch it once and will time out by this
+            # point anyways
         except:  # noqa: E722
             await setup_browser()
             ret = await do_render(target_filename)
