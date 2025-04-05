@@ -22,13 +22,14 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /opt/fxtumblr
 
+# Copy the source code into the container
+COPY . .
+
 # Install Chromium and fxtumblr dependencies.
 RUN apt update
-RUN apt install -y gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget libcairo-gobject2 libxinerama1 libgtk2.0-0 libpangoft2-1.0-0 libthai0 libpixman-1-0 libxcb-render0 libharfbuzz0b libdatrie1 libgraphite2-3 libgbm1
 RUN apt install -y fonts-noto-color-emoji
-COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install -r requirements.txt
+    python -m pip install . .[render-playwright]
 RUN playwright install-deps chromium
 
 # Add fxtumblr user
@@ -41,9 +42,6 @@ RUN useradd -m -u ${UID} -g fxtumblr-render fxtumblr-render
 USER fxtumblr-render
 RUN playwright install chromium
 USER root
-
-# Copy the source code into the container
-COPY . .
 
 # Expose the listening port
 EXPOSE ${FXTUMBLR_RENDER_PORT}

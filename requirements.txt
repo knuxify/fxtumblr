@@ -6,8 +6,6 @@ markdownify
 uvicorn
 hypercorn
 nh3
-pyppeteer
-playwright
 python-dateutil
 emoji
 redis

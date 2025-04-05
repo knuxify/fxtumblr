@@ -26,19 +26,18 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /opt/fxtumblr
 
+# Copy the source code into the container
+COPY . .
+
 # Install fxtumblr dependencies.
-COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install -r requirements.txt
+    python -m pip install . .[statstool]
 
 # Add fxtumblr user
 ARG UID=10001
 ARG GID=10001
 RUN groupadd -g "${GID}" fxtumblr
 RUN useradd -m -u ${UID} -g fxtumblr fxtumblr
-
-# Copy the source code into the container
-COPY . .
 
 # Expose the listening port
 EXPOSE ${FXTUMBLR_PORT}

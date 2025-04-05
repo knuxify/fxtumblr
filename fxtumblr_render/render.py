@@ -12,7 +12,7 @@ from fxtumblr.npf import TumblrThread
 
 from .paths import RENDERS_PATH, filename_for
 
-BROWSER_TYPE = config.get("renders_browser", "pyppeteer")
+BROWSER_TYPE = config.get("renders_browser", "playwright-chromium")
 if BROWSER_TYPE == "pyppeteer":
     import pyppeteer
 elif BROWSER_TYPE.startswith("playwright"):

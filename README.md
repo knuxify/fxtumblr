@@ -51,16 +51,15 @@ It is also possible to run fxtumblr in a Docker container; see docker/README.md 
 
 Unfortunately, standard embeds are too limited to fully display an entire Tumblr thread. Thus, there's optional support for rendering threads using a headless web browser. (Renders are enabled on the official instance.)
 
-In order to make use of it, set `renders_enable` in your config. Then, run `./run-renderer.sh` to start the renderer process.
+In order to make use of it, set `renders_enable` in your config, install the relevant package for your backend (see the next paragraph), and run `./run-renderer.sh` to start the renderer process.
 
 The available backends (selectable with `renders_browser` in the config) are:
 
-- `pyppeteer` (default) - uses pyppeteer package and system install of Chromium.
-- `playwright-chromium` - uses Playwright and Chromium.
-- `playwright-firefox` - uses Playwright and Firefox.
-- `playwright-webkit` - uses Playwright and WebKit.
+- `playwright-chromium` (default) - uses Playwright and Chromium (requires `playwright`).
+- `playwright-webkit` - uses Playwright and WebKit (untested) (requires `playwright`).
+- `pyppeteer` - uses pyppeteer package and system install of Chromium (requires `pyppeteer`). Has some weird rendering bugs under Docker, and is unmaintained upstream; however, it's your only option if you're not on an x86_64 or aarch64 system with glibc.
 
-Pyppeteer is the simplest. Playwright is the most accurate, up-to-date and supports more platforms (and will likely become the default in the near future). Which one works best is up to you.
+Playwright is the most accurate and up-to-date. Pyppeteer is simpler and runs on more platforms. Which one works best is up to you.
 
 Run `playwright install chromium` to let Playwright download its own Chromium build.
 

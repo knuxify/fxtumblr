@@ -25,7 +25,6 @@ dependencies = [
 	"emoji",
 	"markdownify",
 	"nh3",
-	"playwright",
 	"aiosqlite",
 	"psycopg[binary]",
 ]
@@ -33,6 +32,14 @@ dependencies = [
 [project.optional-dependencies]
 lint = [
 	"flake8",
+]
+
+render-pyppeteer = [
+	"pyppeteer",
+]
+
+render-playwright = [
+	"playwright",
 ]
 
 statstool = [
