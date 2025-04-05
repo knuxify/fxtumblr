@@ -1,36 +1,43 @@
-[tool.poetry]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
 name = "fxtumblr"
 version = "0.1.0"
 description = "Make Tumblr embeds on other websites way better. Like TwitFix/fxtwitter, but for Tumblr."
-authors = ["knuxify <knuxify@gmail.com>"]
+authors = [
+	{ name = "knuxify", email = "knuxify@gmail.com" },
+]
 license = "MIT"
 readme = "README.md"
+requires-python = ">=3.9"
 
-[tool.poetry.dependencies]
-python = "^3.9"
-quart = "^0.19.5"
-quart-cors = "^0.7.0"
-pytumblr = "^0.1.2"
-pyyaml = "^6.0.1"
-markdownify = "^0.12.1"
-uvicorn = "^0.29.0"
-hypercorn = "^0.16.0"
-nh3 = "^0.2.17"
-pyppeteer = "^2.0.0"
-python-dateutil = "^2.9.0.post0"
-emoji = "^2.11.1"
-redis = "^5.0.4"
-aiosqlite = "^0.20.0"
-psycopg = "^3.2.3"
+dependencies = [
+	"quart",
+	"quart-cors",
+	"uvicorn",
+	"hypercorn",
+	"pytumblr",
+	"redis",
+	"pyyaml",
+	"python-dateutil",
+	"emoji",
+	"markdownify",
+	"nh3",
+	"playwright",
+	"aiosqlite",
+	"psycopg[binary]",
+]
 
-[tool.poetry.group.dev.dependencies]
-flake8 = "^7.0.0"
+[project.optional-dependencies]
+lint = [
+	"flake8",
+]
 
+statstool = [
+	"matplotlib",
+]
 
-[tool.poetry.group.statstool.dependencies]
-matplotlib = "^3.8.4"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.hatch]
+skip-install = true
