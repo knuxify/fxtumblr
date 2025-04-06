@@ -12,7 +12,7 @@ from fxtumblr.config import config
 
 RENDERS_PATH = config["renders_path"]
 
-VALID_MODIFIERS = ("dark", "unroll")
+VALID_MODIFIERS = ("dark", "unroll", "oldstyle")
 
 
 def filename_for(

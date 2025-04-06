@@ -41,7 +41,7 @@ async def generate_embed_route(blogname: str, postid: int, summary: str = None):
 
     if STATS_ENABLED:
         modifiers = []
-        for mod in ("unroll", "dark"):
+        for mod in ("unroll", "dark", "oldstyle"):
             if mod in request.args:
                 modifiers.append(mod)
 
@@ -226,6 +226,8 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
             modifiers.append("unroll")
         if dark:
             modifiers.append("dark")
+        if "oldstyle" in request.args:
+            modifiers.append("oldstyle")
         render_path = (
             BASE_URL
             + "/renders/"

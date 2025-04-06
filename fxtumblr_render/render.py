@@ -109,6 +109,7 @@ async def render_thread(
         or f"{thread.blog_name}-{thread.id}" in config.get("renders_ignore_cache", [])
         or not os.path.exists(os.path.join(RENDERS_PATH, target_filename))
     ):
+        print("rendering :)")
         rendered_html = render_template.render(
             thread=thread, fxtumblr_path=FXTUMBLR_PATH, modifiers=modifiers
         )

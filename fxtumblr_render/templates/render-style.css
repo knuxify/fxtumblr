@@ -44,7 +44,7 @@ html, body {
 	line-height: 1.5;
 
 	{% if "dark" in modifiers %}
-		background-color: rgb(34, 34, 34);
+		background-color: {% if "oldstyle" in modifiers %}rgb(34, 34, 34){% else %}rgb(26, 26, 26){% endif %};
 		color: #fff;
 		--black: 255, 255, 255;
 	{% else %}
@@ -67,18 +67,31 @@ html, body {
 
 .post-header, .main-header {
 	box-sizing: border-box;
+	{% if "oldstyle" in modifiers %}
 	padding: 15px 16px;
 	font-size: .875rem;
+	gap: .4rem;
+	{% else %}
+	padding: 12px 16px;
+	gap: 2px; /* HACK; should be 8px */
+	{% endif %}
 	line-height: 1.42857;
 	display: flex;
 	align-items: center;
 }
-.post-header > *, .main-header > * { margin-right: .4rem; }
 
 .main-header {
 	color: rgba(var(--black), 0.65);
 }
 .main-header .username, .post-header .username { font-weight: 700; }
+
+{% if "oldstyle" not in modifiers %}
+.main-header .user-info-wrapper { display: flex; flex-direction: column; }
+.main-header .reblogged-from-wrapper {
+	font-size: .875rem; font-weight: 350; line-height: 1.25rem;
+}
+{% endif %}
+
 .main-header .reblogged-by {
 	color: rgb(var(--black));
 }
@@ -93,14 +106,29 @@ html, body {
 }
 
 .post-header .avatar, .main-header .avatar {
+	object-fit: contain;
+	{% if "oldstyle" in modifiers %}
 	width: 32px;
 	height: 32px;
-	object-fit: contain;
 	border-radius: 3px;
+	{% else %}
+	width: 44px;
+	height: 44px;
+	border-radius: 9999px;
+	{% endif %}
 }
 
 .avatar-wrapper { display: flex; position: relative; margin-right: 10px; }
+{% if "oldstyle" in modifiers %}
 .avatar-reblog-badge { position: absolute; bottom: -3px; right: -3px; line-height: 0; }
+{% else %}
+.avatar-reblog-badge {
+	position: absolute; bottom: 0; right: -4px; line-height: 0; 
+	background-color: rgb(1, 207, 53); color: rgba(255, 255, 255, 1);
+	border-radius: 9999px;
+	outline: 2px solid {% if "dark" in modifiers %}rgb(26, 26, 26){% else %}rgba(255, 255, 255, 1){% endif %};
+}
+{% endif %}
 
 .tags {
 	padding: 0 16px;
