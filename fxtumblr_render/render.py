@@ -6,6 +6,7 @@ import asyncio
 from inspect import getsourcefile
 import jinja2
 import os.path
+import traceback
 
 from fxtumblr.config import config
 from fxtumblr.npf import TumblrThread
