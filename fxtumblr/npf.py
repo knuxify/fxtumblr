@@ -17,7 +17,7 @@ import emoji
 import re
 from urllib.parse import urlparse
 
-from .tumblr import tumblr, get_poll, get_avatar, DEFAULT_AVATAR
+from .tumblr import get_poll, get_avatar, DEFAULT_AVATAR
 
 strip_tags = re.compile("<.*?>")
 
@@ -311,18 +311,18 @@ class NPFFormattingRange:
             result["start_insert"] = f"<{tag}>"
             result["end_insert"] = f"</{tag}>"
         elif self.type == "underline":
-            result["start_insert"] = f'<span style="text-decoration:underline">'
-            result["end_insert"] = f"</span>"
+            result["start_insert"] = '<span style="text-decoration:underline">'
+            result["end_insert"] = "</span>"
         elif self.type == "link":
             result["start_insert"] = f'<a href="{self.url}">'
-            result["end_insert"] = f"</a>"
+            result["end_insert"] = "</a>"
         elif self.type == "mention":
             blog_url = self.blog.get("url")
             result["start_insert"] = f'<a class="tumblelog" href="{blog_url}">'
-            result["end_insert"] = f"</a>"
+            result["end_insert"] = "</a>"
         elif self.type == "color":
             result["start_insert"] = f'<span style="color:{self.hex}">'
-            result["end_insert"] = f"</span>"
+            result["end_insert"] = "</span>"
         else:
             raise ValueError(self.type)
         return result
@@ -449,7 +449,7 @@ class NPFBlock(TumblrContentBlockBase):
                     {
                         "url": payload["url"],
                         "sitename": "Instagram",
-                        "title": f'Video by {payload["attribution"]["display_text"]} on Instagram',
+                        "title": f"Video by {payload['attribution']['display_text']} on Instagram",
                         "description": f"See Instagram photos and videos from @{payload['attribution']['display_text']}",
                     }
                 )
@@ -600,18 +600,18 @@ class NPFMediaList:
 class NPFMediaBlock(NPFBlock, NPFNonTextBlockMixin):
     def __init__(
         self,
-        media: Optional[List[dict]] = [],
+        media: Optional[List[dict]] = None,
         alt_text: Optional[str] = None,
         embed_html: Optional[str] = None,
-        poster: Optional[dict] = [],
-        data: Optional[dict] = {},
-        attribution: Optional[dict] = {},
+        poster: Optional[dict] = None,
+        data: Optional[dict] = None,
+        attribution: Optional[dict] = None,
     ):
-        self._media = NPFMediaList(media)
+        self._media = NPFMediaList(media) if media else None
         self._alt_text = alt_text
         self._embed_html = embed_html
         self._poster = NPFMediaList(poster) if poster else None
-        self._data = data
+        self._data = data if data else {}
         self._attribution = (
             NPFAttribution.from_payload(attribution) if attribution else None
         )
@@ -663,9 +663,7 @@ class NPFImageBlock(NPFMediaBlock):
             )
             width = orig_w
 
-        img_tag = (
-            f"<img src=\"{selected_size['url']}\"{original_dimensions_attrs_str}/>"
-        )
+        img_tag = f'<img src="{selected_size["url"]}"{original_dimensions_attrs_str}/>'
 
         alt_tag = ""
         if "gif" in selected_size["url"]:
@@ -673,7 +671,7 @@ class NPFImageBlock(NPFMediaBlock):
         elif self.alt_text:
             alt_tag = '<span class="tmblr-alt-text-helper">ALT</span>'
 
-        figure_tag = f'<figure class="tmblr-full{ " orig-size" if width < 300 else "" }{ " gif" if "gif" in selected_size["url"] else ""}"{original_dimensions_attrs_str}>{img_tag}{alt_tag}</figure>'
+        figure_tag = f'<figure class="tmblr-full{" orig-size" if width < 300 else ""}{" gif" if "gif" in selected_size["url"] else ""}"{original_dimensions_attrs_str}>{img_tag}{alt_tag}</figure>'
 
         return figure_tag
 
@@ -744,9 +742,9 @@ class NPFVideoBlock(NPFMediaBlock):
                 f' data-orig-height="{orig_h}" data-orig-width="{orig_w}"'
             )
 
-        video_tag = f"<video "
+        video_tag = "<video "
         if selected_size_poster:
-            video_tag += f"poster=\"{selected_size_poster['url']}\""
+            video_tag += f'poster="{selected_size_poster["url"]}"'
         video_tag += f'controls="controls"{original_dimensions_attrs_str}><source src="{self.media.media[0]["url"]}" type="video/mp4"></video>'
 
         figure_tag = f'<figure class="tmblr-full"{original_dimensions_attrs_str}>{video_tag}</figure>'
@@ -759,7 +757,7 @@ class NPFVideoBlock(NPFMediaBlock):
             selected_size = self.poster._pick_one_size(target_width)
 
         if selected_size:
-            img_tag = f"<img class=\"video-poster\" src=\"{selected_size['url']}\"/>"
+            img_tag = f'<img class="video-poster" src="{selected_size["url"]}"/>'
         else:
             img_tag = '<div class="video-poster video-poster-dummy"></div>'
 
@@ -809,7 +807,7 @@ class NPFAudioBlock(NPFMediaBlock):
         if self.embed_html:
             return self.embed_html
 
-        audio_tag = f"<audio src=\"{self.media.media[0]['url']}\" controls=\"controls\" muted=\"muted\"/>"
+        audio_tag = f'<audio src="{self.media.media[0]["url"]}" controls="controls" muted="muted"/>'
 
         figure_tag = f'<figure class="tmblr-full">{audio_tag}</figure>'
 
@@ -828,7 +826,7 @@ class NPFAudioBlock(NPFMediaBlock):
         provider = self.data.get("provider")
 
         html = f"""
-                <div class="audio-player{' audio-' + provider if provider else ''}">
+                <div class="audio-player{" audio-" + provider if provider else ""}">
                     <div class="play-button">
                         <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__{provider if provider in ("spotify", "soundcloud") else "play-cropped"}"></use></svg>
                     </div>
@@ -895,7 +893,7 @@ class NPFLinkBlock(NPFBlock, NPFNonTextBlockMixin):
         author: Optional[str] = None,
         site_name: Optional[str] = None,
         display_url: Optional[str] = None,
-        poster: Optional[dict] = [],
+        poster: Optional[dict] = None,
     ):
         self._url = url
         self._title = title
@@ -1031,7 +1029,7 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
             all_votes = [votes for votes in self.data["results"].values()]
             total_votes = sum(all_votes)
             most_votes = max(all_votes)
-            vote_str = f'{total_votes:,} vote{"s" if total_votes != 1 else ""}'
+            vote_str = f"{total_votes:,} vote{'s' if total_votes != 1 else ''}"
 
         created_at = dateutil.parser.parse(self.created_at)
         expire_delta = datetime.timedelta(seconds=self.settings["expire_after"])
@@ -1062,10 +1060,6 @@ class NPFPollBlock(NPFBlock, NPFNonTextBlockMixin):
 
             for answer in self.answers:
                 answer_count = self.data["results"][answer["client_id"]]
-                if answer_count == most_votes:
-                    color = "var(--accent), .4"
-                else:
-                    color = "var(--black), .1"
                 if total_votes:
                     answer_percentage = (answer_count / total_votes) * 100
                     answer_percentage = (
@@ -1626,8 +1620,8 @@ class NPFContent(TumblrContentBase):
                 block_counts["image"] > 0 and block_counts["video"] > 0
             ):
                 try:
-                    blocks[0].base_block
-                    blocks[-1].base_block
+                    blocks[0].base_block  # noqa: B018
+                    blocks[-1].base_block  # noqa: B018
                 except AttributeError:
                     pass
                 else:

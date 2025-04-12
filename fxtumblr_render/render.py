@@ -7,6 +7,7 @@ from inspect import getsourcefile
 import jinja2
 import os.path
 import traceback
+from typing import Optional
 
 from fxtumblr.config import config
 from fxtumblr.npf import TumblrThread
@@ -87,13 +88,18 @@ async def close_browser() -> None:
 
 
 async def render_thread(
-    thread: TumblrThread, force_new_render: bool = False, modifiers: list = []
+    thread: TumblrThread,
+    force_new_render: bool = False,
+    modifiers: Optional[list] = None,
 ) -> bool:
     """
     Takes trail info from the generate_embed function and renders out
     the thread into a picture.
     """
     global browser
+
+    if modifiers is None:
+        modifiers = []
 
     if "unroll" in modifiers and not thread.unroll:
         thread.unroll = True

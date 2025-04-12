@@ -1,11 +1,11 @@
 from .app import app
-from .config import BASE_URL, config
+from .config import config
 import fxtumblr_render.paths
 from fxtumblr_render.client import render_thread
 import os.path
 import asyncio
 
-from quart import render_template, send_from_directory
+from quart import send_from_directory
 
 RENDERS_PATH = config["renders_path"]
 

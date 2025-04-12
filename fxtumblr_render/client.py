@@ -2,6 +2,7 @@ import asyncio
 import json
 import traceback
 import os.path
+from typing import Optional
 
 from fxtumblr.config import config
 from .paths import path_to
@@ -9,7 +10,9 @@ from .paths import path_to
 _queue = set()
 
 
-async def render_thread(blogname: str, post_id: int, modifiers: list = []) -> bool:
+async def render_thread(
+    blogname: str, post_id: int, modifiers: Optional[list[str]] = None
+) -> bool:
     global _queue
 
     reader, writer = await asyncio.open_connection(
@@ -25,7 +28,7 @@ async def render_thread(blogname: str, post_id: int, modifiers: list = []) -> bo
         to_send = {
             "blogname": blogname,
             "post_id": post_id,
-            "modifiers": modifiers,
+            "modifiers": modifiers or [],
             "work_id": work_id,
         }
 

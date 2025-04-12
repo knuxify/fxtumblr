@@ -8,7 +8,6 @@ from pytumblr.request import TumblrRequest
 # needed by FxTumblrRequest
 import requests
 import urllib.parse
-from requests_oauthlib import OAuth1
 from requests.exceptions import TooManyRedirects, HTTPError
 import sys
 
@@ -84,7 +83,7 @@ class FxTumblrRequest:
             return False
 
         if (self.current_cred + 1) == len(self.requests):
-            self_current_cred = 0
+            self.current_cred = 0
         else:
             self.current_cred += 1
 
@@ -145,7 +144,7 @@ class FxTumblrRequest:
 
         return self.json_parse(resp)
 
-    def post(self, url, params={}, files=[]):
+    def post(self, url, params={}, files=[]):  # noqa: B006
         """
         Issues a POST request against the API, allows for multipart data uploads
 

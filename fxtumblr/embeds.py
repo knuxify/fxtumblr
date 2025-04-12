@@ -7,15 +7,13 @@ import logging
 import traceback
 import re
 from quart import request, render_template, redirect
-import os.path
 
 from .app import app
-from .cache import post_needs_caching
 from .config import APP_NAME, BASE_URL, config
 from .stats import register_hit
 from .npf import TumblrThread
 
-from fxtumblr_render.paths import filename_for, path_to
+from fxtumblr_render.paths import filename_for
 
 from .tumblr import get_post
 
@@ -70,7 +68,6 @@ async def generate_embed_route(blogname: str, postid: int, summary: str = None):
 
 async def generate_embed(blogname: str, postid: int, summary: str = None):
     should_render = False
-    needs_caching = post_needs_caching(blogname, postid)
     post = get_post(blogname, postid)
 
     post_tumblr_url = f"https://www.tumblr.com/{blogname}/{postid}"
@@ -191,7 +188,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         description = description[:max_desc_length] + truncate_placeholder
         should_render = True
 
-    miniheader = f'{post["note_count"]} notes'
+    miniheader = f"{post['note_count']} notes"
 
     if reblog["by"] and reblog["from"]:
         if reblog["by"] == reblog["from"]:
@@ -236,7 +233,7 @@ async def generate_embed(blogname: str, postid: int, summary: str = None):
         image = {"url": render_path, "width": 0, "height": 0}
         card_type = "summary_large_image"
         if video:
-            description = f'(Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post["blog_name"]}/{post["id"]}?video)'
+            description = f"(Hint: You can get the raw video by pasting in the following link: {BASE_URL}/{post['blog_name']}/{post['id']}?video)"
 
         video = None
     else:

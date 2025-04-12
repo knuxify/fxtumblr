@@ -48,3 +48,7 @@ statstool = [
 
 [tool.hatch]
 skip-install = true
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "B", "F"]
+ignore = ["E722"]

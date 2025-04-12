@@ -9,6 +9,7 @@ where modifiers are sorted alphabetically.
 
 import os
 from fxtumblr.config import config
+from typing import Optional
 
 RENDERS_PATH = config["renders_path"]
 
@@ -16,20 +17,19 @@ VALID_MODIFIERS = ("dark", "unroll", "oldstyle")
 
 
 def filename_for(
-    blogname: str, post_id: int, extension: str, modifiers: list[str] = []
+    blogname: str, post_id: int, extension: str, modifiers: Optional[list[str]] = None
 ) -> str:
     """Generates a render path with the given data."""
-    for mod in modifiers:
-        if mod not in VALID_MODIFIERS:
-            raise ValueError(f"Invalid modifier {mod}")
-
     if modifiers:
+        for mod in modifiers:
+            if mod not in VALID_MODIFIERS:
+                raise ValueError(f"Invalid modifier {mod}")
         return f"{blogname}-{post_id}.{','.join(sorted(modifiers))}.{extension}"
     return f"{blogname}-{post_id}.{extension}"
 
 
 def path_to(
-    blogname: str, post_id: int, extension: str, modifiers: list[str] = []
+    blogname: str, post_id: int, extension: str, modifiers: Optional[list[str]] = None
 ) -> str:
     """Shorthand for RENDERS_PATH + filename_for..."""
     return os.path.join(
@@ -59,8 +59,8 @@ def from_filename(filename: str) -> dict:
         for mod in modifiers:
             if mod not in VALID_MODIFIERS:
                 raise ValueError(f"Invalid modifier {mod}")
-    except ValueError:
-        raise ValueError("Malformed filename")
+    except ValueError as e:
+        raise ValueError("Malformed filename") from e
 
     return {
         "blogname": blogname,

@@ -6,7 +6,6 @@ Statistic counting code.
 from .config import config
 
 import asyncio
-import time
 import datetime
 from typing import List
 import traceback
@@ -21,13 +20,15 @@ if STATS_DB_TYPE == "sqlite":
 elif STATS_DB_TYPE == "postgres":
     import psycopg
 
-    PSQL_DSN = ' '.join([
-                            f"host={config['stats_db_host']}",
-                            f"port={config['stats_db_port']}",
-                            f"user={config['stats_db_user']}",
-                            f"password={config['stats_db_password']}",
-                            f"dbname={config['stats_db_name']}",
-                        ])
+    PSQL_DSN = " ".join(
+        [
+            f"host={config['stats_db_host']}",
+            f"port={config['stats_db_port']}",
+            f"user={config['stats_db_user']}",
+            f"password={config['stats_db_password']}",
+            f"dbname={config['stats_db_name']}",
+        ]
+    )
 
 else:
     raise ValueError("stats_db_type must be one of: sqlite, postgres")
@@ -41,7 +42,7 @@ def hash_post(blogname: str, postid: str):
 
 
 async def register_hit(
-    blogname: str, postid: str, modifiers: List[str] = [], failed: bool = False
+    blogname: str, postid: str, modifiers: List[str] = (), failed: bool = False
 ):
     if f"{blogname}-{postid}" in STATS_IGNORE:
         return
@@ -54,7 +55,7 @@ async def register_hit(
             "id": str(uuid.uuid4()),
             "time": int(now.timestamp()),
             "post": hash_post(blogname, postid),
-            "modifiers": ",".join(modifiers),
+            "modifiers": ",".join(modifiers) if modifiers else "",
             "failed": failed,
         }
 
@@ -72,7 +73,14 @@ async def register_hit(
                     async with aconn.cursor() as acur:
                         await setup_db(acur)
                         await acur.execute(
-                            "INSERT INTO fxtumblr_stats (id, time, post, modifiers, failed) VALUES (%s, %s, %s, %s, %s);", (data["id"], data["time"], data["post"], data["modifiers"], data["failed"])
+                            "INSERT INTO fxtumblr_stats (id, time, post, modifiers, failed) VALUES (%s, %s, %s, %s, %s);",
+                            (
+                                data["id"],
+                                data["time"],
+                                data["post"],
+                                data["modifiers"],
+                                data["failed"],
+                            ),
                         )
                     await aconn.commit()
         except:
