@@ -103,6 +103,7 @@ class FxTumblrRequest:
                        in the request
         :returns: a dict parsed of the JSON response
         """
+        _url = url
         if not url.startswith(self.host):
             url = self.host + url
         if params:
@@ -137,7 +138,7 @@ class FxTumblrRequest:
         # FxTumblrRequest modification start
         if resp.status_code == 429:
             if self.next_key():
-                return self.get(url, params)
+                return self.get(_url, params)
         else:
             self._key_switches_since_fail = 0
         # FxTumblrRequest modification end
@@ -155,8 +156,10 @@ class FxTumblrRequest:
 
         :returns: a dict parsed of the JSON response
         """
+        _url = url
         if not url.startswith(self.host):
             url = self.host + url
+
         try:
             if files:
                 return self.post_multipart(url, params, files)
@@ -171,7 +174,7 @@ class FxTumblrRequest:
                 # FxTumblrRequest modification start
                 if resp.status_code == 429:
                     if self.next_key():
-                        return self.post(url, params, files)
+                        return self.post(_url, params, files)
                 else:
                     self._key_switches_since_fail = 0
                 # FxTumblrRequest modification end
@@ -181,7 +184,7 @@ class FxTumblrRequest:
             # FxTumblrRequest modification start
             if e.response.status_code == 429:
                 if self.next_key():
-                    return self.post(url, params, files)
+                    return self.post(_url, params, files)
             else:
                 self._key_switches_since_fail = 0
             # FxTumblrRequest modification end
@@ -196,6 +199,7 @@ class FxTumblrRequest:
                        in the request
         :returns: a dict parsed of the JSON response
         """
+        _url = url
         if not url.startswith(self.host):
             url = self.host + url
         if params:
@@ -211,7 +215,7 @@ class FxTumblrRequest:
         # FxTumblrRequest modification start
         if resp.status_code == 429:
             if self.next_key():
-                return self.delete(url, params)
+                return self.delete(_url, params)
         else:
             self._key_switches_since_fail = 0
         # FxTumblrRequest modification end
