@@ -103,7 +103,8 @@ class FxTumblrRequest:
                        in the request
         :returns: a dict parsed of the JSON response
         """
-        url = self.host + url
+        if not url.startswith(self.host):
+            url = self.host + url
         if params:
             url = url + "?" + urllib.parse.urlencode(params)
 
@@ -154,7 +155,8 @@ class FxTumblrRequest:
 
         :returns: a dict parsed of the JSON response
         """
-        url = self.host + url
+        if not url.startswith(self.host):
+            url = self.host + url
         try:
             if files:
                 return self.post_multipart(url, params, files)
@@ -194,7 +196,8 @@ class FxTumblrRequest:
                        in the request
         :returns: a dict parsed of the JSON response
         """
-        url = self.host + url
+        if not url.startswith(self.host):
+            url = self.host + url
         if params:
             url = url + "?" + urllib.parse.urlencode(params)
 
