@@ -19,7 +19,7 @@ dependencies = [
 	"uvicorn",
 	"hypercorn",
 	"pytumblr",
-	"redis",
+	"valkey",
 	"pyyaml",
 	"python-dateutil",
 	"emoji",

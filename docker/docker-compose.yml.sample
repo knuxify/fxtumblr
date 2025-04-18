@@ -2,10 +2,10 @@
 # (This file expects to be moved into the main fxtumblr source code directory!)
 
 services:
-  # Redis is used for the post cache, which is shared between the main fxtumblr
+  # Valkey is used for the post cache, which is shared between the main fxtumblr
   # container and the renderer container.
-  redis:
-    image: redis:alpine
+  valkey:
+    image: valkey/valkey:alpine
     restart: unless-stopped
 
   # -- Start of renderer section. --

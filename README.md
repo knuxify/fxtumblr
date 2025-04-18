@@ -40,7 +40,7 @@ Admins may still be able to track requests, e.g. through nginx access logs (disa
 * Copy `config.yml.sample` to `config.yml`
 * Modify config according to your needs
 * Install nginx and Hypercorn, copy nginx config (`fxtumblr.nginx`) into your sites-available, modify it to use your domainn name, `ln -s` it into sites-enabled
-* Install Redis, set it up via `/etc/redis.conf`, apply the settings to the config file
+* Install Valkey, set it up via `/etc/valkey.conf`, apply the settings to the config file
 * Run `./run.sh` (and simultaneously `./run-renderer.sh` if you want rendering support - see next section).
 
 ### Running in Docker

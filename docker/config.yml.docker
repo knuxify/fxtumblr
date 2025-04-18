@@ -30,8 +30,8 @@ tumblr_consumer_secret: "FIXME"
 # Unless you're willing to modify the container build files directly,
 # do not change these!
 
-redis_host: "redis"
-redis_port: 6379
+valkey_host: "valkey"
+valkey_port: 6379
 
 renders_path: "/opt/fxtumblr/renders"
 renders_host: fxtumblr-render

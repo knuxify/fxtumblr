@@ -6,9 +6,9 @@ logging: false
 statistics: false
 stats_db: "stats.db"
 
-redis_host: "localhost"
-redis_port: 6379
-redis_password: "foobared"
+valkey_host: "localhost"
+valkey_port: 6379
+valkey_password: "foobared"
 cache_expiry: 43200 # 12 hours
 
 max_images_in_thread: 30

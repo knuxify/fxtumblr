@@ -6,14 +6,14 @@ import json
 import time
 import datetime
 import dateutil
-import redis
+import valkey
 
 from .config import config
 
-r = redis.Redis(
-    host=config.get("redis_host", "localhost"),
-    port=config.get("redis_port", 6379),
-    password=config.get("redis_password", None),
+r = valkey.Valkey(
+    host=config.get("valkey_host", config.get("redis_host", "localhost")),
+    port=config.get("valkey_port", config.get("redis_port", 6379)),
+    password=config.get("valkey_password", config.get("redis_password", None)),
     decode_responses=True,
 )
 
