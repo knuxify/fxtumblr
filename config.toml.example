@@ -1,0 +1,38 @@
+[instance]
+
+# Name of the instance; shows up in embeds.
+name = "fxtumblr"
+# Base domain of the instance.
+domain = "example.com"
+# Contact email listed on the index page.
+contact_email = "changeme@example.com"
+
+# Whether or not to enable anonymous statistics. The following data is
+# collected:
+#
+# - Hashed ID of the blog and post
+# - Whether embedding finished succesfully or not
+# - Whether the post was rendered or not
+# - Which optional parameters were used
+#
+# Note that disabling statistics also prevents the health endpoints from
+# being used.
+stats = true
+
+# Whether or not to enable health monitoring endpoints.
+health = true
+
+# List of strings to show next to the instance name.
+motd = [""]
+
+[tumblr]
+
+# Tumblr API key:
+consumer_key = "FIXME"
+consumer_secret = "FIXME"
+
+[redis]
+
+host = "localhost"
+port = 6379
+# password = ""

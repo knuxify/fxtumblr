@@ -1,0 +1,41 @@
+[project]
+name = "fxtumblr"
+version = "2.0.0"
+description = "Tumblr embed wrapper"
+readme = "README.md"
+requires-python = ">=3.11"
+package-mode = false
+dependencies = [
+	"authlib",
+	"httpx",
+	"redis",
+	"Quart",
+	"frozendict",
+	"emoji",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "B", "D", "F", "I"]
+ignore = ["D212", "D203", "D205", "D202"]
+
+[dependency-groups]
+test = [
+    "pytest",
+	"pytest-asyncio",
+	"pytest-dotenv",
+    "pytest-httpserver",
+    "pytest-redis",
+    "pytest-cov",
+]
+typing = [
+    "mypy",
+    "types-authlib",
+    "types-frozendict",
+    "types-emoji",
+    "types-redis"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+log_cli = true
+log_cli_level = "INFO"
