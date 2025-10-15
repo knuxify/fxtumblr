@@ -3,6 +3,7 @@
 
 import html
 import itertools
+import urllib.parse
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from enum import StrEnum
@@ -48,10 +49,10 @@ class Media:
     type: str
     #: URL to the media.
     url: str
-    #: Width of the media.
-    width: int
-    #: Height of the media.
-    height: int
+    #: Width of the media, if applicable.
+    width: int | None
+    #: Height of the media, if applicable.
+    height: int | None
     #: Whether or not the media has its original dimensions.
     has_original_dimensions: bool = False
 
@@ -66,14 +67,27 @@ class Media:
         return cls(
             type=data["type"],
             url=data["url"],
-            width=data["width"],
-            height=data["height"],
+            width=data.get("width", None),
+            height=data.get("height", None),
             has_original_dimensions=data.get("has_original_dimensions", False),
         )
 
 
 class MediaList(list):
     """List of Media objects. Provides a convenience method for finding media of a specific size."""
+
+    @property
+    def no_dimensions(self) -> bool:
+        """
+        Check if the media in this list has no width/height.
+
+        :returns: True if the media contained in the list is dimensionless,
+        i.e. is not an image or video.
+        """
+        for media in self:
+            if media.width is None or media.height is None:
+                return True
+        return False
 
     @property
     def original_dimensions(self) -> tuple[int, int] | None:
@@ -83,6 +97,9 @@ class MediaList(list):
         :returns: Tuple of width and height, or None if original dimensions could
             not be determined.
         """
+        if self.no_dimensions:
+            return None
+
         for media in self:
             if media.has_original_dimensions:
                 return (media.width, media.height)
@@ -98,6 +115,9 @@ class MediaList(list):
         :returns: Media object representing highest-quality media, or None if the list
             is empty.
         """
+        if self.no_dimensions:
+            return None
+
         _self_sorted = sorted(self, key=lambda m: m.width, reverse=True)
 
         for media in _self_sorted:
@@ -113,6 +133,9 @@ class MediaList(list):
         :param target_width: Width to target.
         :returns: A matching Media object, or None if the list is empty.
         """
+        if self.no_dimensions:
+            return None
+
         _self_sorted = sorted(self, key=lambda m: m.width, reverse=True)
 
         for media in _self_sorted:
@@ -144,6 +167,22 @@ class Attribution:
 
     type: ClassVar[str]
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "Attribution":
+        """
+        Turn an attribution dict into an Attribution object by picking the correct
+        attribution type to use.
+
+        In subclasses, this method should convert the dict to the given type,
+        or raise an exception if the type doesn't match.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        if data["type"] in ATTRIBUTION_TYPES:
+            return ATTRIBUTION_TYPES[data["type"]].from_dict(data)
+        raise ValueError("Unknown attribution type {data.get('type')}]}")
+
     def to_html(self) -> str:
         """
         Convert the attribution data to a human-viewable HTML format.
@@ -154,22 +193,165 @@ class Attribution:
         """
         raise NotImplementedError
 
+
+@dataclass
+class AttributionApp(Attribution):
+    """Attribution to an external app."""
+
+    type: ClassVar[str] = "app"
+
+    #: The URL to be attributed.
+    url: str
+    #: Name of the app.
+    app_name: str | None = None
+    #: Additional text to display.
+    display_text: str | None = None
+
     @classmethod
     def from_dict(cls, data: dict) -> Self:
         """
-        Turn ann attribution dict into an NPFContent object.
-
-        To be implemented by subclasses.
+        Turn the attibution entry into an AttributionApp object.
 
         :param data: Data to use for object creation.
         :returns: The resulting object.
         """
-        raise NotImplementedError
+        assert data["type"] == cls.type
+
+        return cls(
+            url=data["url"],
+            app_name=data.get("app_name", None),
+            display_text=data.get("display_text", None),
+        )
+
+    def to_html(self) -> str:
+        """
+        Convert the attribution data to a human-viewable HTML format.
+
+        :returns: The conversion result, as a string containing valid HTML.
+        """
+        caret_tag = '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
+
+        if self.app_name and self.display_text and self.app_name != "Twitter":
+            text = self.app_name + " | " + self.display_text
+        elif self.display_text:
+            text = self.display_text
+        elif self.app_name:
+            text = self.app_name
+        else:
+            text = urllib.parse.urlparse(self.url).netloc
+
+        return f'<div class="attribution app-attribution"><a href="{self.url}">{text}</a>{caret_tag}</div>'
+
+
+@dataclass
+class AttributionBlog(Attribution):
+    """Attribution to a Tumblr blog."""
+
+    type: ClassVar[str] = "blog"
+
+    #: The URL of the blog to be attributed.
+    url: str
+    #: The blog to attribute.
+    blog: "Blog"
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Turn the attibution entry into an AttributionPost object.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        assert data["type"] == cls.type
+
+        from .types import Blog
+
+        return cls(url=data["url"], blog=Blog.from_api(data["blog"]))
+
+    def to_html(self) -> str:
+        """
+        Convert the attribution data to a human-viewable HTML format.
+
+        :returns: The conversion result, as a string containing valid HTML.
+        """
+        return f'<div class="attribution blog-attribution"><a href="{self.url}">{self.blog.name}</a></div>'
+
+
+@dataclass
+class AttributionLink(Attribution):
+    """Attribution to an external link."""
+
+    type: ClassVar[str] = "link"
+
+    #: The URL to be attributed.
+    url: str
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Turn the attibution entry into an AttributionLink object.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        assert data["type"] == cls.type
+
+        return cls(
+            url=data["url"],
+        )
+
+    def to_html(self) -> str:
+        """
+        Convert the attribution data to a human-viewable HTML format.
+
+        :returns: The conversion result, as a string containing valid HTML.
+        """
+        caret_tag = '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
+
+        return f'<div class="attribution image-attribution"><a href="{self.url}">{urllib.parse.urlparse(self.url).netloc}</a>{caret_tag}</div>'
 
 
 @dataclass
 class AttributionPost(Attribution):
     """Attribution to a Tumblr post."""
+
+    type: ClassVar[str] = "post"
+
+    #: The URL of the post to be attributed.
+    url: str
+    #: The blog which made the post.
+    blog: "Blog"
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Turn the attibution entry into an AttributionPost object.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        assert data["type"] == cls.type
+
+        from .types import Blog
+
+        return cls(url=data["url"], blog=Blog.from_api(data["blog"]))
+
+    def to_html(self) -> str:
+        """
+        Convert the attribution data to a human-viewable HTML format.
+
+        :returns: The conversion result, as a string containing valid HTML.
+        """
+        return f'<div class="attribution post-attribution"><a href="{self.url}">GIF by <b>{self.blog.name}</b></a></div>'
+
+
+#: Mapping of type strings to attribution classes.
+ATTRIBUTION_TYPES: dict[str, type[AttributionPost]] = {
+    "app": AttributionApp,
+    "blog": AttributionBlog,
+    "link": AttributionLink,
+    "post": AttributionPost,
+}
 
 
 ##
@@ -184,6 +366,27 @@ class ContentBlock:
     #: Content block type; defined by subclasses.
     type: ClassVar[str]
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "ContentBlock":
+        """
+        Turn a content block dict into a ContentBlock object by picking the correct
+        content block type to use.
+
+        In subclasses, this method should convert the dict to the given type,
+        or raise an exception if the type doesn't match.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        if "type" not in data:
+            return ContentBlockUnknown(msg="Malformed content block")
+        elif data["type"] in CONTENT_BLOCK_TYPES:
+            return CONTENT_BLOCK_TYPES[data["type"]].from_dict(data)
+        else:
+            return ContentBlockUnknown(
+                msg=f'Unknown content block type "{data["type"]}"'
+            )
+
     def to_html(self) -> str:
         """
         Convert the block data to HTML format.
@@ -191,18 +394,6 @@ class ContentBlock:
         To be implemented by subclasses.
 
         :returns: The conversion result, as a string containing valid HTML.
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        """
-        Turn a content block dict into an NPFContent object.
-
-        To be implemented by subclasses.
-
-        :param data: Data to use for object creation.
-        :returns: The resulting object.
         """
         raise NotImplementedError
 
@@ -256,6 +447,35 @@ class TextFormat:
     #: Additional data for the format.
     data: frozendict
 
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Turn a format entry into a TextFormat object.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+
+        # Prepare format type
+        try:
+            _type = TextFormatType(data["type"])
+        except ValueError as e:
+            raise UnknownContentBlockError(
+                f"Unknown formatting type {data['type']}"
+            ) from e
+
+        # Prepare remaining data dict
+        _data = data.copy()
+        del _data["start"]
+        del _data["end"]
+        del _data["type"]
+        if "blog" in _data:
+            _data["blog"] = frozendict(_data["blog"])
+
+        return cls(
+            start=data["start"], end=data["end"], type=_type, data=frozendict(_data)
+        )
+
     @property
     def html_tag(self) -> str:
         """HTML opening tag contents for this format."""
@@ -296,35 +516,6 @@ class TextFormat:
             return None
         return self.data["hex"]
 
-    @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        """
-        Turn a format entry into a TextFormat object.
-
-        :param data: Data to use for object creation.
-        :returns: The resulting object.
-        """
-
-        # Prepare format type
-        try:
-            _type = TextFormatType(data["type"])
-        except ValueError as e:
-            raise UnknownContentBlockError(
-                f"Unknown formatting type {data['type']}"
-            ) from e
-
-        # Prepare remaining data dict
-        _data = data.copy()
-        del _data["start"]
-        del _data["end"]
-        del _data["type"]
-        if "blog" in _data:
-            _data["blog"] = frozendict(_data["blog"])
-
-        return cls(
-            start=data["start"], end=data["end"], type=_type, data=frozendict(_data)
-        )
-
 
 @dataclass
 class ContentBlockText(ContentBlock):
@@ -344,6 +535,49 @@ class ContentBlockText(ContentBlock):
 
     #: Formatting data.
     formatting: list[TextFormat] | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Turn a text content block dict into an NPFContentText object.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        assert data["type"] == cls.type
+
+        _indent_level = None
+        if "subtype" in data:
+            try:
+                _subtype = ContentTextSubtype(data["subtype"])
+            except ValueError as e:
+                raise UnknownContentBlockError(
+                    f"Unknown text block subtype {data['subtype']}"
+                ) from e
+
+            if _subtype in (
+                ContentTextSubtype.ordered_list_item,
+                ContentTextSubtype.unordered_list_item,
+            ):
+                _indent_level = data.get("indent_level", 0)
+
+        else:
+            _subtype = None
+
+        if "formatting" in data:
+            _formatting = [TextFormat.from_dict(i) for i in data["formatting"]]
+            _formatting.sort(key=lambda f: f.start)
+            _formatting.sort(key=lambda f: f.end, reverse=True)
+            # TODO: Fix up duplicate formats
+        else:
+            _formatting = None
+
+        return cls(
+            text=data["text"],
+            subtype=_subtype,
+            indent_level=_indent_level,
+            formatting=_formatting,
+        )
 
     def to_html(self) -> str:
         """
@@ -424,10 +658,13 @@ class ContentBlockText(ContentBlock):
                 out = "<h1>" + out + "</h1>"
             elif self.subtype == ContentTextSubtype.heading2:
                 out = "<h2>" + out + "</h2>"
+
+            # Note that the <ul>/<ol> wrappers are applied in NPFPost.to_html().
             elif self.subtype == ContentTextSubtype.ordered_list_item:
                 out = "<li>" + out + "</li>"
             elif self.subtype == ContentTextSubtype.unordered_list_item:
                 out = "<li>" + out + "</h2>"
+
             elif self.subtype == ContentTextSubtype.chat:
                 out = '<p class="npf_chat">' + out + "</p>"
             elif self.subtype == ContentTextSubtype.quote:
@@ -454,48 +691,6 @@ class ContentBlockText(ContentBlock):
 
         return out
 
-    @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        """
-        Turn a text content block dict into an NPFContentText object.
-
-        :param data: Data to use for object creation.
-        :returns: The resulting object.
-        """
-        assert data["type"] == cls.type
-
-        _indent_level = None
-        if "subtype" in data:
-            try:
-                _subtype = ContentTextSubtype(data["subtype"])
-            except ValueError as e:
-                raise UnknownContentBlockError(
-                    f"Unknown text block subtype {data['subtype']}"
-                ) from e
-
-            if _subtype in (
-                ContentTextSubtype.ordered_list_item,
-                ContentTextSubtype.unordered_list_item,
-            ):
-                _indent_level = data.get("indent_level", 0)
-
-        else:
-            _subtype = None
-
-        if "formatting" in data:
-            _formatting = [TextFormat.from_dict(i) for i in data["formatting"]]
-            _formatting.sort(key=lambda f: f.start)
-            _formatting.sort(key=lambda f: f.end, reverse=True)
-        else:
-            _formatting = None
-
-        return cls(
-            text=data["text"],
-            subtype=_subtype,
-            indent_level=_indent_level,
-            formatting=_formatting,
-        )
-
 
 @dataclass
 class ContentBlockImage(ContentBlock):
@@ -513,6 +708,28 @@ class ContentBlockImage(ContentBlock):
     alt_text: str | None = None
     #: Caption, if any.
     caption: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Turn an image content block dict into an NPFContentText object.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        assert data["type"] == cls.type
+
+        if "attribution" in data:
+            _attribution = Attribution.from_dict(data["attribution"])
+        else:
+            _attribution = None
+
+        return cls(
+            media=MediaList.from_list_of_dicts(data.get("media", [])),
+            attribution=_attribution,
+            alt_text=data.get("alt_text", None),
+            caption=data.get("caption", None),
+        )
 
     def to_html(self) -> str:
         """
@@ -539,28 +756,6 @@ class ContentBlockImage(ContentBlock):
 
         return figure_tag
 
-    @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        """
-        Turn an image content block dict into an NPFContentText object.
-
-        :param data: Data to use for object creation.
-        :returns: The resulting object.
-        """
-        assert data["type"] == cls.type
-
-        if "attribution" in data:
-            _attribution = Attribution.from_dict(data["attribution"])
-        else:
-            _attribution = None
-
-        return cls(
-            media=MediaList.from_list_of_dicts(data.get("media", [])),
-            attribution=_attribution,
-            alt_text=data.get("alt_text", None),
-            caption=data.get("caption", None),
-        )
-
 
 @dataclass
 class ContentBlockLink(ContentBlock):
@@ -577,36 +772,6 @@ class ContentBlockLink(ContentBlock):
     site_name: str | None = None
     display_url: str | None = None
     poster: MediaList | None = None
-
-    def to_html(self) -> str:
-        """
-        Convert the block data to HTML format.
-
-        :returns: The conversion result, as a string containing valid HTML.
-        """
-        if self.title:
-            title = self.title
-        elif self.display_url:
-            title = self.display_url
-        else:
-            title = self.url
-
-        html = '<div class="link-embed">'
-
-        if self.poster:
-            selected_size_poster = self.poster.get_by_width(540)
-            html += f'<div class="link-embed-image-top"><img src="{selected_size_poster.url}" class="link-image"><span class="link-image-title">{title}</span></div>'
-        else:
-            html += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
-
-        html += '<div class="link-embed-bottom">'
-        if self.description:
-            html += f'<span class="link-description">{self.description}</span>'
-        if self.site_name:
-            html += f'<span class="link-sitename">{self.site_name}</span>'
-        html += "</div></div>"
-
-        return html
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
@@ -633,12 +798,49 @@ class ContentBlockLink(ContentBlock):
             poster=_poster,
         )
 
+    def to_html(self) -> str:
+        """
+        Convert the block data to HTML format.
+
+        :returns: The conversion result, as a string containing valid HTML.
+        """
+        if self.title:
+            title = self.title
+        elif self.display_url:
+            title = self.display_url
+        else:
+            title = self.url
+
+        html = '<div class="link-embed">'
+
+        if self.poster:
+            selected_size_poster = self.poster.get_by_width(640)
+            html += f'<div class="link-embed-image-top"><img src="{selected_size_poster.url}" class="link-image"><span class="link-image-title">{title}</span></div>'
+        else:
+            html += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
+
+        html += '<div class="link-embed-bottom">'
+        if self.description:
+            html += f'<span class="link-description">{self.description}</span>'
+        if self.site_name:
+            html += f'<span class="link-sitename">{self.site_name}</span>'
+        html += "</div></div>"
+
+        return html
+
 
 @dataclass
 class ContentBlockVideo(ContentBlock):
     """Represents a video embed."""
 
     type: ClassVar[str] = "video"
+
+    media: Media | None
+    poster: MediaList | None
+    url: str | None
+
+    alt_text: str | None = None
+    attribution: Attribution | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
@@ -649,7 +851,74 @@ class ContentBlockVideo(ContentBlock):
         :returns: The resulting object.
         """
         assert data["type"] == cls.type
-        return cls()
+
+        if "media" in data and data["media"]:
+            media = Media.from_dict(data["media"])
+        else:
+            media = None
+
+        # Get thumbnail (poster) of the video.
+        if "poster" in data:
+            poster = MediaList.from_list_of_dicts(data["poster"])
+
+        # If there is no poster object, it's still possible to get the thumbnail
+        # URL by modifying the URL.
+        elif media:
+            poster_url = (
+                urllib.parse.urlparse(media.url)
+                ._replace(netloc="64.media.tumblr.com")
+                .geturl()
+                .replace(".mp4", "_frame1.jpg")
+                .replace("_720_frame1", "_frame1")
+            )
+
+            poster = MediaList()
+            poster.append(
+                Media(
+                    type="image/jpg",
+                    url=poster_url,
+                    width=media.width,
+                    height=media.height,
+                )
+            )
+
+        else:
+            poster = None
+
+        if "attribution" in data:
+            attribution = Attribution.from_dict(data["attribution"])
+        else:
+            attribution = None
+
+        return cls(
+            url=data.get("url", None),
+            media=media,
+            poster=poster,
+            alt_text=data.get("alt_text", None),
+            attribution=attribution,
+        )
+
+    def to_html(self) -> str:
+        """
+        Convert the block data to HTML format.
+
+        :returns: The conversion result, as a string containing valid HTML.
+        """
+        poster = self.poster.get_by_width(640)
+        if poster:
+            poster_img_tag = f'<img class="video-poster" src="{poster.url}"/>'
+        else:
+            poster_img_tag = '<div class="video-poster video-poster-dummy"></div>'
+
+        play_button_tag = '<span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span>'
+
+        alt_tag = ""
+        if self.alt_text:
+            alt_tag = '<span class="tmblr-alt-text-helper">ALT</span>'
+
+        figure_tag = f'<figure class="tmblr-full video-block">{poster_img_tag}{play_button_tag}{alt_tag}</figure>'
+
+        return figure_tag
 
 
 @dataclass
@@ -657,6 +926,15 @@ class ContentBlockAudio(ContentBlock):
     """Represents an audio embed."""
 
     type: ClassVar[str] = "audio"
+
+    provider: str | None = None
+
+    title: str | None = None
+    artist: str | None = None
+    album: str | None = None
+    poster: MediaList | None = None
+    media: Media | None = None
+    alt_text: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
@@ -667,7 +945,64 @@ class ContentBlockAudio(ContentBlock):
         :returns: The resulting object.
         """
         assert data["type"] == cls.type
-        return cls()
+
+        if "poster" in data:
+            poster = MediaList.from_list_of_dicts(data["poster"])
+        else:
+            poster = None
+
+        if "media" in data:
+            media = Media.from_dict(data["media"])
+        else:
+            media = None
+
+        return cls(
+            title=data.get("title"),
+            artist=data.get("artist"),
+            album=data.get("album"),
+            alt_text=data.get("alt_text"),
+            poster=poster,
+            media=media,
+            provider=data.get("provider"),
+        )
+
+    def to_html(self) -> str:
+        """
+        Convert the block data to HTML format.
+
+        :returns: The conversion result, as a string containing valid HTML.
+        """
+        # This returns a (nonfunctional) official client-like view of an
+        # audio track.
+        selected_size_poster = None
+        if self.poster:
+            selected_size_poster = self.poster.get_by_width(85)
+        poster_url = ""
+        if selected_size_poster:
+            poster_url = selected_size_poster.url
+
+        html = f"""
+                <div class="audio-player{" audio-" + self.provider if self.provider else ""}">
+                    <div class="play-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__{self.provider if self.provider in ("spotify", "soundcloud") else "play-cropped"}"></use></svg>
+                    </div>
+                    <div class="audio-info">
+                        <div class="title">{self.title}</div>
+                        <div class="artist">{self.artist}</div>
+                        <div class="album">{self.album}</div>
+                    </div>
+        """
+        if poster_url:
+            html += f"""
+                    <div class="audio-image">
+                        <img src="{poster_url}">
+                    </div>
+            """
+        html += """
+                </div>
+        """
+
+        return html
 
 
 @dataclass
@@ -694,13 +1029,16 @@ class ContentBlockUnknown(ContentBlock):
 
     type: ClassVar[str] = "unknown"
 
+    #: An optional message to include in the block.
+    msg: str | None = None
+
     def to_html(self) -> str:
         """
         Convert the block data to HTML format.
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-        return
+        return "TODO"
 
 
 #: Mapping of type strings to content block classes.
@@ -712,6 +1050,7 @@ CONTENT_BLOCK_TYPES: dict[str, type[ContentBlock]] = {
     "audio": ContentBlockAudio,
     "poll": ContentBlockPoll,
 }
+
 
 ##
 # Layout blocks
@@ -743,43 +1082,65 @@ class NPFPost:
 
     is_commercial: bool = False
 
-    # TODO: Having this function support two different post types will bite us
-    # in the ass. Fix this.
     @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        """Turn a Tumblr API post response or post from reblog trail into an NPFPost object."""
+    def from_post_dict(cls, data: dict) -> Self:
+        """Turn post data from the Tumblr API into an NPFPost object."""
+
+        assert "id" in data and "blog" in data
 
         # To avoid a cyclical dependency, we import Blog here instead of at the
         # top of the file.
         from .types import Blog
 
-        # This function accepts two types of post dicts, both largely
-        # identical: regular post objects and trail items.
-        # The only relevant difference is that the latter stores post
-        # data in a "post" dict.
+        return cls(
+            id=data["id"],
+            timestamp=data.get("timestamp", -1),
+            blog=Blog.from_api(data["blog"]),
+            content=[ContentBlock.from_dict(block) for block in data["content"]],
+            layout=cls._parse_layout(data["layout"]),
+            is_commercial=data.get("is_commercial", False),
+        )
 
-        # Trail post (https://www.tumblr.com/docs/npf#reblog-trail)
-        if "id" not in data:
-            if "id" not in data.get("post", {}):
-                # Broken trail item
-                _id = -1
-                blog = Blog.create_dummy(data.get("broken_blog_name", "unknown-user"))
-            else:
-                _id = int(data["post"]["id"])
-                blog = Blog.from_api(data["blog"])
-            timestamp = data.get("post", {}).get("timestamp", -1)
+    @classmethod
+    def from_trail_dict(cls, data: dict) -> Self:
+        """Turn a post from a reblog trail into an NPFPost object."""
 
-        # Regular post
+        assert "blog" in data or "broken_blog_name" in data
+
+        # To avoid a cyclical dependency, we import Blog here instead of at the
+        # top of the file.
+        from .types import Blog
+
+        if "broken_blog_name" in data:
+            # Broken trail item
+            _id = -1
+            _blog = Blog.create_dummy(data.get("broken_blog_name", "unknown-user"))
         else:
-            _id = data["id"]
-            timestamp = data.get("timestamp", -1)
-            blog = Blog.from_api(data["blog"])
+            # Regular post
+            _id = int(data.get("post", {}).get("id", -1))
+            _blog = Blog.from_api(data["blog"])
+        _timestamp = data.get("post", {}).get("timestamp", -1)
 
         return cls(
             id=_id,
-            timestamp=timestamp,
-            blog=blog,
-            content=[],
-            layout=[],
+            timestamp=_timestamp,
+            blog=_blog,
+            content=[ContentBlock.from_dict(block) for block in data["content"]],
+            layout=cls._parse_layout(data["layout"]),
             is_commercial=data.get("is_commercial", False),
         )
+
+    @classmethod
+    def _parse_layout(cls, data: list[dict]) -> list[LayoutBlock]:
+        """
+        Parse layout dicts into a list of LayoutBlock-derived objects.
+
+        :param data: Data used to create the objects.
+        :returns: A list of LayoutBlock-derived objects representing the post
+            content.
+        """
+        out = []
+
+        # TODO
+
+        return out

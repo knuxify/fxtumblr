@@ -20,7 +20,7 @@ from ..conftest import _get_tumblr_test_data
 def test_npf_post():
     """Test the NPFPost class."""
     with open(_get_tumblr_test_data("post_npftest.json")) as test_data:
-        post = NPFPost.from_dict(json.load(test_data)["response"]["posts"][0])
+        post = NPFPost.from_post_dict(json.load(test_data)["response"]["posts"][0])
 
     assert post is not None
     assert isinstance(post, NPFPost)
@@ -255,7 +255,66 @@ def test_block_video():
                     "height": 544,
                 },
             },
-            "FIXME",
+            '<figure class="tmblr-full video-block"><img class="video-poster" src="https://64.media.tumblr.com/tumblr_s2dhynoXj51yk47jo_frame1.jpg"/><span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span></figure>',
+        ),
+        (
+            {
+                "type": "video",
+                "provider": "youtube",
+                "url": "https://www.youtube.com/watch?v=9sPthPleEKo",
+                "embed_html": '<iframe width="356" height="200"  id="youtube_iframe" src="https://www.youtube.com/embed/9sPthPleEKo?feature=oembed&amp;enablejsapi=1&amp;origin=https://safe.txmblr.com&amp;wmode=opaque" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen title="Road work ahead? Uh yeah, I sure hope it does [Drew Gooden]"></iframe>',
+                "poster": [
+                    {
+                        "media_key": "3f2bc691a34a4717874cb8525f5bf75e:5b2682c6837efa16-be",
+                        "type": "image/jpeg",
+                        "width": 480,
+                        "height": 360,
+                        "url": "https://64.media.tumblr.com/3f2bc691a34a4717874cb8525f5bf75e/5b2682c6837efa16-be/s500x750/ab21befaf02dec37e0f5fbb2d76cf8a6be90a140.jpg",
+                    }
+                ],
+                "embed_iframe": {
+                    "url": "https://safe.txmblr.com/svc/embed/inline/https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D9sPthPleEKo#embed-68e9480c0717e466720385",
+                    "width": 356,
+                    "height": 200,
+                },
+                "metadata": {"id": "9sPthPleEKo"},
+                "attribution": {
+                    "type": "app",
+                    "app_name": "YouTube",
+                    "url": "https://www.youtube.com/watch?v=9sPthPleEKo",
+                    "display_text": "? - Road work ahead? Uh yeah, I sure hope it does [Drew Gooden]",
+                },
+            },
+            '<figure class="tmblr-full video-block"><img class="video-poster" src="https://64.media.tumblr.com/3f2bc691a34a4717874cb8525f5bf75e/5b2682c6837efa16-be/s500x750/ab21befaf02dec37e0f5fbb2d76cf8a6be90a140.jpg"/><span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span></figure>',
+        ),
+        (
+            {
+                "type": "video",
+                "provider": "vimeo",
+                "url": "https://vimeo.com/823545557",
+                "embed_html": '<iframe src="https://player.vimeo.com/video/823545557?title=0&amp;byline=0&amp;portrait=0&amp;app_id=122963" width="540" height="304" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" title="underscores - Cops and robbers"></iframe>',
+                "poster": [
+                    {
+                        "media_key": "d4d14589e1383ee16f3eae38abb72cb4:5b2682c6837efa16-28",
+                        "type": "image/jpeg",
+                        "width": 295,
+                        "height": 166,
+                        "url": "https://64.media.tumblr.com/d4d14589e1383ee16f3eae38abb72cb4/5b2682c6837efa16-28/s400x600/0f95e805ab8aea92372d3fa350b49700bbb13cef.jpg",
+                    }
+                ],
+                "embed_iframe": {
+                    "url": "https://safe.txmblr.com/svc/embed/inline/https%3A%2F%2Fvimeo.com%2F823545557#embed-68e9480c07485832543369",
+                    "width": 540,
+                    "height": 324,
+                },
+                "attribution": {
+                    "type": "app",
+                    "app_name": "Vimeo",
+                    "url": "https://vimeo.com/823545557",
+                    "display_text": "Ayodeji - underscores - Cops and robbers",
+                },
+            },
+            '<figure class="tmblr-full video-block"><img class="video-poster" src="https://64.media.tumblr.com/d4d14589e1383ee16f3eae38abb72cb4/5b2682c6837efa16-28/s400x600/0f95e805ab8aea92372d3fa350b49700bbb13cef.jpg"/><span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span></figure>',
         ),
     )
 

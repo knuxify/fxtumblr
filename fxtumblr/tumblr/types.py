@@ -83,8 +83,8 @@ class Post:
         trail = []
         if "trail" in data:
             for i in data["trail"]:
-                trail.append(NPFPost.from_dict(i))
-        trail.append(NPFPost.from_dict(data))
+                trail.append(NPFPost.from_trail_dict(i))
+        trail.append(NPFPost.from_post_dict(data))
 
         return cls(
             blog=Blog.from_api(data["blog"]),
