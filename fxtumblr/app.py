@@ -7,9 +7,12 @@ from quart import Quart, render_template, send_from_directory
 
 from . import config
 
+#: Main Quart application object.
 app = Quart(__name__)
+#: Main logger for the application.
 logger = logging.getLogger(__name__)
 
+# Template globals for use in Jinja templates.
 app.jinja_env.globals["domain"] = config["instance"]["domain"]
 app.jinja_env.globals["instance"] = {
     "name": config["instance"]["name"],

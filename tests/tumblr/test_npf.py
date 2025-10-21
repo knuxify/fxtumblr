@@ -32,6 +32,20 @@ def test_npf_post():
     assert post.content
     assert post.layout
 
+    # Test post with ask
+    with open(_get_tumblr_test_data("post_ask.json")) as test_data:
+        post = NPFPost.from_post_dict(json.load(test_data)["response"]["posts"][0])
+
+    assert post is not None
+    assert isinstance(post, NPFPost)
+
+    assert isinstance(post.blog, Blog)
+    assert not post.blog.is_broken
+    assert post.blog.name == "knuxify"
+
+    assert post.content
+    assert post.layout
+
 
 def test_block_text():
     """Test text content block functions."""
@@ -361,7 +375,7 @@ def test_block_audio():
         assert block.to_html() == expected_result
 
 
-def test_block_poll():
+async def test_block_poll(tumblr_api):
     """Test poll content block functions."""
 
     examples = (
@@ -388,6 +402,7 @@ def test_block_poll():
                 },
                 "created_at": "2023-10-11 17:09:44 GMT",
                 "timestamp": 1697044184,
+                "_fxt_test_data": {"blog": "knuxify", "post": 730903802869317632},
             },
             "FIXME",
         ),
@@ -396,4 +411,7 @@ def test_block_poll():
     for data, expected_result in examples:
         block = ContentBlockPoll.from_dict(data)
         assert isinstance(block, ContentBlockPoll)
+        await block.fetch_results(
+            tumblr_api, data["_fxt_test_data"]["blog"], data["_fxt_test_data"]["post"]
+        )
         assert block.to_html() == expected_result

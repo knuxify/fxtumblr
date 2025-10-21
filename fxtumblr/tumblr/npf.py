@@ -1,28 +1,31 @@
 # SPDX-License-Identifier: MIT
 """Parser for Tumblr's NPF ("Neue Post Format") format."""
 
+import datetime
 import html
 import itertools
 import urllib.parse
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TYPE_CHECKING, ClassVar, Self
+from typing import TYPE_CHECKING, ClassVar, Self, Union
 
+import dateutil
 import emoji
 from frozendict import frozendict
 
 if TYPE_CHECKING:
     # Placed in TYPE_CHECKING due to circular import
-    from .types import Blog
+    from .api import TumblrAPI
+    from .types import Blog, PollResults
 
 ##
 # Helper classes/functions
 ##
 
 
-class UnknownContentBlockError(Exception):
-    """Exception raised when the content block type is not known."""
+class NPFParseError(Exception):
+    """Exception raised when an error is encountered during NPF parsing."""
 
 
 def _closing_tag(tag: str) -> str:
@@ -181,7 +184,7 @@ class Attribution:
         """
         if data["type"] in ATTRIBUTION_TYPES:
             return ATTRIBUTION_TYPES[data["type"]].from_dict(data)
-        raise ValueError("Unknown attribution type {data.get('type')}]}")
+        raise NPFParseError("Unknown attribution type {data.get('type')}]}")
 
     def to_html(self) -> str:
         """
@@ -346,7 +349,7 @@ class AttributionPost(Attribution):
 
 
 #: Mapping of type strings to attribution classes.
-ATTRIBUTION_TYPES: dict[str, type[AttributionPost]] = {
+ATTRIBUTION_TYPES: dict[str, type[Attribution]] = {
     "app": AttributionApp,
     "blog": AttributionBlog,
     "link": AttributionLink,
@@ -460,9 +463,7 @@ class TextFormat:
         try:
             _type = TextFormatType(data["type"])
         except ValueError as e:
-            raise UnknownContentBlockError(
-                f"Unknown formatting type {data['type']}"
-            ) from e
+            raise NPFParseError(f"Unknown formatting type {data['type']}") from e
 
         # Prepare remaining data dict
         _data = data.copy()
@@ -486,11 +487,11 @@ class TextFormat:
         elif self.type == TextFormatType.strikethrough:
             return "strike"
         elif self.type == TextFormatType.small:
-            return ("small",)
+            return "small"
         elif self.type == TextFormatType.link:
             return (f"a href={self.url}",)
         elif self.type == TextFormatType.mention:
-            return (f"a href={self.blog['url']}",)
+            return f"a href={self.blog['url']}"
         elif self.type == TextFormatType.color:
             return f'span style="color: {self.hex}"'
         return "span"
@@ -551,13 +552,14 @@ class ContentBlockText(ContentBlock):
             try:
                 _subtype = ContentTextSubtype(data["subtype"])
             except ValueError as e:
-                raise UnknownContentBlockError(
+                raise NPFParseError(
                     f"Unknown text block subtype {data['subtype']}"
                 ) from e
 
             if _subtype in (
                 ContentTextSubtype.ordered_list_item,
                 ContentTextSubtype.unordered_list_item,
+                ContentTextSubtype.indented,
             ):
                 _indent_level = data.get("indent_level", 0)
 
@@ -1006,10 +1008,56 @@ class ContentBlockAudio(ContentBlock):
 
 
 @dataclass
+class PollAnswer:
+    """The answer to a poll represented by ContentBlockPoll."""
+
+    #: ID of the answer; used to correlate the answer to the vote count returned
+    #: by the poll results API.
+    client_id: str
+
+    #: Displayed text of the answer.
+    answer_text: str
+
+    #: Amount of votes, or None if the information hasn't been fetched yet.
+    #: See ContentBlockPoll.fetch_results().
+    votes: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """Turn a poll answer object into a PollAnswer."""
+        return cls(client_id=data["client_id"], answer_text=data["answer_text"])
+
+
+@dataclass
 class ContentBlockPoll(ContentBlock):
-    """Represents a poll embed."""
+    """Represents a poll."""
 
     type: ClassVar[str] = "poll"
+
+    #: ID of the poll; used to fetch poll result data.
+    client_id: str
+
+    #: Question asked in the poll.
+    question: str
+
+    #: Poll answers.
+    answers: tuple[PollAnswer]
+
+    #: Date of poll creation.
+    created_at: str
+
+    #: Whether or not the poll allows for multiple choices.
+    multiple_choice: bool
+
+    #: Amount of seconds since poll creation until its closure.
+    expire_after: int
+
+    #: Results of the poll, or None if they haven't been fetched yet.
+    #: Poll results are fetched from the API separately.
+    results: Union["PollResults", None] = None
+
+    #: Total amount of votes, or None if poll results haven't been fetched yet.
+    total_votes: int | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
@@ -1020,7 +1068,117 @@ class ContentBlockPoll(ContentBlock):
         :returns: The resulting object.
         """
         assert data["type"] == cls.type
-        return cls()
+
+        return cls(
+            client_id=data["client_id"],
+            question=data["question"],
+            answers=tuple(PollAnswer.from_dict(a) for a in data["answers"]),
+            created_at=data["created_at"],
+            multiple_choice=data["settings"]["multiple_choice"],
+            expire_after=data["settings"]["expire_after"],
+        )
+
+    async def fetch_results(self, api: "TumblrAPI", blog_id: str, post_id: int):
+        """
+        Fill in post result data from the poll results API.
+
+        Poll results are accessible through a separate API, but accessing it
+        requires information that is not typically available at block level.
+        This function can be called from the post level to fill in result
+        information.
+
+        (Note that TumblrAPI.get_post() already calls this function automatically
+        for all polls within the post, unless the fetch_polls option is set to
+        False.)
+
+        :param api: Instance of TumblrAPI to use
+        :param blog_id: Blog identifier: username, URL or ID.
+        :param post_id: Post ID.
+        :raises NPFParseError: if poll data is not available.
+        """
+        results = await api.get_poll_results(blog_id, post_id, self.client_id)
+        if not results:
+            raise NPFParseError("Poll data not found")
+
+        self.results = results
+
+        total_votes = 0
+
+        for answer in self.answers:
+            votes = results.results[answer.client_id]
+            answer.votes = votes
+            total_votes += votes
+
+        self.total_votes = total_votes
+
+    def to_html(self) -> str:
+        """
+        Convert the block data to HTML format.
+
+        :returns: The conversion result, as a string containing valid HTML.
+        """
+
+        # Get vote counts
+        most_votes = max(self.results.results.values())
+        total_votes_str = (
+            f"{self.total_votes:,} vote{'s' if self.total_votes != 1 else ''}"
+        )
+
+        # Get creation date
+        created_at = dateutil.parser.parse(self.created_at)
+        expire_delta = datetime.timedelta(seconds=self.expire_after)
+        end_time = created_at + expire_delta
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        #: Human-readable "time left" string
+        time_str = ""
+
+        if end_time > now:
+            time_remaining = end_time - now
+
+            # https://stackoverflow.com/questions/14190045/how-do-i-convert-datetime-timedelta-to-minutes-hours-in-python
+            days, seconds = time_remaining.days, time_remaining.seconds
+            hours = seconds // 3600
+            minutes = (seconds % 3600) // 60
+            seconds = seconds % 60
+
+            if total_votes_str:
+                time_str = total_votes_str
+
+            if days > 0:
+                time_str += f"Remaining time: {days} days {hours} hours"
+            else:
+                time_str += f"Remaining time: {hours} hours {minutes} minutes"
+
+            is_over = False
+
+        else:
+            time_str = "Final result"
+            is_over = True
+
+        html = f'<div class="poll-block{" poll-over" if is_over else ""}"><span class="poll-question">{self.question}</span>'
+
+        # Generate poll answer divs
+        if is_over:
+            for answer in self.answers:
+                answer_count = self.results.results[answer.client_id]
+                if self.total_votes:
+                    answer_percentage = (answer_count / self.total_votes) * 100
+                    answer_percentage = (
+                        "{:.2f}".format(answer_percentage)
+                        if not str(answer_percentage).endswith(".0")
+                        else int(answer_percentage)
+                    )
+                else:
+                    answer_percentage = 0
+                html += f'<div class="poll-answer{" poll-answer-win" if answer_count == most_votes else ""}"><div class="poll-answer-filler" style="width: {answer_percentage}%;"></div><span class="poll-answer-text">{answer.answer_text}</span><span class="poll-answer-percentage">{answer_percentage}%</span></div>'
+        else:
+            for answer in self.answers:
+                html += f'<div class="poll-answer">{answer.answer_text}</div>'
+
+        html += f'<span class="poll-meta">{time_str}</span></div>'
+
+        return html
 
 
 @dataclass
@@ -1057,11 +1215,116 @@ CONTENT_BLOCK_TYPES: dict[str, type[ContentBlock]] = {
 ##
 
 
+@dataclass
 class LayoutBlock:
     """Base class for NPF layout blocks."""
 
     #: Layout block type; defined by subclasses.
     type: ClassVar[str]
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "LayoutBlock":
+        """
+        Turn a layout block dict into a LayoutBlock object by picking the correct
+        layout block type to use.
+
+        In subclasses, this method should convert the dict to the given type,
+        or raise an exception if the type doesn't match.
+
+        :param data: Data to use for object creation.
+        :raises NPFParseError: If the layout type is unknown or the data is invalid.
+        :returns: The resulting object.
+        """
+        if "type" not in data:
+            raise NPFParseError("Invalid layout block")
+        elif data["type"] == "rows":
+            return LayoutBlockRows.from_dict(data)
+        elif data["type"] == "ask":
+            return LayoutBlockAsk.from_dict(data)
+        raise NPFParseError("Unknown layout block")
+
+
+@dataclass
+class LayoutDisplay:
+    """A single element of the display dict in LayoutBlockRows."""
+
+    #: List of block indeces covered by the block, starting from 0.
+    blocks: list[int]
+
+    #: Mode, currently unused.
+    mode: str = "weighted"
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Turn a display dict into a LayoutDisplay object.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        return cls(blocks=data["blocks"], mode=data.get("mode", "weighted"))
+
+
+@dataclass
+class LayoutBlockRows:
+    """Row-based layout."""
+
+    type: ClassVar[str] = "rows"
+
+    #: List of LayoutDisplay objects representing the block display data.
+    display: list[LayoutDisplay]
+
+    #: If not None, represents the amount of blocks before a truncation block
+    #: ("Read More...") must be shown.
+    truncate_after: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Turn a rows layout block dict into a LayoutBlockRows object.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        assert data["type"] == cls.type
+
+        return cls(
+            display=[LayoutDisplay.from_dict(d) for d in data["display"]],
+            truncate_after=data.get("truncate_after", None),
+        )
+
+
+@dataclass
+class LayoutBlockAsk:
+    """Layout element representing an asked question."""
+
+    type: ClassVar[str] = "ask"
+
+    #: List of block indeces covered by the block, starting from 0.
+    blocks: list[int]
+
+    #: Attribution of the question, or None if the question is anonymous.
+    attribution: Attribution | None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Turn an ask layout block dict into a LayoutBlockRows object.
+
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
+        """
+        assert data["type"] == cls.type
+
+        if "attribution" in data:
+            attribution = Attribution.from_dict(data["attribution"])
+        else:
+            attribution = None
+
+        return cls(
+            blocks=data["blocks"],
+            attribution=attribution,
+        )
 
 
 ##
@@ -1077,7 +1340,10 @@ class NPFPost:
     timestamp: int
     blog: "Blog"
 
+    #: List of content blocks within the post.
     content: list[ContentBlock]
+    #: List of LayoutBlock objects describing the layout. This information is used
+    #: in to_html() and similar methods to determine how to render the blocks.
     layout: list[LayoutBlock]
 
     is_commercial: bool = False
@@ -1097,7 +1363,7 @@ class NPFPost:
             timestamp=data.get("timestamp", -1),
             blog=Blog.from_api(data["blog"]),
             content=[ContentBlock.from_dict(block) for block in data["content"]],
-            layout=cls._parse_layout(data["layout"]),
+            layout=[LayoutBlock.from_dict(block) for block in data["layout"]],
             is_commercial=data.get("is_commercial", False),
         )
 
@@ -1126,21 +1392,32 @@ class NPFPost:
             timestamp=_timestamp,
             blog=_blog,
             content=[ContentBlock.from_dict(block) for block in data["content"]],
-            layout=cls._parse_layout(data["layout"]),
+            layout=[LayoutBlock.from_dict(block) for block in data["layout"]],
             is_commercial=data.get("is_commercial", False),
         )
 
-    @classmethod
-    def _parse_layout(cls, data: list[dict]) -> list[LayoutBlock]:
+    def to_html(self) -> str:
         """
-        Parse layout dicts into a list of LayoutBlock-derived objects.
+        Convert the post content into an HTML representation.
 
-        :param data: Data used to create the objects.
-        :returns: A list of LayoutBlock-derived objects representing the post
-            content.
+        :returns: A string with a valid HTML representation of the post.
         """
-        out = []
 
+        # Brief overview of HTML conversion steps:
+        # - Each ContentBlock subclass implements a .to_html() method which
+        #   converts the block content to HTML - *at single block level*.
+        # - Layouts and tags that span *multiple blocks* are instead handled
+        #   here, in NPFPost.to_html().
+        # The same mechanism is used for activity_html and plaintext conversions.
+
+        # Step 1: Generate HTML content for each individual block.
+        out: list[str] = [block.to_html() for block in self.blocks]
+
+        # Step 2: Add wrappers for elements that span multiple blocks (e.g. list
+        # items need to be wrapped in ul/ol).
         # TODO
 
-        return out
+        # Step 3: Apply layouts.
+        # TODO
+
+        return "".join(out)

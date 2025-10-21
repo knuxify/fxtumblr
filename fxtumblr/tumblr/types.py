@@ -16,7 +16,6 @@ class Blog:
     for a list of all properties, see Tumblr's API documentation.
     """
 
-    # Username.
     name: str
     uuid: str
     url: str | None
@@ -95,15 +94,23 @@ class Post:
 
 
 @dataclass
-class Poll:
-    """Represents a poll under a post."""
+class PollResults:
+    """Represents the results of a poll."""
+
+    #: Results of the poll, as a dict where the keys are the IDs of the options,
+    #: and the value is the amount of votes.
+    results: dict[str, int]
+
+    #: Timestamp of the poll results. Can be used to check against the poll
+    #: closing timestamp.
+    timestamp: int
 
     @classmethod
     def from_api(cls, data: dict) -> Self:
         """
-        Turn a data dict received from the API into a Poll object.
+        Turn a data dict received from the API into a PollResults object.
 
-        :param data: Data to create the Poll object from.
-        :returns: the resulting Poll object.
+        :param data: Data to create the PollResults object from.
+        :returns: the resulting PollResults object.
         """
-        return cls()
+        return cls(results=data["results"], timestamp=data["timestamp"])

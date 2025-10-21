@@ -12,6 +12,7 @@ dependencies = [
 	"Quart",
 	"frozendict",
 	"emoji",
+	"python-dateutil",
 ]
 
 [tool.ruff.lint]
@@ -32,7 +33,7 @@ typing = [
     "types-authlib",
     "types-frozendict",
     "types-emoji",
-    "types-redis"
+    "types-redis",
 ]
 
 [tool.pytest.ini_options]

@@ -1,0 +1,1 @@
+{"meta": {"status": 400, "msg": "Bad Request"}, "errors": [{"title": "Bad Request", "code": 20006, "detail": "Invalid poll ID"}], "response": []}

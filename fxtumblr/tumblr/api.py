@@ -8,7 +8,7 @@ from typing import Optional, Self
 from authlib.integrations.httpx_client import AsyncOAuth1Client
 
 from ..app import logger
-from .types import Blog, Poll, Post
+from .types import Blog, PollResults, Post
 
 
 @dataclass
@@ -19,11 +19,17 @@ class TumblrAPIError:
     title: str
     #: Error code.
     code: int
+    #: Extra detail text.
+    detail: str | None = None
 
     @classmethod
     def from_api(cls, data: dict) -> Self:
         """Create a TumblrAPIError from an error dict."""
-        return cls(title=data.get("title", "Unknown error"), code=data.get("code", 500))
+        return cls(
+            title=data.get("title", "Unknown error"),
+            code=data.get("code", 500),
+            detail=data.get("detail", None),
+        )
 
 
 @dataclass
@@ -57,20 +63,36 @@ class TumblrAPIResponse:
 class TumblrAPIException(Exception):
     """Exception class for Tumblr API methods."""
 
+    errors: list[TumblrAPIError]
+
     @classmethod
     def from_response(cls, response: TumblrAPIResponse) -> Self:
         """Create a new TumblrAPIException from a TumblrAPIResponse."""
         if len(response.errors) == 0:
-            return cls(f"Error: Unknown error ({response.status})")
+            ret = cls(f"Error: Unknown error ({response.status})")
 
         elif len(response.errors) == 1:
-            return cls(f"Error: {response.errors[0].title} ({response.errors[0].code})")
+            error = response.errors[0]
+            if error.detail:
+                ret = cls(f"Error: {error.title}; {error.detail} ({error.code})")
+            else:
+                ret = cls(f"Error: {error.title} ({error.code})")
 
         else:
             error_str = f"{len(response.errors)} errors:\n"
             for error in response.errors:
-                error_str.append(f" - {error.title} ({error.code}))\n")
-            return cls(error_str)
+                if error.detail:
+                    error_str.append(
+                        f" - {error.title}; {error.detail} ({error.code}))\n"
+                    )
+
+                else:
+                    error_str.append(f" - {error.title} ({error.code}))\n")
+            ret = error_str
+
+        ret.errors = response.errors
+
+        return ret
 
 
 class TumblrAPI:
@@ -167,7 +189,11 @@ class TumblrAPI:
             raise TumblrAPIException.from_response(resp)
 
     async def get_post(
-        self, blog_id: str, post_id: int, skip_cache: bool = False
+        self,
+        blog_id: str,
+        post_id: int,
+        skip_cache: bool = False,
+        fetch_poll_results: bool = True,
     ) -> Post | None:
         """
         Get a post from the blog with the given identifier.
@@ -177,6 +203,9 @@ class TumblrAPI:
         :param blog_id: Blog identifier: username, URL or ID.
         :param post_id: Post ID.
         :param skip_cache: If True, always skips the cache.
+        :param fetch_polls: If True (the default), fetches poll results for all polls
+            in the post. This requires additional API calls; if such behavior
+            is undesirable, set this to False.
         :returns: Post object representing the post if it was found, None otherwise.
         :raises TumblrAPIException: if the API returns an error.
         """
@@ -190,7 +219,20 @@ class TumblrAPI:
                 # double-check that we actually extract the correct post here.
                 for post in resp.response["posts"]:
                     if post["id"] == post_id:
-                        return Post.from_api(resp.response["posts"][0])
+                        post = Post.from_api(resp.response["posts"][0])
+
+                        # Fetch poll results
+                        for tpost in post.trail:
+                            for block in tpost.content:
+                                if block.type == "poll":
+                                    try:
+                                        await block.fetch_results(
+                                            self, blog_id, post_id
+                                        )
+                                    except ValueError:
+                                        continue
+
+                        return post
                 return None
             else:
                 return None
@@ -201,23 +243,23 @@ class TumblrAPI:
         else:
             raise TumblrAPIException.from_response(resp)
 
-    async def get_poll(
+    async def get_poll_results(
         self, blog_id: str, post_id: int, poll_id: int, skip_cache: bool = False
-    ) -> Poll | None:
+    ) -> PollResults | None:
         """
-        Get a poll with the given ID.
+        Get results for the poll with the given ID.
 
         :param blog_id: Blog identifier: username, URL or ID.
         :param post_id: Post ID.
         :param poll_id: ID of the poll.
         :param skip_cache: If True, always skips the cache.
-        :returns: Post object representing the post if it was found, None otherwise.
+        :returns: PollResults object representing the post if it was found, None otherwise.
         :raises TumblrAPIException: if the API returns an error.
         """
-        resp = await self._get(f"/polls/{blog_id}/{post_id}/{poll_id}")
+        resp = await self._get(f"/polls/{blog_id}/{post_id}/{poll_id}/results")
 
         if resp.status == 200:
-            return Poll.from_api(resp.response)
+            return PollResults.from_api(resp.response)
 
         elif resp.status == 404:
             return None
