@@ -33,6 +33,7 @@ typing = [
     "types-authlib",
     "types-frozendict",
     "types-emoji",
+	"types-python-dateutil",
     "types-redis",
 ]
 

@@ -226,7 +226,11 @@ class TumblrAPI:
                             for block in tpost.content:
                                 if block.type == "poll":
                                     try:
-                                        await block.fetch_results(
+                                        # mypy is unaware that the block type is correct,
+                                        # since we don't want to pull in the whole import
+                                        # just for this check, and only check the type
+                                        # string.
+                                        await block.fetch_results(  # type: ignore
                                             self, blog_id, post_id
                                         )
                                     except ValueError:

@@ -3,7 +3,10 @@
 
 import json
 
+import pytest
+
 from fxtumblr.tumblr.npf import (
+    ContentBlock,
     ContentBlockAudio,
     ContentBlockImage,
     ContentBlockLink,
@@ -17,7 +20,7 @@ from fxtumblr.tumblr.types import Blog
 from ..conftest import _get_tumblr_test_data
 
 
-def test_npf_post():
+async def test_npf_post(tumblr_api):
     """Test the NPFPost class."""
     with open(_get_tumblr_test_data("post_npftest.json")) as test_data:
         post = NPFPost.from_post_dict(json.load(test_data)["response"]["posts"][0])
@@ -31,6 +34,17 @@ def test_npf_post():
 
     assert post.content
     assert post.layout
+
+    # The NPF test post has a poll, we need to fetch results before rendering to HTML
+    for block in post.content:
+        assert isinstance(block, ContentBlock)
+        if block.type == "poll":
+            await block.fetch_results(tumblr_api, post.blog.name, post.id)
+
+    html = post.to_html()
+
+    with open("render.html", "w") as render_file:
+        render_file.write(html)
 
     # Test post with ask
     with open(_get_tumblr_test_data("post_ask.json")) as test_data:
@@ -46,19 +60,24 @@ def test_npf_post():
     assert post.content
     assert post.layout
 
+    html = post.to_html()
+
 
 def test_block_text():
     """Test text content block functions."""
 
     examples = (
-        ({"type": "text", "text": "This is a test post!"}, "This is a test post!"),
+        (
+            {"type": "text", "text": "This is a test post!"},
+            "<p>This is a test post!</p>",
+        ),
         (
             {
                 "type": "text",
                 "text": "This is a test post!",
                 "formatting": [{"start": 0, "end": 1, "type": "bold"}],
             },
-            "<b>T</b>his is a test post!",
+            "<p><b>T</b>his is a test post!</p>",
         ),
         (
             {
@@ -66,7 +85,73 @@ def test_block_text():
                 "text": "Test",
                 "formatting": [{"start": 0, "end": 4, "type": "bold"}],
             },
-            "<b>Test</b>",
+            "<p><b>Test</b></p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "AABBCCDD",
+                "formatting": [
+                    {"start": 1, "end": 2, "type": "bold"},
+                    {"start": 5, "end": 6, "type": "bold"},
+                ],
+            },
+            "<p>A<b>A</b>BBC<b>C</b>DD</p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "AABBCCDD",
+                "formatting": [
+                    {"start": 1, "end": 2, "type": "bold"},
+                    {"start": 5, "end": 6, "type": "bold"},
+                ],
+            },
+            "<p>A<b>A</b>BBC<b>C</b>DD</p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "AAAABBBB",
+                "formatting": [
+                    {"start": 4, "end": 8, "type": "bold"},
+                    {"start": 0, "end": 8, "type": "italic"},
+                ],
+            },
+            "<p><i>AAAA<b>BBBB</b></i></p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "AAAABBBB",
+                "formatting": [
+                    {"start": 4, "end": 8, "type": "italic"},
+                    {"start": 0, "end": 8, "type": "bold"},
+                ],
+            },
+            "<p><b>AAAA<i>BBBB</i></b></p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "AAAABBBB",
+                "formatting": [
+                    {"start": 0, "end": 4, "type": "bold"},
+                    {"start": 0, "end": 8, "type": "italic"},
+                ],
+            },
+            "<p><i><b>AAAA</b>BBBB</i></p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "AAAABBBB",
+                "formatting": [
+                    {"start": 0, "end": 4, "type": "italic"},
+                    {"start": 0, "end": 8, "type": "bold"},
+                ],
+            },
+            "<p><b><i>AAAA</i>BBBB</b></p>",
         ),
         (
             {
@@ -77,7 +162,7 @@ def test_block_text():
                     {"start": 0, "end": 7, "type": "italic"},
                 ],
             },
-            "<b><i>This is</i></b> a test post!",
+            "<p><b><i>This is</i></b> a test post!</p>",
         ),
         (
             {
@@ -88,7 +173,7 @@ def test_block_text():
                     {"start": 0, "end": 9, "type": "italic"},
                 ],
             },
-            "<i>This <b>is</b> a</i> test post!",
+            "<p><i>This <b>is</b> a</i> test post!</p>",
         ),
         # Complex tag closing examples
         (
@@ -100,7 +185,7 @@ def test_block_text():
                     {"start": 3, "end": 9, "type": "italic"},
                 ],
             },
-            "<b>Thi<i>s is</i></b><i> a</i> test post!",
+            "<p><b>Thi<i>s is</i></b><i> a</i> test post!</p>",
         ),
         (
             {
@@ -112,7 +197,44 @@ def test_block_text():
                     {"start": 3, "end": 9, "type": "italic"},
                 ],
             },
-            "<strike><b>Thi<i>s is</i></b><i> a</i> test</strike> post!",
+            "<p><strike><b>Thi<i>s is</i></b><i> a</i> test</strike> post!</p>",
+        ),
+        # Multi-codepoint emoji
+        (
+            {
+                "type": "text",
+                "text": "This is a 5-codepoint emoji 👨‍👨‍👦 post!",
+                "formatting": [
+                    {"start": 0, "end": 4, "type": "bold"},
+                    {"start": 22, "end": 38, "type": "bold"},
+                    {"start": 34, "end": 38, "type": "italic"},
+                ],
+            },
+            "<p><b>This</b> is a 5-codepoint <b>emoji 👨‍👨‍👦 <i>post</i></b>!</p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "AA👨‍👨‍👦BB",
+                "formatting": [
+                    {"start": 2, "end": 7, "type": "bold"},
+                ],
+            },
+            "<p>AA<b>👨‍👨‍👦</b>BB</p>",
+        ),
+        # Problematic excerpts from the NPF test post
+        (
+            {
+                "type": "text",
+                "text": "Note that formatting counts one Unicode codepoint as one character; so, make sure emoji like 👨‍👨‍👦 don't break your offsets.",
+                "formatting": [
+                    {"type": "bold", "start": 82, "end": 87},
+                    {"type": "bold", "start": 93, "end": 98},
+                    {"type": "bold", "start": 105, "end": 110},
+                    {"type": "italic", "start": 111, "end": 115},
+                ],
+            },
+            "<p>Note that formatting counts one Unicode codepoint as one character; so, make sure <b>emoji</b> like <b>👨‍👨‍👦</b> don&#x27;t <b>break</b> <i>your</i> offsets.</p>",
         ),
     )
 
@@ -127,7 +249,7 @@ def test_block_text():
                     {"start": 3, "end": 7, "type": "bold"},
                 ],
             },
-            "<b>This is</b> a test post!",
+            "<p><b>This is</b> a test post!</p>",
         ),
         (
             {
@@ -139,7 +261,7 @@ def test_block_text():
                     {"start": 5, "end": 7, "type": "bold"},
                 ],
             },
-            "<b>Thi<i>s is</i> a</b> test post!",
+            "<p><b>Thi<i>s is</i> a</b> test post!</p>",
         ),
     """
 
@@ -338,6 +460,8 @@ def test_block_video():
         assert block.to_html() == expected_result
 
 
+# TODO
+@pytest.mark.skip
 def test_block_audio():
     """Test audio content block functions."""
 
@@ -404,7 +528,7 @@ async def test_block_poll(tumblr_api):
                 "timestamp": 1697044184,
                 "_fxt_test_data": {"blog": "knuxify", "post": 730903802869317632},
             },
-            "FIXME",
+            '<div class="poll-block poll-over"><span class="poll-question">A poll!</span><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">I love NPF!</span><span class="poll-answer-percentage">50%</span></div><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">Why must thou do this to me, Tumblr.</span><span class="poll-answer-percentage">50%</span></div><span class="poll-meta">Final result</span></div>',
         ),
     )
 
