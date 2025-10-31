@@ -1606,7 +1606,7 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
         # 3.3. Add the block content.
         # 3.3.1. If we're dealing with a text block but aren't in an indent,
         #        add <div class="text-block"> wrapper.
-        if not indent_stack:
+        if not indent_stack and isinstance(block, ContentBlockText):
             out += '<div class="text-block">' + block.to_html() + "</div>"
         else:
             out += block.to_html()
