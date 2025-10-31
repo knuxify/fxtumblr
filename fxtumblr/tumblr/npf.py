@@ -1260,18 +1260,6 @@ class LayoutBlock:
     #: Layout block type; defined by subclasses.
     type: ClassVar[str]
 
-    #: Layout priority. This is an fxtumblr-specific concept;
-    #: it dictates the order in which layouts are nested.
-    #: LayoutBlockRow has a priority of -1, as it's parsed
-    #: as the very first layout, separate from the remaining
-    #: types. LayoutBlockAsk and other wrapper-style layouts
-    #: (should they ever appear) are priority 1, and meta-layouts
-    #: (custom fxtumblr-specific wrappers around multi-block text formats)
-    #: are priority 2.
-    #: In general, the higher the priority, the further down
-    #: it is in nesting priority.
-    priority: ClassVar[int]
-
     @classmethod
     def from_dict(cls, data: dict) -> "LayoutBlock":
         """
@@ -1339,7 +1327,6 @@ class LayoutBlockRows(LayoutBlock):
     """Row-based layout."""
 
     type: ClassVar[str] = "rows"
-    priority: ClassVar[int] = -1
 
     #: List of LayoutDisplay objects representing the block display data.
     display: list[LayoutDisplay]
@@ -1369,7 +1356,6 @@ class LayoutBlockAsk(LayoutBlock, RangedLayoutBlock):
     """Layout element representing an asked question."""
 
     type: ClassVar[str] = "ask"
-    priority: ClassVar[int] = 1
 
     #: List of block indeces covered by the block, counting from 0.
     blocks: list[int]
@@ -1422,7 +1408,6 @@ class MetaLayoutMultiBlockRow(LayoutBlock, RangedLayoutBlock):
     """
 
     type: ClassVar[str] = "multi_block_row"
-    priority: ClassVar[int] = 1
 
     #: List of block indeces covered by the block, counting from 0.
     blocks: list[int]
