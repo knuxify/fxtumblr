@@ -8,6 +8,7 @@ from typing import Optional, Self
 from authlib.integrations.httpx_client import AsyncOAuth1Client
 
 from ..app import logger
+from ..cache import cache
 from .types import Blog, PollResults, Post
 
 
@@ -175,10 +176,22 @@ class TumblrAPI:
         :returns: Blog object representing the blog if it was found, None otherwise.
         :raises TumblrAPIException: if the API returns an error.
         """
+        cache_key: str = f"fxt-blog:{blog_id}"
+
+        if not skip_cache:
+            cached_data = await cache.get_json(cache_key)
+            if cached_data:
+                return Blog.from_api(cached_data)
+
         resp = await self._get(f"/blog/{blog_id}/posts")
 
         if resp.status == 200 and resp.response:
-            return Blog.from_api(resp.response)
+            blog = Blog.from_api(resp.response)
+            # Set cache keys for both blog ID and blog name
+            if not skip_cache:
+                await cache.set_json(f"fxt-blog:{blog.uuid}", resp.response)
+                await cache.set_json(f"fxt-blog:{blog.name}", resp.response)
+            return blog
 
         elif resp.status == 404:
             return None
@@ -201,12 +214,24 @@ class TumblrAPI:
         :param blog_id: Blog identifier: username, URL or ID.
         :param post_id: Post ID.
         :param skip_cache: If True, always skips the cache.
-        :param fetch_polls: If True (the default), fetches poll results for all polls
-            in the post. This requires additional API calls; if such behavior
-            is undesirable, set this to False.
+        :param fetch_poll_results: If True (the default), fetches poll results
+            for all polls in the post. This requires additional API calls; if
+            such behavior is undesirable, set this to False.
         :returns: Post object representing the post if it was found, None otherwise.
         :raises TumblrAPIException: if the API returns an error.
         """
+        cache_key: str = f"fxt-post:{blog_id}:{post_id}"
+
+        if not skip_cache:
+            cached_data = await cache.get_json(cache_key)
+            if cached_data:
+                post = Post.from_api(cached_data)
+
+                if fetch_poll_results:
+                    await post.fetch_poll_results(self, skip_cache=skip_cache)
+
+                return post
+
         resp = await self._get(
             f"/blog/{blog_id}/posts", params={"id": post_id, "npf": "true"}
         )
@@ -215,24 +240,15 @@ class TumblrAPI:
             if "posts" in resp.response and resp.response["posts"]:
                 # It is possible for the API to return multiple posts (e.g. if post_id=0);
                 # double-check that we actually extract the correct post here.
-                for post in resp.response["posts"]:
-                    if post["id"] == post_id:
-                        post = Post.from_api(resp.response["posts"][0])
+                for post_data in resp.response["posts"]:
+                    if post_data["id"] == post_id:
+                        post = Post.from_api(post_data)
 
-                        # Fetch poll results
-                        for tpost in post.trail:
-                            for block in tpost.content:
-                                if block.type == "poll":
-                                    try:
-                                        # mypy is unaware that the block type is correct,
-                                        # since we don't want to pull in the whole import
-                                        # just for this check, and only check the type
-                                        # string.
-                                        await block.fetch_results(  # type: ignore
-                                            self, blog_id, post_id
-                                        )
-                                    except ValueError:
-                                        continue
+                        if fetch_poll_results:
+                            await post.fetch_poll_results(self, skip_cache=skip_cache)
+
+                        if not skip_cache:
+                            await cache.set_json(cache_key, post_data)
 
                         return post
                 return None
@@ -258,10 +274,20 @@ class TumblrAPI:
         :returns: PollResults object representing the post if it was found, None otherwise.
         :raises TumblrAPIException: if the API returns an error.
         """
+        cache_key: str = f"fxt-poll:{blog_id}:{post_id}:{poll_id}"
+
+        if not skip_cache:
+            cached_data = await cache.get_json(cache_key)
+            if cached_data:
+                return PollResults.from_api(cached_data)
+
         resp = await self._get(f"/polls/{blog_id}/{post_id}/{poll_id}/results")
 
         if resp.status == 200 and resp.response:
-            return PollResults.from_api(resp.response)
+            ret = PollResults.from_api(resp.response)
+            if not skip_cache:
+                await cache.set_json(cache_key, resp.response)
+            return ret
 
         elif resp.status == 404:
             return None

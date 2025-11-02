@@ -1122,7 +1122,9 @@ class ContentBlockPoll(ContentBlock):
             expire_after=data["settings"]["expire_after"],
         )
 
-    async def fetch_results(self, api: "TumblrAPI", blog_id: str, post_id: int):
+    async def fetch_results(
+        self, api: "TumblrAPI", blog_id: str, post_id: int, skip_cache: bool = False
+    ):
         """
         Fill in post result data from the poll results API.
 
@@ -1138,9 +1140,12 @@ class ContentBlockPoll(ContentBlock):
         :param api: Instance of TumblrAPI to use
         :param blog_id: Blog identifier: username, URL or ID.
         :param post_id: Post ID.
+        :param skip_cache: If True, skips the cache unconditionally.
         :raises NPFParseError: if poll data is not available.
         """
-        results = await api.get_poll_results(blog_id, post_id, self.client_id)
+        results = await api.get_poll_results(
+            blog_id, post_id, self.client_id, skip_cache=skip_cache
+        )
         if not results:
             raise NPFParseError("Poll data not found")
 
@@ -1767,3 +1772,19 @@ class NPFPost:
         # The same mechanism is used for activity_html and plaintext conversions.
 
         return npf_to_html(self.content, self.layout)
+
+    async def fetch_poll_results(self, api: "TumblrAPI", skip_cache: bool = False):
+        """
+        Fetch poll results for all polls in this post.
+
+        :param api: TumblrAPI object to use for fetching.
+        :param skip_cache: If True, ignores the cache.
+        """
+        for block in self.content:
+            if isinstance(block, ContentBlockPoll):
+                try:
+                    await block.fetch_results(
+                        api, self.blog.name, self.id, skip_cache=skip_cache
+                    )
+                except ValueError:
+                    continue

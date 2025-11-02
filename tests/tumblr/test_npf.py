@@ -13,6 +13,7 @@ from fxtumblr.tumblr.npf import (
     ContentBlockPoll,
     ContentBlockText,
     ContentBlockVideo,
+    LayoutBlock,
     NPFPost,
 )
 from fxtumblr.tumblr.types import Blog
@@ -33,13 +34,15 @@ async def test_npf_post(tumblr_api):
     assert post.blog.name == "knuxify"
 
     assert post.content
+    for content_block in post.content:
+        assert isinstance(content_block, ContentBlock)
+
     assert post.layout
+    for layout_block in post.layout:
+        assert isinstance(layout_block, LayoutBlock)
 
     # The NPF test post has a poll, we need to fetch results before rendering to HTML
-    for block in post.content:
-        assert isinstance(block, ContentBlock)
-        if block.type == "poll":
-            await block.fetch_results(tumblr_api, post.blog.name, post.id)
+    await post.fetch_poll_results(tumblr_api, skip_cache=True)
 
     html = post.to_html()
 
@@ -536,6 +539,9 @@ async def test_block_poll(tumblr_api):
         block = ContentBlockPoll.from_dict(data)
         assert isinstance(block, ContentBlockPoll)
         await block.fetch_results(
-            tumblr_api, data["_fxt_test_data"]["blog"], data["_fxt_test_data"]["post"]
+            tumblr_api,
+            data["_fxt_test_data"]["blog"],
+            data["_fxt_test_data"]["post"],
+            skip_cache=True,
         )
         assert block.to_html() == expected_result

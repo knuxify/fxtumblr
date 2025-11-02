@@ -2,9 +2,13 @@
 """Data classes representing Tumblr data objects."""
 
 from dataclasses import dataclass
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from .npf import NPFPost
+
+if TYPE_CHECKING:
+    # Placed in TYPE_CHECKING due to circular import
+    from .api import TumblrAPI
 
 
 @dataclass
@@ -91,6 +95,16 @@ class Post:
             post_url=data["post_url"],
             trail=trail,
         )
+
+    async def fetch_poll_results(self, api: "TumblrAPI", skip_cache: bool = False):
+        """
+        Fetch poll results for all polls in this post.
+
+        :param api: TumblrAPI object to use for fetching.
+        :param skip_cache: If True, ignores the cache.
+        """
+        for post in self.trail:
+            await post.fetch_poll_results(api, skip_cache=skip_cache)
 
 
 @dataclass

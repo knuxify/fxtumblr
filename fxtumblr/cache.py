@@ -8,6 +8,9 @@ import redis.asyncio as redis
 
 from . import config
 
+#: Default cache timeout.
+DEFAULT_TIMEOUT: int = config.get("cache", {}).get("timeout", 360)
+
 
 class Cache:
     """Class representing Redis cache."""
@@ -45,7 +48,7 @@ class Cache:
         """Get element by key, as a string."""
         return await self.cache.get(key)
 
-    async def set(self, key: str, value: str, timeout: int = 0):
+    async def set(self, key: str, value: str, timeout: int = DEFAULT_TIMEOUT):
         """Set the element with the given key to the given string value."""
         return await self._set(self.cache, key, value, timeout)
 
@@ -53,7 +56,7 @@ class Cache:
         """Get element by key, as bytes."""
         return await self.cache_bin.get(key)
 
-    async def set_bin(self, key: str, value: bytes, timeout: int = 0):
+    async def set_bin(self, key: str, value: bytes, timeout: int = DEFAULT_TIMEOUT):
         """Set the element with the given key to the given bytes value."""
         return await self._set(self.cache_bin, key, value, timeout)
 
@@ -64,7 +67,7 @@ class Cache:
             return None
         return json.loads(raw)
 
-    async def set_json(self, key: str, value: dict, timeout: int = 0):
+    async def set_json(self, key: str, value: dict, timeout: int = DEFAULT_TIMEOUT):
         """Set dict serialized to JSON as the cache value for the given key."""
         serialized = json.dumps(value)
         return await self.set(key, serialized, timeout)
