@@ -1502,7 +1502,7 @@ def _update_indented_block_wrappers(
         # with an indent_level >= 0, which is only true for blocks with a
         # subtype within the list of indented block subtypes - see
         # ContentBlockText.from_dict().)
-        if not block.subtype or not indent_stack[-1].subtype:
+        if not block.subtype or (indent_stack and not indent_stack[-1].subtype):
             return
 
         wrapper = INDENTED_BLOCK_WRAPPERS[block.subtype]
@@ -1554,16 +1554,19 @@ def _update_indented_block_wrappers(
     return out
 
 
-def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
+def npf_to_html(
+    content: list[ContentBlock], layouts: list[LayoutBlock], truncate: bool = True
+) -> str:
     """
     Given a list of content blocks and layouts, convert NPF data to HTML.
 
     :param content: List of ContentBlock objects representing content blocks.
     :param content: List of LayoutBlock objects representing layout blocks.
+    :param truncate: Whether or not to add the "read more" block after the
+        cutoff passed in the truncate_after variable of the rows layout.
+        For posts without a truncate_after setting, this option does nothing.
     :returns: Valid HTML representation of the data.
     """
-
-    # TODO read more support
 
     # The following lists contain start and end indeces for layouts;
     # the indeces refer to the index of the block in block_order (defined
@@ -1574,10 +1577,12 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
 
     # 1. Calculate block order based on LayoutBlockRows.
     found_rows: bool = False
+    is_truncated: bool = False
     block_order: list[int] = []
     for layout in layouts:
         if isinstance(layout, LayoutBlockRows):
             found_rows = True
+
             for display in layout.display:
                 block_order += display.blocks
 
@@ -1589,6 +1594,16 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
                         multi_block_row
                     )
                     layout_ends[len(block_order) - 1].append(multi_block_row)
+
+                # If truncation is enabled, stop adding new blocks after
+                # this point, and mark the post as truncated
+                if (
+                    truncate
+                    and layout.truncate_after
+                    and len(block_order) > layout.truncate_after
+                ):
+                    is_truncated = True
+                    break
 
             break
 
@@ -1665,7 +1680,11 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
         else:
             out += wrapper.close
 
-    # 5. Return the resulting string.
+    # 5. If the post is truncated, add the "Read more" block.
+    if is_truncated:
+        out += '<div class="read-more">Keep reading</div>'
+
+    # 6. Return the resulting string.
     return out
 
 
