@@ -1757,10 +1757,13 @@ class NPFPost:
             is_commercial=data.get("is_commercial", False),
         )
 
-    def to_html(self) -> str:
+    def to_html(self, truncate: bool = False) -> str:
         """
         Convert the post content into an HTML representation.
 
+        :param truncate: Whether or not to add the "read more" block after the
+            cutoff passed in the truncate_after variable of the rows layout.
+            For posts without a truncate_after setting, this option does nothing.
         :returns: A string with a valid HTML representation of the post.
         """
 
@@ -1771,7 +1774,7 @@ class NPFPost:
         #   here, in NPFPost.to_html().
         # The same mechanism is used for activity_html and plaintext conversions.
 
-        return npf_to_html(self.content, self.layout)
+        return npf_to_html(self.content, self.layout, truncate=truncate)
 
     async def fetch_poll_results(self, api: "TumblrAPI", skip_cache: bool = False):
         """
