@@ -783,7 +783,10 @@ class ContentBlockLink(ContentBlock):
 
         if self.poster:
             selected_size_poster = self.poster.get_by_width(640)
-            html += f'<div class="link-embed-image-top"><img src="{selected_size_poster.url}" class="link-image"><span class="link-image-title">{title}</span></div>'
+            if selected_size_poster:
+                html += f'<div class="link-embed-image-top"><img src="{selected_size_poster.url}" class="link-image"><span class="link-image-title">{title}</span></div>'
+            else:
+                html += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
         else:
             html += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
 
@@ -844,6 +847,9 @@ class ContentBlockImage(ContentBlock):
         """
         media_orig = self.media.get_hq()
         media_small = self.media.get_by_width(640)
+
+        if not media_orig or not media_small or not media_orig.width:
+            return "<p>(broken image)</p>"
 
         badge_tag = ""
         if ".gif" in media_small.url:
@@ -1079,7 +1085,7 @@ class ContentBlockPoll(ContentBlock):
     question: str
 
     #: Poll answers.
-    answers: tuple[PollAnswer]
+    answers: list[PollAnswer]
 
     #: Date of poll creation.
     created_at: str
@@ -1110,7 +1116,7 @@ class ContentBlockPoll(ContentBlock):
         return cls(
             client_id=data["client_id"],
             question=data["question"],
-            answers=tuple(PollAnswer.from_dict(a) for a in data["answers"]),
+            answers=[PollAnswer.from_dict(a) for a in data["answers"]],
             created_at=data["created_at"],
             multiple_choice=data["settings"]["multiple_choice"],
             expire_after=data["settings"]["expire_after"],
@@ -1155,12 +1161,12 @@ class ContentBlockPoll(ContentBlock):
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-
-        # Get vote counts
-        most_votes = max(self.results.results.values())
-        total_votes_str = (
-            f"{self.total_votes:,} vote{'s' if self.total_votes != 1 else ''}"
-        )
+        if self.results:
+            # Get vote counts
+            most_votes = max(self.results.results.values())
+            total_votes_str = (
+                f"{self.total_votes:,} vote{'s' if self.total_votes != 1 else ''}"
+            )
 
         # Get creation date
         created_at = dateutil.parser.parse(self.created_at)
@@ -1199,16 +1205,20 @@ class ContentBlockPoll(ContentBlock):
         # Generate poll answer divs
         if is_over:
             for answer in self.answers:
-                answer_count = self.results.results[answer.client_id]
-                if self.total_votes:
-                    answer_percentage = (answer_count / self.total_votes) * 100
-                    answer_percentage = (
-                        "{:.2f}".format(answer_percentage)
-                        if not str(answer_percentage).endswith(".0")
-                        else int(answer_percentage)
-                    )
+                if self.results:
+                    answer_count = self.results.results[answer.client_id]
+                    if self.total_votes:
+                        _answer_percentage = (answer_count / self.total_votes) * 100
+                        answer_percentage = (
+                            "{:.2f}".format(_answer_percentage)
+                            if not str(_answer_percentage).endswith(".0")
+                            else str(int(_answer_percentage))
+                        )
+                    else:
+                        answer_percentage = "0"
                 else:
-                    answer_percentage = 0
+                    answer_count = 0
+                    answer_percentage = "0"
                 html += f'<div class="poll-answer{" poll-answer-win" if answer_count == most_votes else ""}"><div class="poll-answer-filler" style="width: {answer_percentage}%;"></div><span class="poll-answer-text">{answer.answer_text}</span><span class="poll-answer-percentage">{answer_percentage}%</span></div>'
         else:
             for answer in self.answers:
@@ -1386,10 +1396,16 @@ class LayoutBlockAsk(LayoutBlock, RangedLayoutBlock):
     @property
     def html_wrapper(self) -> HTMLWrapper:
         """Generate a HTMLWrapper object containing HTML wrappers for this layout."""
-        return HTMLWrapper(
-            open=f'<div class="question"><div class="question-header"><strong class="asking-name">{html.escape(self.attribution.blog.name)}</strong> asked:</div><div class="question-content">',
-            close="</div></div>",
-        )
+        if self.attribution and isinstance(self.attribution, AttributionBlog):
+            return HTMLWrapper(
+                open=f'<div class="question"><div class="question-header"><strong class="asking-name">{html.escape(self.attribution.blog.name)}</strong> asked:</div><div class="question-content">',
+                close="</div></div>",
+            )
+        else:
+            return HTMLWrapper(
+                open='<div class="question"><div class="question-header"><strong class="asking-name">Anonymous</strong> asked:</div><div class="question-content">',
+                close="</div></div>",
+            )
 
 
 ##
@@ -1480,6 +1496,15 @@ def _update_indented_block_wrappers(
         """Add an item to the top of the indent stack."""
         nonlocal indent_stack
         nonlocal out
+
+        # Added for mypy reasons; these two conditions are indirectly
+        # guaranteed to be true by the outer function (we only consider items
+        # with an indent_level >= 0, which is only true for blocks with a
+        # subtype within the list of indented block subtypes - see
+        # ContentBlockText.from_dict().)
+        if not block.subtype or not indent_stack[-1].subtype:
+            return
+
         wrapper = INDENTED_BLOCK_WRAPPERS[block.subtype]
         if len(indent_stack) > 0:
             indent_wrapper = INDENTED_BLOCK_WRAPPERS[indent_stack[-1].subtype]
@@ -1510,9 +1535,9 @@ def _update_indented_block_wrappers(
 
             elif indent_delta < 0:
                 # We need to close tags to get to our desired indent level.
-                while indent_delta > 0:
+                while indent_delta < 0:
                     _pop()
-                    indent_delta -= 1
+                    indent_delta += 1
 
             else:  # indent_delta == 0
                 if indent_stack[-1].subtype != block.subtype:
@@ -1538,21 +1563,21 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
     :returns: Valid HTML representation of the data.
     """
 
+    # TODO read more support
+
     # The following lists contain start and end indeces for layouts;
     # the indeces refer to the index of the block in block_order (defined
     # below), which is not necessarily the same as the index in content
     # (as the NPF docs permit listing blocks out-of-order in multi-block rows).
-    layout_starts: dict[int, list[LayoutBlock]] = defaultdict(list)
-    layout_ends: dict[int, list[LayoutBlock]] = defaultdict(list)
+    layout_starts: dict[int, list[RangedLayoutBlock]] = defaultdict(list)
+    layout_ends: dict[int, list[RangedLayoutBlock]] = defaultdict(list)
 
     # 1. Calculate block order based on LayoutBlockRows.
     found_rows: bool = False
     block_order: list[int] = []
     for layout in layouts:
         if isinstance(layout, LayoutBlockRows):
-            if found_rows:
-                raise NPFParseError("More than one rows layout found")
-
+            found_rows = True
             for display in layout.display:
                 block_order += display.blocks
 
@@ -1565,7 +1590,12 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
                     )
                     layout_ends[len(block_order) - 1].append(multi_block_row)
 
-            found_rows = True
+            break
+
+    # Per Tumblr docs: if there is no rows layout, assume rows with one block
+    # each
+    if not found_rows:
+        block_order = list(range(len(content)))
 
     # 1.1. Set layout starts/ends for non-row layout blocks.
     # (We can only do this after block_order has been filled.)
@@ -1573,13 +1603,9 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
         if isinstance(layout, LayoutBlockRows):
             continue
 
-        layout_starts[block_order.index(layout.blocks[0])].append(layout)
-        layout_ends[block_order.index(layout.blocks[-1])].append(layout)
-
-    # Per Tumblr docs: if there is no rows layout, assume rows with one block
-    # each
-    if not found_rows:
-        block_order = list(range(len(content)))
+        if isinstance(layout, RangedLayoutBlock):
+            layout_starts[block_order.index(layout.blocks[0])].append(layout)
+            layout_ends[block_order.index(layout.blocks[-1])].append(layout)
 
     # 2. Iterate over all content blocks and convert them into HTML.
     out: str = ""
@@ -1596,8 +1622,8 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
             ) from e
 
         # 3.1. If layouts start, open them.
-        for layout in layout_starts[i]:
-            out += layout.html_wrapper.open
+        for _layout in layout_starts[i]:
+            out += _layout.html_wrapper.open
 
         # 3.2. If there's a list block, call some function to determine what
         # tags to place, and place the list wrappers in a stack.
@@ -1616,6 +1642,7 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
             # 3.4.1. If indented blocks are open, close them first.
             while indent_stack:
                 indent_block = indent_stack.pop()
+                assert indent_block.subtype
                 wrapper = INDENTED_BLOCK_WRAPPERS[indent_block.subtype]
                 if indent_block.indent_level > 0:
                     out += wrapper.close + wrapper.down
@@ -1623,14 +1650,15 @@ def npf_to_html(content: list[ContentBlock], layouts: list[LayoutBlock]) -> str:
                     out += wrapper.close
 
             # 3.4.2. Close the layouts.
-            for layout in layout_ends[i]:
-                out += layout.html_wrapper.close
+            for _layout in layout_ends[i]:
+                out += _layout.html_wrapper.close
 
         i += 1
 
     # 4. Close all opened indented blocks.
     while indent_stack:
         indent_block = indent_stack.pop()
+        assert indent_block.subtype
         wrapper = INDENTED_BLOCK_WRAPPERS[indent_block.subtype]
         if indent_block.indent_level > 0:
             out += wrapper.close + wrapper.down

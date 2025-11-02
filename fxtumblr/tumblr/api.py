@@ -39,8 +39,8 @@ class TumblrAPIResponse:
     #: The status code of the response, according to the "meta" array.
     status: int
 
-    #: Tuple of errors returned by the API.
-    errors: tuple[TumblrAPIError] = tuple()
+    #: List of errors returned by the API.
+    errors: list[TumblrAPIError]
 
     #: Response, if applicable.
     response: dict | None = None
@@ -49,9 +49,9 @@ class TumblrAPIResponse:
     def from_api(cls, data: dict) -> Self:
         """Convert dict-ified JSON data from the Tumblr API to a TumblrAPIResponse object."""
         if "errors" in data:
-            errors = tuple(TumblrAPIError.from_api(err) for err in data["errors"])
+            errors = [TumblrAPIError.from_api(err) for err in data["errors"]]
         else:
-            errors = tuple()
+            errors = []
 
         return cls(
             status=data.get("meta", {}).get("status", 500),
@@ -82,13 +82,11 @@ class TumblrAPIException(Exception):
             error_str = f"{len(response.errors)} errors:\n"
             for error in response.errors:
                 if error.detail:
-                    error_str.append(
-                        f" - {error.title}; {error.detail} ({error.code}))\n"
-                    )
+                    error_str += f" - {error.title}; {error.detail} ({error.code}))\n"
 
                 else:
-                    error_str.append(f" - {error.title} ({error.code}))\n")
-            ret = error_str
+                    error_str += f" - {error.title} ({error.code}))\n"
+            ret = cls(error_str)
 
         ret.errors = response.errors
 
@@ -179,7 +177,7 @@ class TumblrAPI:
         """
         resp = await self._get(f"/blog/{blog_id}/posts")
 
-        if resp.status == 200:
+        if resp.status == 200 and resp.response:
             return Blog.from_api(resp.response)
 
         elif resp.status == 404:
@@ -213,7 +211,7 @@ class TumblrAPI:
             f"/blog/{blog_id}/posts", params={"id": post_id, "npf": "true"}
         )
 
-        if resp.status == 200:
+        if resp.status == 200 and resp.response:
             if "posts" in resp.response and resp.response["posts"]:
                 # It is possible for the API to return multiple posts (e.g. if post_id=0);
                 # double-check that we actually extract the correct post here.
@@ -248,7 +246,7 @@ class TumblrAPI:
             raise TumblrAPIException.from_response(resp)
 
     async def get_poll_results(
-        self, blog_id: str, post_id: int, poll_id: int, skip_cache: bool = False
+        self, blog_id: str, post_id: int, poll_id: str, skip_cache: bool = False
     ) -> PollResults | None:
         """
         Get results for the poll with the given ID.
@@ -262,7 +260,7 @@ class TumblrAPI:
         """
         resp = await self._get(f"/polls/{blog_id}/{post_id}/{poll_id}/results")
 
-        if resp.status == 200:
+        if resp.status == 200 and resp.response:
             return PollResults.from_api(resp.response)
 
         elif resp.status == 404:
