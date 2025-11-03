@@ -701,21 +701,21 @@ class ContentBlockText(ContentBlock):
             elif self.subtype == ContentTextSubtype.quirky:
                 out = '<p class="npf_quirky">' + out + "</p>"
 
-            # Apply emoji styling. (The use of self.text instead of out is deliberate;
-            # it means that formatting tags are ignored.)
-            elif len(self.text) > 0 and not self.text[0].isalnum():
-                # mypy misdetects emoji.analyze as not being real
-                emoji_tuple = tuple(itertools.islice(emoji.analyze(self.text), 4))  # type: ignore
-                emoji_and_char_tuple = tuple(
-                    itertools.islice(emoji.analyze(self.text, non_emoji=True), 4)  # type: ignore
-                )
-                if len(emoji_tuple) <= 3 and [e.chars for e in emoji_tuple] == [
-                    e.chars for e in emoji_and_char_tuple
-                ]:
-                    out = '<p class="emoji-large">' + out + "</p>"
-                else:
-                    out = "<p>" + out + "</p>"
+            else:
+                out = "<p>" + out + "</p>"
 
+        # Apply emoji styling. (The use of self.text instead of out is deliberate;
+        # it means that formatting tags are ignored.)
+        elif len(self.text) > 0 and not self.text[0].isalnum():
+            # mypy misdetects emoji.analyze as not being real
+            emoji_tuple = tuple(itertools.islice(emoji.analyze(self.text), 4))  # type: ignore
+            emoji_and_char_tuple = tuple(
+                itertools.islice(emoji.analyze(self.text, non_emoji=True), 4)  # type: ignore
+            )
+            if len(emoji_tuple) <= 3 and [e.chars for e in emoji_tuple] == [
+                e.chars for e in emoji_and_char_tuple
+            ]:
+                out = '<p class="emoji-large">' + out + "</p>"
             else:
                 out = "<p>" + out + "</p>"
 
@@ -1027,26 +1027,21 @@ class ContentBlockAudio(ContentBlock):
         if selected_size_poster:
             poster_url = selected_size_poster.url
 
-        html = f"""
-                <div class="audio-player{" audio-" + self.provider if self.provider else ""}">
-                    <div class="play-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__{self.provider if self.provider in ("spotify", "soundcloud") else "play-cropped"}"></use></svg>
-                    </div>
-                    <div class="audio-info">
-                        <div class="title">{self.title}</div>
-                        <div class="artist">{self.artist}</div>
-                        <div class="album">{self.album}</div>
-                    </div>
-        """
+        html = f'<div class="audio-player{" audio-" + self.provider if self.provider else ""}">'
+
+        # Play button/service icon
+        html += f'<div class="play-button"><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__{self.provider if self.provider in ("spotify", "soundcloud") else "play-cropped"}"></use></svg></div>'
+
+        # Audio info
+        html += '<div class="audio-info">'
+        html += f'<div class="title">{self.title}</div>'
+        html += f'<div class="artist">{self.artist}</div>'
+        html += f'<div class="album">{self.album}</div>'
+        html += "</div>"
+
         if poster_url:
-            html += f"""
-                    <div class="audio-image">
-                        <img src="{poster_url}">
-                    </div>
-            """
-        html += """
-                </div>
-        """
+            html += f'<div class="audio-image"><img src="{poster_url}"></div>'
+        html += "</div>"
 
         return html
 
@@ -1493,7 +1488,8 @@ def _update_indented_block_wrappers(
         indent_block = indent_stack.pop()
         wrapper = INDENTED_BLOCK_WRAPPERS[indent_block.subtype]
         if indent_block.indent_level > 0:
-            out += wrapper.close + wrapper.down
+            wrapper_outer = INDENTED_BLOCK_WRAPPERS[indent_stack[-1].subtype]
+            out += wrapper.close + wrapper_outer.down
         else:
             out += wrapper.close
 

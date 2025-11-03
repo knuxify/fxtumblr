@@ -3,8 +3,6 @@
 
 import json
 
-import pytest
-
 from fxtumblr.tumblr.npf import (
     ContentBlock,
     ContentBlockAudio,
@@ -15,6 +13,7 @@ from fxtumblr.tumblr.npf import (
     ContentBlockVideo,
     LayoutBlock,
     NPFPost,
+    npf_to_html,
 )
 from fxtumblr.tumblr.types import Blog
 
@@ -225,19 +224,98 @@ def test_block_text():
             },
             "<p>AA<b>👨‍👨‍👦</b>BB</p>",
         ),
-        # Problematic excerpts from the NPF test post
+        # Subtypes
         (
             {
                 "type": "text",
-                "text": "Note that formatting counts one Unicode codepoint as one character; so, make sure emoji like 👨‍👨‍👦 don't break your offsets.",
+                "text": "ab👨‍👨‍👦cd",
+                "subtype": "heading1",
                 "formatting": [
-                    {"type": "bold", "start": 82, "end": 87},
-                    {"type": "bold", "start": 93, "end": 98},
-                    {"type": "bold", "start": 105, "end": 110},
-                    {"type": "italic", "start": 111, "end": 115},
+                    {"start": 2, "end": 7, "type": "bold"},
                 ],
             },
-            "<p>Note that formatting counts one Unicode codepoint as one character; so, make sure <b>emoji</b> like <b>👨‍👨‍👦</b> don&#x27;t <b>break</b> <i>your</i> offsets.</p>",
+            "<h1>ab<b>👨‍👨‍👦</b>cd</h1>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "ab👨‍👨‍👦cd",
+                "subtype": "heading2",
+                "formatting": [
+                    {"start": 2, "end": 7, "type": "bold"},
+                ],
+            },
+            "<h2>ab<b>👨‍👨‍👦</b>cd</h2>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "ab👨‍👨‍👦cd",
+                "subtype": "ordered-list-item",
+                "formatting": [
+                    {"start": 2, "end": 7, "type": "bold"},
+                ],
+            },
+            "<li>ab<b>👨‍👨‍👦</b>cd</li>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "ab👨‍👨‍👦cd",
+                "subtype": "unordered-list-item",
+                "formatting": [
+                    {"start": 2, "end": 7, "type": "bold"},
+                ],
+            },
+            "<li>ab<b>👨‍👨‍👦</b>cd</li>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "ab👨‍👨‍👦cd",
+                "subtype": "chat",
+                "formatting": [
+                    {"start": 2, "end": 7, "type": "bold"},
+                ],
+            },
+            '<p class="npf_chat">ab<b>👨‍👨‍👦</b>cd</p>',
+        ),
+        (
+            {
+                "type": "text",
+                "text": "ab👨‍👨‍👦cd",
+                "subtype": "quote",
+                "formatting": [
+                    {"start": 2, "end": 7, "type": "bold"},
+                ],
+            },
+            '<p class="npf_quote">ab<b>👨‍👨‍👦</b>cd</p>',
+        ),
+        (
+            {
+                "type": "text",
+                "text": "ab👨‍👨‍👦cd",
+                "subtype": "quirky",
+                "formatting": [
+                    {"start": 2, "end": 7, "type": "bold"},
+                ],
+            },
+            '<p class="npf_quirky">ab<b>👨‍👨‍👦</b>cd</p>',
+        ),
+        # Emoji styling
+        (
+            {
+                "type": "text",
+                "text": "😀😄😅",
+            },
+            '<p class="emoji-large">😀😄😅</p>',
+        ),
+        (
+            {
+                "type": "text",
+                "text": "👨‍👨‍👦👨‍👨‍👦👨‍👨‍👦",
+            },
+            '<p class="emoji-large">👨‍👨‍👦👨‍👨‍👦👨‍👨‍👦</p>',
         ),
     )
 
@@ -274,6 +352,97 @@ def test_block_text():
         if "formatting" in data:
             assert block.formatting is not None
         assert block.to_html() == expected_result
+
+
+def test_npf_to_html():
+    """Test the npf_to_html function."""
+
+    # Test cases from Tumblr docs: 1
+
+    content = [
+        ContentBlock.from_dict(c)
+        for c in [
+            {"type": "text", "subtype": "heading1", "text": "Sward's Shopping List"},
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "First level: Fruit",
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "Second level: Apples",
+                "indent_level": 1,
+            },
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "Third level: Green",
+                "indent_level": 2,
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "Second level: Pears",
+                "indent_level": 1,
+            },
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "First level: Vegetables",
+            },
+        ]
+    ]
+    html = npf_to_html(content=content, layouts=[])
+    assert (
+        html
+        == '<div class="text-block"><h1>Sward&#x27;s Shopping List</h1></div><ol class="text-list"><li>First level: Fruit</li><li><ul class="text-list"><li>Second level: Apples</li><li><ol class="text-list"><li>Third level: Green</li></ol></li><li>Second level: Pears</li></ul></li><li>First level: Vegetables</li></ol>'
+    )
+
+    content = [
+        ContentBlock.from_dict(c)
+        for c in [
+            {
+                "type": "text",
+                "subtype": "indented",
+                "text": "1: blockquote, not nested",
+            },
+            {
+                "type": "text",
+                "subtype": "indented",
+                "text": "2: blockquote, nested",
+                "indent_level": 1,
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "3: nested in two blockquotes",
+                "indent_level": 2,
+            },
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "4: nested in two blockquotes and a list",
+                "indent_level": 3,
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "3: back to level 3, double nesting",
+                "indent_level": 2,
+            },
+            {
+                "type": "text",
+                "subtype": "indented",
+                "text": "1: back to level 1, no nesting",
+            },
+        ]
+    ]
+    html = npf_to_html(content=content, layouts=[])
+    assert (
+        html
+        == '<blockquote class="text-block text-indented"><p>1: blockquote, not nested</p><blockquote class="text-block text-indented"><p>2: blockquote, nested</p><ul class="text-list"><li>3: nested in two blockquotes</li><li><ol class="text-list"><li>4: nested in two blockquotes and a list</li></ol></li><li>3: back to level 3, double nesting</li></ul></blockquote><p>1: back to level 1, no nesting</p></blockquote>'
+    )
 
 
 def test_block_image():
@@ -424,7 +593,7 @@ def test_block_video():
                     "display_text": "? - Road work ahead? Uh yeah, I sure hope it does [Drew Gooden]",
                 },
             },
-            '<figure class="tmblr-full video-block"><img class="video-poster" src="https://64.media.tumblr.com/3f2bc691a34a4717874cb8525f5bf75e/5b2682c6837efa16-be/s500x750/ab21befaf02dec37e0f5fbb2d76cf8a6be90a140.jpg"/><span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span></figure>',
+            '<figure class="tmblr-full video-block"><img class="video-poster" src="https://64.media.tumblr.com/3f2bc691a34a4717874cb8525f5bf75e/5b2682c6837efa16-be/s500x750/ab21befaf02dec37e0f5fbb2d76cf8a6be90a140.jpg"/><span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span></figure><div class="attribution app-attribution"><a href="https://www.youtube.com/watch?v=9sPthPleEKo">YouTube | ? - Road work ahead? Uh yeah, I sure hope it does [Drew Gooden]</a><span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span></div>',
         ),
         (
             {
@@ -453,7 +622,7 @@ def test_block_video():
                     "display_text": "Ayodeji - underscores - Cops and robbers",
                 },
             },
-            '<figure class="tmblr-full video-block"><img class="video-poster" src="https://64.media.tumblr.com/d4d14589e1383ee16f3eae38abb72cb4/5b2682c6837efa16-28/s400x600/0f95e805ab8aea92372d3fa350b49700bbb13cef.jpg"/><span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span></figure>',
+            '<figure class="tmblr-full video-block"><img class="video-poster" src="https://64.media.tumblr.com/d4d14589e1383ee16f3eae38abb72cb4/5b2682c6837efa16-28/s400x600/0f95e805ab8aea92372d3fa350b49700bbb13cef.jpg"/><span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span></figure><div class="attribution app-attribution"><a href="https://vimeo.com/823545557">Vimeo | Ayodeji - underscores - Cops and robbers</a><span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span></div>',
         ),
     )
 
@@ -463,8 +632,6 @@ def test_block_video():
         assert block.to_html() == expected_result
 
 
-# TODO
-@pytest.mark.skip
 def test_block_audio():
     """Test audio content block functions."""
 
@@ -492,7 +659,7 @@ def test_block_audio():
                     }
                 ],
             },
-            "FIXME",
+            '<div class="audio-player audio-tumblr"><div class="play-button"><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__play-cropped"></use></svg></div><div class="audio-info"><div class="title">Example Track</div><div class="artist">Example Artist</div><div class="album">Example Album</div></div><div class="audio-image"><img src="https://64.media.tumblr.com/41023f06513343104e9520f824c44c95/5b2682c6837efa16-2a/s250x400/daf29fc6b4c169a4b8513dc09321c2340f6d5311.jpg"></div></div>',
         ),
     )
 
