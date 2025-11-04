@@ -317,6 +317,34 @@ def test_block_text():
             },
             '<p class="emoji-large">👨‍👨‍👦👨‍👨‍👦👨‍👨‍👦</p>',
         ),
+        (
+            {
+                "type": "text",
+                "text": "test😀😄😅",
+            },
+            "<p>test😀😄😅</p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "😀😄😅test",
+            },
+            "<p>😀😄😅test</p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "😀<😄>😅",
+            },
+            "<p>😀&lt;😄&gt;😅</p>",
+        ),
+        (
+            {
+                "type": "text",
+                "text": "😀<😄",
+            },
+            "<p>😀&lt;😄</p>",
+        ),
     )
 
     """
