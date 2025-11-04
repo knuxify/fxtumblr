@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, ClassVar, Self, Union
 
 import dateutil
 import emoji
+import nh3
 from frozendict import frozendict
 
 if TYPE_CHECKING:
@@ -41,6 +42,65 @@ def _closing_tag(tag: str) -> str:
             break
         out += i
     return out
+
+
+def sanitize_html(html: str) -> str:
+    """
+    Sanitizes HTML to only include elements we add; second line of defense
+    against arbitrary code execution.
+
+    Update this whenever you add a new object.
+    """
+    return nh3.clean(
+        html,
+        tags={
+            "p",
+            "b",
+            "i",
+            "a",
+            "small",
+            "strong",
+            "strike",
+            "h1",
+            "h2",
+            "ul",
+            "ol",
+            "li",
+            "blockquote",
+            "span",
+            "div",
+            "figure",
+            "img",
+            "audio",
+            "video",
+            "source",
+            "svg",
+            "path",
+            "aside",
+            "use",
+        },  # fmt: skip
+        attributes={
+            "*": {"class", "id"},
+            "a": {"class", "id", "href"},
+            "div": {"class", "id", "style"},
+            "span": {"class", "id", "style"},
+            "figure": {"class", "id", "data-orig-height", "data-orig-width"},
+            "img": {"class", "id", "src", "data-orig-height", "data-orig-width"},
+            "video": {
+                "class",
+                "id",
+                "poster",
+                "src",
+                "controls",
+                "data-orig-height",
+                "data-orig-width",
+            },
+            "source": {"src", "type"},
+            "audio": {"class", "id", "poster", "src", "controls", "muted"},
+            "svg": {"class", "id", "xmlns", "height", "width", "role", "style"},
+            "use": {"class", "id", "href"},
+        },
+    )
 
 
 @dataclass
@@ -1701,7 +1761,7 @@ def npf_to_html(
         out += '<div class="read-more">Keep reading</div>'
 
     # 6. Return the resulting string.
-    return out
+    return sanitize_html(out)
 
 
 @dataclass
