@@ -28,6 +28,11 @@ class NPFParseError(Exception):
     """Exception raised when an error is encountered during NPF parsing."""
 
 
+def safe_url(url: str) -> str:
+    """Make an URL safe for putting in a HTML tag."""
+    return urllib.parse.quote(url, safe="/:?&=")
+
+
 def _closing_tag(tag: str) -> str:
     """Extract the tag name from a tag's content."""
     out = ""
@@ -268,7 +273,7 @@ class AttributionApp(Attribution):
         else:
             text = urllib.parse.urlparse(self.url).netloc
 
-        return f'<div class="attribution app-attribution"><a href="{self.url}">{text}</a>{caret_tag}</div>'
+        return f'<div class="attribution app-attribution"><a href="{safe_url(self.url)}">{text}</a>{caret_tag}</div>'
 
 
 @dataclass
@@ -302,7 +307,7 @@ class AttributionBlog(Attribution):
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-        return f'<div class="attribution blog-attribution"><a href="{self.url}">{self.blog.name}</a></div>'
+        return f'<div class="attribution blog-attribution"><a href="{safe_url(self.url)}">{self.blog.name}</a></div>'
 
 
 @dataclass
@@ -336,7 +341,7 @@ class AttributionLink(Attribution):
         """
         caret_tag = '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
 
-        return f'<div class="attribution image-attribution"><a href="{self.url}">{urllib.parse.urlparse(self.url).netloc}</a>{caret_tag}</div>'
+        return f'<div class="attribution image-attribution"><a href="{safe_url(self.url)}">{urllib.parse.urlparse(self.url).netloc}</a>{caret_tag}</div>'
 
 
 @dataclass
@@ -370,7 +375,7 @@ class AttributionPost(Attribution):
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-        return f'<div class="attribution post-attribution"><a href="{self.url}">GIF by <b>{self.blog.name}</b></a></div>'
+        return f'<div class="attribution post-attribution"><a href="{safe_url(self.url)}">GIF by <b>{html.escape(self.blog.name)}</b></a></div>'
 
 
 #: Mapping of type strings to attribution classes.
@@ -514,10 +519,10 @@ class TextFormat:
         elif self.type == TextFormatType.small:
             return "small"
         elif self.type == TextFormatType.link:
-            return f"a href={self.url}"
+            return f"a href={safe_url(self.url)}"
         elif self.type == TextFormatType.mention:
             # self.blog is not None for TextFormatType.mention
-            return f"a href={self.blog['url']}"  # type: ignore
+            return f"a href={safe_url(self.blog['url'])}"  # type: ignore
         elif self.type == TextFormatType.color:
             return f'span style="color: {self.hex}"'
         return "span"
@@ -773,31 +778,33 @@ class ContentBlockLink(ContentBlock):
         :returns: The conversion result, as a string containing valid HTML.
         """
         if self.title:
-            title = self.title
+            title = html.escape(self.title)
         elif self.display_url:
-            title = self.display_url
+            title = html.escape(self.display_url)
         else:
-            title = self.url
+            title = html.escape(self.url)
 
-        html = '<div class="link-embed">'
+        out = '<div class="link-embed">'
 
         if self.poster:
             selected_size_poster = self.poster.get_by_width(640)
             if selected_size_poster:
-                html += f'<div class="link-embed-image-top"><img src="{selected_size_poster.url}" class="link-image"><span class="link-image-title">{title}</span></div>'
+                out += f'<div class="link-embed-image-top"><img src="{safe_url(selected_size_poster.url)}" class="link-image"><span class="link-image-title">{title}</span></div>'
             else:
-                html += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
+                out += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
         else:
-            html += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
+            out += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
 
-        html += '<div class="link-embed-bottom">'
+        out += '<div class="link-embed-bottom">'
         if self.description:
-            html += f'<span class="link-description">{self.description}</span>'
+            out += (
+                f'<span class="link-description">{html.escape(self.description)}</span>'
+            )
         if self.site_name:
-            html += f'<span class="link-sitename">{self.site_name}</span>'
-        html += "</div></div>"
+            out += f'<span class="link-sitename">{html.escape(self.site_name)}</span>'
+        out += "</div></div>"
 
-        return html
+        return out
 
 
 @dataclass
@@ -863,7 +870,7 @@ class ContentBlockImage(ContentBlock):
         if ".gif" in media_small.url:
             classes += " gif"
 
-        figure_tag = f'<figure class="{classes}"><img src="{media_small.url}"/>{badge_tag}</figure>'
+        figure_tag = f'<figure class="{classes}"><img src="{safe_url(media_small.url)}"/>{badge_tag}</figure>'
 
         if self.attribution:
             figure_tag += self.attribution.to_html()
@@ -949,7 +956,9 @@ class ContentBlockVideo(ContentBlock):
         if self.poster:
             poster = self.poster.get_by_width(640)
             if poster:
-                poster_img_tag = f'<img class="video-poster" src="{poster.url}"/>'
+                poster_img_tag = (
+                    f'<img class="video-poster" src="{safe_url(poster.url)}"/>'
+                )
         else:
             poster_img_tag = '<div class="video-poster video-poster-dummy"></div>'
 
@@ -1027,23 +1036,26 @@ class ContentBlockAudio(ContentBlock):
         if selected_size_poster:
             poster_url = selected_size_poster.url
 
-        html = f'<div class="audio-player{" audio-" + self.provider if self.provider else ""}">'
+        out = f'<div class="audio-player{" audio-" + self.provider if self.provider else ""}">'
 
         # Play button/service icon
-        html += f'<div class="play-button"><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__{self.provider if self.provider in ("spotify", "soundcloud") else "play-cropped"}"></use></svg></div>'
+        out += f'<div class="play-button"><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__{self.provider if self.provider in ("spotify", "soundcloud") else "play-cropped"}"></use></svg></div>'
 
         # Audio info
-        html += '<div class="audio-info">'
-        html += f'<div class="title">{self.title}</div>'
-        html += f'<div class="artist">{self.artist}</div>'
-        html += f'<div class="album">{self.album}</div>'
-        html += "</div>"
+        out += '<div class="audio-info">'
+        if self.title:
+            out += f'<div class="title">{html.escape(self.title)}</div>'
+        if self.artist:
+            out += f'<div class="artist">{html.escape(self.artist)}</div>'
+        if self.album:
+            out += f'<div class="album">{html.escape(self.album)}</div>'
+        out += "</div>"
 
         if poster_url:
-            html += f'<div class="audio-image"><img src="{poster_url}"></div>'
-        html += "</div>"
+            out += f'<div class="audio-image"><img src="{safe_url(poster_url)}"></div>'
+        out += "</div>"
 
-        return html
+        return out
 
 
 @dataclass
@@ -1200,7 +1212,7 @@ class ContentBlockPoll(ContentBlock):
             time_str = "Final result"
             is_over = True
 
-        html = f'<div class="poll-block{" poll-over" if is_over else ""}"><span class="poll-question">{self.question}</span>'
+        out = f'<div class="poll-block{" poll-over" if is_over else ""}"><span class="poll-question">{html.escape(self.question)}</span>'
 
         # Generate poll answer divs
         if is_over:
@@ -1219,14 +1231,16 @@ class ContentBlockPoll(ContentBlock):
                 else:
                     answer_count = 0
                     answer_percentage = "0"
-                html += f'<div class="poll-answer{" poll-answer-win" if answer_count == most_votes else ""}"><div class="poll-answer-filler" style="width: {answer_percentage}%;"></div><span class="poll-answer-text">{answer.answer_text}</span><span class="poll-answer-percentage">{answer_percentage}%</span></div>'
+                out += f'<div class="poll-answer{" poll-answer-win" if answer_count == most_votes else ""}"><div class="poll-answer-filler" style="width: {answer_percentage}%;"></div><span class="poll-answer-text">{html.escape(answer.answer_text)}</span><span class="poll-answer-percentage">{answer_percentage}%</span></div>'
         else:
             for answer in self.answers:
-                html += f'<div class="poll-answer">{answer.answer_text}</div>'
+                out += (
+                    f'<div class="poll-answer">{html.escape(answer.answer_text)}</div>'
+                )
 
-        html += f'<span class="poll-meta">{time_str}</span></div>'
+        out += f'<span class="poll-meta">{time_str}</span></div>'
 
-        return html
+        return out
 
 
 @dataclass

@@ -544,6 +544,27 @@ def test_block_image():
             },
             '<figure class="tmblr-full"><img src="https://64.media.tumblr.com/1cc6f410b3bc53161f8fbd64d2b28b5a/5b2682c6837efa16-ae/s640x960/ce8b82f18f36f7b124d718d21442714022a290aa.png"/><span class="tmblr-alt-text-helper">ALT</span></figure>',
         ),
+        (
+            {
+                "type": "image",
+                "media": [
+                    {
+                        "media_key": "1cc6f410b3bc53161f8fbd64d2b28b5a:5b2682c6837efa16-ae",
+                        "type": "image/png",
+                        "width": 560,
+                        "height": 200,
+                        "url": 'https://64.media.tumblr.com/1cc6f410b3bc53161f8fbd64d2b28b5a/"5b2682c6837efa16-ae/s640x960/ce8b82f18f36f7b124d718d21442714022a290aa.png',
+                        "has_original_dimensions": True,
+                    },
+                ],
+                "alt_text": "<script>alert(1)</script>",
+                "attribution": {
+                    "type": "link",
+                    "url": 'https://example.com/"/><script>alert(2)</script>',
+                },
+            },
+            '<figure class="tmblr-full"><img src="https://64.media.tumblr.com/1cc6f410b3bc53161f8fbd64d2b28b5a/%225b2682c6837efa16-ae/s640x960/ce8b82f18f36f7b124d718d21442714022a290aa.png"/><span class="tmblr-alt-text-helper">ALT</span></figure><div class="attribution image-attribution"><a href="https://example.com/%22/%3E%3Cscript%3Ealert%282%29%3C/script%3E">example.com</a><span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span></div>',
+        ),
     )
 
     for data, expected_result in examples:
@@ -566,6 +587,65 @@ def test_block_link():
                 "site_name": "Tumblr",
             },
             '<div class="link-embed"><div class="link-embed-top"><span class="link-title">Today on Tumblr</span></div><div class="link-embed-bottom"><span class="link-description">Explore today’s picks from the Tumblr team.</span><span class="link-sitename">Tumblr</span></div></div>',
+        ),
+        (
+            {
+                "type": "link",
+                "url": "https://tumblr.com",
+                "display_url": "https://tumblr.com",
+            },
+            '<div class="link-embed"><div class="link-embed-top"><span class="link-title">https://tumblr.com</span></div><div class="link-embed-bottom"></div></div>',
+        ),
+        (
+            {
+                "type": "link",
+                "url": 'https://example.com/"/><script>alert(1)</script>',
+                "display_url": 'https://example.com/"/><script>alert(2)</script>',
+                "title": "<script>alert(3)</script>",
+                "description": "<script>alert(4)</script>",
+                "site_name": "<script>alert(5)</script>",
+            },
+            '<div class="link-embed"><div class="link-embed-top"><span class="link-title">&lt;script&gt;alert(3)&lt;/script&gt;</span></div><div class="link-embed-bottom"><span class="link-description">&lt;script&gt;alert(4)&lt;/script&gt;</span><span class="link-sitename">&lt;script&gt;alert(5)&lt;/script&gt;</span></div></div>',
+        ),
+        (
+            {
+                "type": "link",
+                "url": "https://href.li/?https://www.nytimes.com/2017/06/15/us/politics/secrecy-surrounding-senate-health-bill-raises-alarms-in-both-parties.html",
+                "display_url": "https://href.li/?https://www.nytimes.com/2017/06/15/us/politics/secrecy-surrounding-senate-health-bill-raises-alarms-in-both-parties.html",
+                "title": "Secrecy Surrounding Senate Health Bill Raises Alarms in Both Parties (Published 2017)",
+                "description": "Senate leaders are writing legislation to repeal and replace the Affordable Care Act without a single hearing on the bill and without an ope",
+                "site_name": "nytimes.com",
+                "poster": [
+                    {
+                        "media_key": "85955a73a8c5d39a74f5c53e5402f342:5b2682c6837efa16-fa",
+                        "type": "image/jpeg",
+                        "width": 1050,
+                        "height": 549,
+                        "url": "https://64.media.tumblr.com/85955a73a8c5d39a74f5c53e5402f342/5b2682c6837efa16-fa/s1280x1920/bac3d2656327f6b379e17183b472c86a428e5f4b.jpg",
+                    }
+                ],
+            },
+            '<div class="link-embed"><div class="link-embed-image-top"><img src="https://64.media.tumblr.com/85955a73a8c5d39a74f5c53e5402f342/5b2682c6837efa16-fa/s1280x1920/bac3d2656327f6b379e17183b472c86a428e5f4b.jpg" class="link-image"><span class="link-image-title">Secrecy Surrounding Senate Health Bill Raises Alarms in Both Parties (Published 2017)</span></div><div class="link-embed-bottom"><span class="link-description">Senate leaders are writing legislation to repeal and replace the Affordable Care Act without a single hearing on the bill and without an ope</span><span class="link-sitename">nytimes.com</span></div></div>',
+        ),
+        (
+            {
+                "type": "link",
+                "url": 'https://example.com/"/><script>alert(1)</script>',
+                "display_url": 'https://example.com/"/><script>alert(2)</script>',
+                "title": "<script>alert(3)</script>",
+                "description": "<script>alert(4)</script>",
+                "site_name": "<script>alert(5)</script>",
+                "poster": [
+                    {
+                        "media_key": "85955a73a8c5d39a74f5c53e5402f342:5b2682c6837efa16-fa",
+                        "type": "image/jpeg",
+                        "width": 1050,
+                        "height": 549,
+                        "url": 'https://64.media.tumblr.com/85955a73a8c5d39a74f5c53e5402f342/"5b2682c6837efa16-fa/s1280x1920/bac3d2656327f6b379e17183b472c86a428e5f4b.jpg',
+                    }
+                ],
+            },
+            '<div class="link-embed"><div class="link-embed-image-top"><img src="https://64.media.tumblr.com/85955a73a8c5d39a74f5c53e5402f342/%225b2682c6837efa16-fa/s1280x1920/bac3d2656327f6b379e17183b472c86a428e5f4b.jpg" class="link-image"><span class="link-image-title">&lt;script&gt;alert(3)&lt;/script&gt;</span></div><div class="link-embed-bottom"><span class="link-description">&lt;script&gt;alert(4)&lt;/script&gt;</span><span class="link-sitename">&lt;script&gt;alert(5)&lt;/script&gt;</span></div></div>',
         ),
     )
 
@@ -689,6 +769,31 @@ def test_block_audio():
             },
             '<div class="audio-player audio-tumblr"><div class="play-button"><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__play-cropped"></use></svg></div><div class="audio-info"><div class="title">Example Track</div><div class="artist">Example Artist</div><div class="album">Example Album</div></div><div class="audio-image"><img src="https://64.media.tumblr.com/41023f06513343104e9520f824c44c95/5b2682c6837efa16-2a/s250x400/daf29fc6b4c169a4b8513dc09321c2340f6d5311.jpg"></div></div>',
         ),
+        (
+            {
+                "type": "audio",
+                "provider": "tumblr",
+                "url": 'https://64.media.tumblr.com/58138b56a8729251b81de4f6d401d2a9/"86e7573156aa2ff2-29/651608e8278b463944dc2f22bae0bcf3a7f0ef62.mp3',
+                "title": "<script>alert(1)</script>",
+                "artist": "<script>alert(2)</script>",
+                "album": "<script>alert(3)</script>",
+                "media": {
+                    "media_key": "58138b56a8729251b81de4f6d401d2a9:5b2682c6837efa16-ea",
+                    "type": "audio/mpeg",
+                    "url": 'https://64.media.tumblr.com/58138b56a8729251b81de4f6d401d2a9/"5b2682c6837efa16-ea/afe1a484a9c04fc15702c8ce9bdb1807d6631a94.mp3',
+                },
+                "poster": [
+                    {
+                        "media_key": "41023f06513343104e9520f824c44c95:5b2682c6837efa16-2a",
+                        "type": "image/jpeg",
+                        "width": 170,
+                        "height": 258,
+                        "url": 'https://64.media.tumblr.com/41023f06513343104e9520f824c44c95/"5b2682c6837efa16-2a/s250x400/daf29fc6b4c169a4b8513dc09321c2340f6d5311.jpg',
+                    }
+                ],
+            },
+            '<div class="audio-player audio-tumblr"><div class="play-button"><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__play-cropped"></use></svg></div><div class="audio-info"><div class="title">&lt;script&gt;alert(1)&lt;/script&gt;</div><div class="artist">&lt;script&gt;alert(2)&lt;/script&gt;</div><div class="album">&lt;script&gt;alert(3)&lt;/script&gt;</div></div><div class="audio-image"><img src="https://64.media.tumblr.com/41023f06513343104e9520f824c44c95/%225b2682c6837efa16-2a/s250x400/daf29fc6b4c169a4b8513dc09321c2340f6d5311.jpg"></div></div>',
+        ),
     )
 
     for data, expected_result in examples:
@@ -727,6 +832,33 @@ async def test_block_poll(tumblr_api):
                 "_fxt_test_data": {"blog": "knuxify", "post": 730903802869317632},
             },
             '<div class="poll-block poll-over"><span class="poll-question">A poll!</span><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">I love NPF!</span><span class="poll-answer-percentage">50%</span></div><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">Why must thou do this to me, Tumblr.</span><span class="poll-answer-percentage">50%</span></div><span class="poll-meta">Final result</span></div>',
+        ),
+        (
+            {
+                "type": "poll",
+                "client_id": "e040d07a-ca6a-4751-8df5-ebaa1719222e",
+                "question": "<script>alert(1)</script>",
+                "answers": [
+                    {
+                        "client_id": "0e094aec-5f4a-42c3-aa5f-4dc79cebabe7",
+                        "answer_text": "<script>alert(2)</script>",
+                    },
+                    {
+                        "client_id": "3fd6cbc9-a929-4a71-a9ea-945fc2bceee3",
+                        "answer_text": "<script>alert(3)</script>",
+                    },
+                ],
+                "settings": {
+                    "multiple_choice": False,
+                    "close_status": "closed-after",
+                    "expire_after": 86400,
+                    "source": "tumblr",
+                },
+                "created_at": "2023-10-11 17:09:44 GMT",
+                "timestamp": 1697044184,
+                "_fxt_test_data": {"blog": "knuxify", "post": 730903802869317632},
+            },
+            '<div class="poll-block poll-over"><span class="poll-question">&lt;script&gt;alert(1)&lt;/script&gt;</span><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">&lt;script&gt;alert(2)&lt;/script&gt;</span><span class="poll-answer-percentage">50%</span></div><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">&lt;script&gt;alert(3)&lt;/script&gt;</span><span class="poll-answer-percentage">50%</span></div><span class="poll-meta">Final result</span></div>',
         ),
     )
 
