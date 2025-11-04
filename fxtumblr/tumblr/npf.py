@@ -34,16 +34,6 @@ def safe_url(url: str) -> str:
     return urllib.parse.quote(url, safe="/:?&=")
 
 
-def _closing_tag(tag: str) -> str:
-    """Extract the tag name from a tag's content."""
-    out = ""
-    for i in tag:
-        if i == " ":
-            break
-        out += i
-    return out
-
-
 def sanitize_html(html: str) -> str:
     """
     Sanitizes HTML to only include elements we add; second line of defense
@@ -78,7 +68,7 @@ def sanitize_html(html: str) -> str:
             "path",
             "aside",
             "use",
-        },  # fmt: skip
+        },
         attributes={
             "*": {"class", "id"},
             "a": {"class", "id", "href"},
@@ -101,6 +91,16 @@ def sanitize_html(html: str) -> str:
             "use": {"class", "id", "href"},
         },
     )
+
+
+def _closing_tag(tag: str) -> str:
+    """Extract the tag name from a tag's content."""
+    out = ""
+    for i in tag:
+        if i == " ":
+            break
+        out += i
+    return out
 
 
 @dataclass
