@@ -14,9 +14,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff poetry>=2.2.0
           poetry install --with typing --with test
-      # Update output format to enable automatic inline annotations.
-      - name: Run Ruff
+      - name: Run Ruff check
         run: poetry run ruff check --output-format=github .
+      - name: Run Ruff format
+        run: poetry run ruff format --check .
       - name: Run mypy
         run: poetry run python3 -m mypy fxtumblr
       - name: Run test suite
