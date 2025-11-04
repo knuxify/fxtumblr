@@ -519,7 +519,8 @@ class TextFormat:
         elif self.type == TextFormatType.small:
             return "small"
         elif self.type == TextFormatType.link:
-            return f"a href={safe_url(self.url)}"
+            # self.url is not None for TextFormatType.link
+            return f"a href={safe_url(self.url)}"  # type: ignore
         elif self.type == TextFormatType.mention:
             # self.blog is not None for TextFormatType.mention
             return f"a href={safe_url(self.blog['url'])}"  # type: ignore
@@ -1521,7 +1522,7 @@ def _update_indented_block_wrappers(
             return
 
         wrapper = INDENTED_BLOCK_WRAPPERS[block.subtype]
-        if len(indent_stack) > 0:
+        if len(indent_stack) > 0 and indent_stack[-1].subtype:
             indent_wrapper = INDENTED_BLOCK_WRAPPERS[indent_stack[-1].subtype]
             out += indent_wrapper.up + wrapper.open
         else:
