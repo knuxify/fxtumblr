@@ -37,8 +37,14 @@ typing = [
 	"types-python-dateutil",
     "types-redis",
 ]
+tests = [
+    "aiofiles (>=25.1.0,<26.0.0)"
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 log_cli = true
 log_cli_level = "INFO"
+
+[tool.mypy]
+exclude = ["tests"]

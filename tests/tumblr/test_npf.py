@@ -3,6 +3,8 @@
 
 import json
 
+import aiofiles
+
 from fxtumblr.tumblr.npf import (
     ContentBlock,
     ContentBlockAudio,
@@ -22,8 +24,10 @@ from ..conftest import _get_tumblr_test_data
 
 async def test_npf_post(tumblr_api):
     """Test the NPFPost class."""
-    with open(_get_tumblr_test_data("post_npftest.json")) as test_data:
-        post = NPFPost.from_post_dict(json.load(test_data)["response"]["posts"][0])
+    async with aiofiles.open(_get_tumblr_test_data("post_npftest.json")) as test_data:
+        post = NPFPost.from_post_dict(
+            json.loads(await test_data.read())["response"]["posts"][0]
+        )
 
     assert post is not None
     assert isinstance(post, NPFPost)
@@ -43,14 +47,11 @@ async def test_npf_post(tumblr_api):
     # The NPF test post has a poll, we need to fetch results before rendering to HTML
     await post.fetch_poll_results(tumblr_api, skip_cache=True)
 
-    html = post.to_html()
-
-    with open("render.html", "w") as render_file:
-        render_file.write(html)
-
     # Test post with ask
-    with open(_get_tumblr_test_data("post_ask.json")) as test_data:
-        post = NPFPost.from_post_dict(json.load(test_data)["response"]["posts"][0])
+    async with aiofiles.open(_get_tumblr_test_data("post_ask.json")) as test_data:
+        post = NPFPost.from_post_dict(
+            json.loads(await test_data.read())["response"]["posts"][0]
+        )
 
     assert post is not None
     assert isinstance(post, NPFPost)
@@ -61,8 +62,6 @@ async def test_npf_post(tumblr_api):
 
     assert post.content
     assert post.layout
-
-    html = post.to_html()
 
 
 def test_block_text():
@@ -424,7 +423,7 @@ def test_npf_to_html():
     html = npf_to_html(content=content, layouts=[])
     assert (
         html
-        == '<div class="text-block"><h1>Sward&#x27;s Shopping List</h1></div><ol class="text-list"><li>First level: Fruit</li><li><ul class="text-list"><li>Second level: Apples</li><li><ol class="text-list"><li>Third level: Green</li></ol></li><li>Second level: Pears</li></ul></li><li>First level: Vegetables</li></ol>'
+        == '<div class="text-block"><h1>Sward\'s Shopping List</h1></div><ol class="text-list"><li>First level: Fruit</li><li><ul class="text-list"><li>Second level: Apples</li><li><ol class="text-list"><li>Third level: Green</li></ol></li><li>Second level: Pears</li></ul></li><li>First level: Vegetables</li></ol>'
     )
 
     content = [
