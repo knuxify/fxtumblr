@@ -632,17 +632,17 @@ class ContentBlockText(ContentBlock):
             format_starts = defaultdict(list)  # character: list of formats
             format_ends = defaultdict(list)  # character: list of formats
 
-            for format in self.formatting:
-                format_starts[format.start].append(format)
-                format_ends[format.end].append(format)
+            for fmt in self.formatting:
+                format_starts[fmt.start].append(fmt)
+                format_ends[fmt.end].append(fmt)
 
             n_char = 0  # Currently parsed character *in the original text*;
             # used to determine format position
             for n_char in range(len(self.text) + 1):
                 # Open formats that need starting
-                for format in format_starts[n_char]:
-                    out += f"<{format.html_tag}>"
-                    open_formats.append(format)
+                for fmt in format_starts[n_char]:
+                    out += f"<{fmt.html_tag}>"
+                    open_formats.append(fmt)
 
                 # Close formats that need ending
                 if format_ends[n_char]:
@@ -650,18 +650,18 @@ class ContentBlockText(ContentBlock):
                     # on this character
                     _ends = set(format_ends[n_char])
                     while not set(temp_closed).issuperset(_ends):
-                        format = open_formats.pop()
-                        temp_closed.append(format)
-                        out += f"</{_closing_tag(format.html_tag)}>"
+                        fmt = open_formats.pop()
+                        temp_closed.append(fmt)
+                        out += f"</{_closing_tag(fmt.html_tag)}>"
 
                     # Then, only reopen the ones we closed on the way
                     for f in _ends:
                         temp_closed.remove(f)
 
                     while temp_closed:
-                        format = temp_closed.pop()
-                        out += f"<{format.html_tag}>"
-                        open_formats.append(format)
+                        fmt = temp_closed.pop()
+                        out += f"<{fmt.html_tag}>"
+                        open_formats.append(fmt)
 
                     del _ends
 

@@ -16,8 +16,8 @@ dependencies = [
 ]
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "B", "D", "F", "I"]
-ignore = ["D212", "D203", "D205", "D202"]
+select = ["E4", "E7", "E9", "ASYNC", "A", "B", "D", "F", "S", "I", "W"]
+ignore = ["D212", "D203", "D205", "D202", "ASYNC109", "S101"]
 
 [dependency-groups]
 test = [
