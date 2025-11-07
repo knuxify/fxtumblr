@@ -1780,6 +1780,9 @@ class NPFPost:
 
     is_commercial: bool = False
 
+    #: If the post is a submission, this contains the username of the submitter.
+    submitted_by: str | None = None
+
     @classmethod
     def from_post_dict(cls, data: dict) -> Self:
         """Turn post data from the Tumblr API into an NPFPost object."""
@@ -1819,6 +1822,11 @@ class NPFPost:
             _blog = Blog.from_api(data["blog"])
         _timestamp = data.get("post", {}).get("timestamp", -1)
 
+        if "is_submitted" in data and data["is_submitted"]:
+            _submitted_by = data["post_author"]
+        else:
+            _submitted_by = None
+
         return cls(
             id=_id,
             timestamp=_timestamp,
@@ -1826,6 +1834,7 @@ class NPFPost:
             content=[ContentBlock.from_dict(block) for block in data["content"]],
             layout=[LayoutBlock.from_dict(block) for block in data["layout"]],
             is_commercial=data.get("is_commercial", False),
+            submitted_by=_submitted_by,
         )
 
     def to_html(self, truncate: bool = False) -> str:
@@ -1845,7 +1854,12 @@ class NPFPost:
         #   here, in NPFPost.to_html().
         # The same mechanism is used for activity_html and plaintext conversions.
 
-        return npf_to_html(self.content, self.layout, truncate=truncate)
+        out = npf_to_html(self.content, self.layout, truncate=truncate)
+
+        if self.submitted_by:
+            out += f'<div class="submitted-by">Submitted by <span class="submitter-username">{self.submitted_by}</span></div>'
+
+        return out
 
     async def fetch_poll_results(self, api: "TumblrAPI", skip_cache: bool = False):
         """
