@@ -20,7 +20,6 @@ async def test_get_post(tumblr_api):
         assert isinstance(post, Post)
         assert post.blog.name == username
         assert post.id == post_id
-        # assert isinstance(post.content, NPFContent)
 
     # Test 404
     post = await tumblr_api.get_post("knuxify", 1234, skip_cache=True)

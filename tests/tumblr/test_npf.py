@@ -16,6 +16,7 @@ from fxtumblr.tumblr.npf import (
     LayoutBlock,
     NPFPost,
     npf_to_html,
+    npf_to_markdown,
 )
 from fxtumblr.tumblr.types import Blog
 
@@ -71,6 +72,7 @@ def test_block_text():
         (
             {"type": "text", "text": "This is a test post!"},
             "<p>This is a test post!</p>",
+            "This is a test post!",
         ),
         (
             {
@@ -79,6 +81,7 @@ def test_block_text():
                 "formatting": [{"start": 0, "end": 1, "type": "bold"}],
             },
             "<p><b>T</b>his is a test post!</p>",
+            "**T**his is a test post!",
         ),
         (
             {
@@ -87,6 +90,7 @@ def test_block_text():
                 "formatting": [{"start": 0, "end": 4, "type": "bold"}],
             },
             "<p><b>Test</b></p>",
+            "**Test**",
         ),
         (
             {
@@ -98,17 +102,7 @@ def test_block_text():
                 ],
             },
             "<p>A<b>A</b>BBC<b>C</b>DD</p>",
-        ),
-        (
-            {
-                "type": "text",
-                "text": "AABBCCDD",
-                "formatting": [
-                    {"start": 1, "end": 2, "type": "bold"},
-                    {"start": 5, "end": 6, "type": "bold"},
-                ],
-            },
-            "<p>A<b>A</b>BBC<b>C</b>DD</p>",
+            "A**A**BBC**C**DD",
         ),
         (
             {
@@ -120,6 +114,7 @@ def test_block_text():
                 ],
             },
             "<p><i>AAAA<b>BBBB</b></i></p>",
+            "*AAAA**BBBB***",
         ),
         (
             {
@@ -131,6 +126,7 @@ def test_block_text():
                 ],
             },
             "<p><b>AAAA<i>BBBB</i></b></p>",
+            "**AAAA*BBBB***",
         ),
         (
             {
@@ -142,6 +138,7 @@ def test_block_text():
                 ],
             },
             "<p><i><b>AAAA</b>BBBB</i></p>",
+            "***AAAA**BBBB*",
         ),
         (
             {
@@ -153,6 +150,7 @@ def test_block_text():
                 ],
             },
             "<p><b><i>AAAA</i>BBBB</b></p>",
+            "***AAAA*BBBB**",
         ),
         (
             {
@@ -164,6 +162,7 @@ def test_block_text():
                 ],
             },
             "<p><b><i>This is</i></b> a test post!</p>",
+            "***This is*** a test post!",
         ),
         (
             {
@@ -175,6 +174,7 @@ def test_block_text():
                 ],
             },
             "<p><i>This <b>is</b> a</i> test post!</p>",
+            "*This **is** a* test post!",
         ),
         # Complex tag closing examples
         (
@@ -187,6 +187,7 @@ def test_block_text():
                 ],
             },
             "<p><b>Thi<i>s is</i></b><i> a</i> test post!</p>",
+            "**Thi*s is**** a* test post!",
         ),
         (
             {
@@ -199,6 +200,7 @@ def test_block_text():
                 ],
             },
             "<p><strike><b>Thi<i>s is</i></b><i> a</i> test</strike> post!</p>",
+            "~**Thi*s is**** a* test~ post!",
         ),
         # Multi-codepoint emoji
         (
@@ -212,6 +214,7 @@ def test_block_text():
                 ],
             },
             "<p><b>This</b> is a 5-codepoint <b>emoji 👨‍👨‍👦 <i>post</i></b>!</p>",
+            "**This** is a 5-codepoint **emoji 👨‍👨‍👦 *post***!",
         ),
         (
             {
@@ -222,6 +225,7 @@ def test_block_text():
                 ],
             },
             "<p>AA<b>👨‍👨‍👦</b>BB</p>",
+            "AA**👨‍👨‍👦**BB",
         ),
         # Subtypes
         (
@@ -234,6 +238,7 @@ def test_block_text():
                 ],
             },
             "<h1>ab<b>👨‍👨‍👦</b>cd</h1>",
+            "# ab**👨‍👨‍👦**cd",
         ),
         (
             {
@@ -245,6 +250,7 @@ def test_block_text():
                 ],
             },
             "<h2>ab<b>👨‍👨‍👦</b>cd</h2>",
+            "## ab**👨‍👨‍👦**cd",
         ),
         (
             {
@@ -256,6 +262,7 @@ def test_block_text():
                 ],
             },
             "<li>ab<b>👨‍👨‍👦</b>cd</li>",
+            "#. ab**👨‍👨‍👦**cd",
         ),
         (
             {
@@ -267,6 +274,7 @@ def test_block_text():
                 ],
             },
             "<li>ab<b>👨‍👨‍👦</b>cd</li>",
+            "* ab**👨‍👨‍👦**cd",
         ),
         (
             {
@@ -278,6 +286,7 @@ def test_block_text():
                 ],
             },
             '<p class="npf_chat">ab<b>👨‍👨‍👦</b>cd</p>',
+            "ab**👨‍👨‍👦**cd",
         ),
         (
             {
@@ -289,6 +298,7 @@ def test_block_text():
                 ],
             },
             '<p class="npf_quote">ab<b>👨‍👨‍👦</b>cd</p>',
+            "> ab**👨‍👨‍👦**cd",
         ),
         (
             {
@@ -300,6 +310,7 @@ def test_block_text():
                 ],
             },
             '<p class="npf_quirky">ab<b>👨‍👨‍👦</b>cd</p>',
+            "ab**👨‍👨‍👦**cd",
         ),
         # Emoji styling
         (
@@ -308,6 +319,7 @@ def test_block_text():
                 "text": "😀😄😅",
             },
             '<p class="emoji-large">😀😄😅</p>',
+            "😀😄😅",
         ),
         (
             {
@@ -315,6 +327,7 @@ def test_block_text():
                 "text": "👨‍👨‍👦👨‍👨‍👦👨‍👨‍👦",
             },
             '<p class="emoji-large">👨‍👨‍👦👨‍👨‍👦👨‍👨‍👦</p>',
+            "👨‍👨‍👦👨‍👨‍👦👨‍👨‍👦",
         ),
         (
             {
@@ -322,6 +335,7 @@ def test_block_text():
                 "text": "test😀😄😅",
             },
             "<p>test😀😄😅</p>",
+            "test😀😄😅",
         ),
         (
             {
@@ -329,6 +343,7 @@ def test_block_text():
                 "text": "😀😄😅test",
             },
             "<p>😀😄😅test</p>",
+            "😀😄😅test",
         ),
         (
             {
@@ -336,6 +351,7 @@ def test_block_text():
                 "text": "😀<😄>😅",
             },
             "<p>😀&lt;😄&gt;😅</p>",
+            "😀<😄>😅",
         ),
         (
             {
@@ -343,6 +359,7 @@ def test_block_text():
                 "text": "😀<😄",
             },
             "<p>😀&lt;😄</p>",
+            "😀<😄",
         ),
     )
 
@@ -373,103 +390,13 @@ def test_block_text():
         ),
     """
 
-    for data, expected_result in examples:
+    for data, expected_result_html, expected_result_markdown in examples:
         block = ContentBlockText.from_dict(data)
         assert isinstance(block, ContentBlockText)
         if "formatting" in data:
             assert block.formatting is not None
-        assert block.to_html() == expected_result
-
-
-def test_npf_to_html():
-    """Test the npf_to_html function."""
-
-    # Test cases from Tumblr docs: 1
-
-    content = [
-        ContentBlock.from_dict(c)
-        for c in [
-            {"type": "text", "subtype": "heading1", "text": "Sward's Shopping List"},
-            {
-                "type": "text",
-                "subtype": "ordered-list-item",
-                "text": "First level: Fruit",
-            },
-            {
-                "type": "text",
-                "subtype": "unordered-list-item",
-                "text": "Second level: Apples",
-                "indent_level": 1,
-            },
-            {
-                "type": "text",
-                "subtype": "ordered-list-item",
-                "text": "Third level: Green",
-                "indent_level": 2,
-            },
-            {
-                "type": "text",
-                "subtype": "unordered-list-item",
-                "text": "Second level: Pears",
-                "indent_level": 1,
-            },
-            {
-                "type": "text",
-                "subtype": "ordered-list-item",
-                "text": "First level: Vegetables",
-            },
-        ]
-    ]
-    html = npf_to_html(content=content, layouts=[])
-    assert (
-        html
-        == '<div class="text-block"><h1>Sward\'s Shopping List</h1></div><ol class="text-list"><li>First level: Fruit</li><li><ul class="text-list"><li>Second level: Apples</li><li><ol class="text-list"><li>Third level: Green</li></ol></li><li>Second level: Pears</li></ul></li><li>First level: Vegetables</li></ol>'
-    )
-
-    content = [
-        ContentBlock.from_dict(c)
-        for c in [
-            {
-                "type": "text",
-                "subtype": "indented",
-                "text": "1: blockquote, not nested",
-            },
-            {
-                "type": "text",
-                "subtype": "indented",
-                "text": "2: blockquote, nested",
-                "indent_level": 1,
-            },
-            {
-                "type": "text",
-                "subtype": "unordered-list-item",
-                "text": "3: nested in two blockquotes",
-                "indent_level": 2,
-            },
-            {
-                "type": "text",
-                "subtype": "ordered-list-item",
-                "text": "4: nested in two blockquotes and a list",
-                "indent_level": 3,
-            },
-            {
-                "type": "text",
-                "subtype": "unordered-list-item",
-                "text": "3: back to level 3, double nesting",
-                "indent_level": 2,
-            },
-            {
-                "type": "text",
-                "subtype": "indented",
-                "text": "1: back to level 1, no nesting",
-            },
-        ]
-    ]
-    html = npf_to_html(content=content, layouts=[])
-    assert (
-        html
-        == '<blockquote class="text-block text-indented"><p>1: blockquote, not nested</p><blockquote class="text-block text-indented"><p>2: blockquote, nested</p><ul class="text-list"><li>3: nested in two blockquotes</li><li><ol class="text-list"><li>4: nested in two blockquotes and a list</li></ol></li><li>3: back to level 3, double nesting</li></ul></blockquote><p>1: back to level 1, no nesting</p></blockquote>'
-    )
+        assert block.to_html() == expected_result_html
+        assert block.to_markdown() == expected_result_markdown
 
 
 def test_block_image():
@@ -570,6 +497,7 @@ def test_block_image():
         block = ContentBlockImage.from_dict(data)
         assert isinstance(block, ContentBlockImage)
         assert block.to_html() == expected_result
+        assert block.to_markdown() == "(image)"
 
 
 def test_block_link():
@@ -586,6 +514,8 @@ def test_block_link():
                 "site_name": "Tumblr",
             },
             '<div class="link-embed"><div class="link-embed-top"><span class="link-title">Today on Tumblr</span></div><div class="link-embed-bottom"><span class="link-description">Explore today’s picks from the Tumblr team.</span><span class="link-sitename">Tumblr</span></div></div>',
+            """> [Today on Tumblr](https://tumblr.com)
+> Explore today’s picks from the Tumblr team.""",
         ),
         (
             {
@@ -594,6 +524,7 @@ def test_block_link():
                 "display_url": "https://tumblr.com",
             },
             '<div class="link-embed"><div class="link-embed-top"><span class="link-title">https://tumblr.com</span></div><div class="link-embed-bottom"></div></div>',
+            "> [https://tumblr.com](https://tumblr.com)",
         ),
         (
             {
@@ -605,6 +536,8 @@ def test_block_link():
                 "site_name": "<script>alert(5)</script>",
             },
             '<div class="link-embed"><div class="link-embed-top"><span class="link-title">&lt;script&gt;alert(3)&lt;/script&gt;</span></div><div class="link-embed-bottom"><span class="link-description">&lt;script&gt;alert(4)&lt;/script&gt;</span><span class="link-sitename">&lt;script&gt;alert(5)&lt;/script&gt;</span></div></div>',
+            """> [<script>alert(3)</script>](https://example.com/"/><script>alert(1)</script>)
+> <script>alert(4)</script>""",
         ),
         (
             {
@@ -625,6 +558,8 @@ def test_block_link():
                 ],
             },
             '<div class="link-embed"><div class="link-embed-image-top"><img src="https://64.media.tumblr.com/85955a73a8c5d39a74f5c53e5402f342/5b2682c6837efa16-fa/s1280x1920/bac3d2656327f6b379e17183b472c86a428e5f4b.jpg" class="link-image"><span class="link-image-title">Secrecy Surrounding Senate Health Bill Raises Alarms in Both Parties (Published 2017)</span></div><div class="link-embed-bottom"><span class="link-description">Senate leaders are writing legislation to repeal and replace the Affordable Care Act without a single hearing on the bill and without an ope</span><span class="link-sitename">nytimes.com</span></div></div>',
+            """> [Secrecy Surrounding Senate Health Bill Raises Alarms in Both Parties (Published 2017)](https://href.li/?https://www.nytimes.com/2017/06/15/us/politics/secrecy-surrounding-senate-health-bill-raises-alarms-in-both-parties.html)
+> Senate leaders are writing legislation to repeal and replace the Affordable Care Act without a single hearing on the bill and without an ope""",
         ),
         (
             {
@@ -645,13 +580,16 @@ def test_block_link():
                 ],
             },
             '<div class="link-embed"><div class="link-embed-image-top"><img src="https://64.media.tumblr.com/85955a73a8c5d39a74f5c53e5402f342/%225b2682c6837efa16-fa/s1280x1920/bac3d2656327f6b379e17183b472c86a428e5f4b.jpg" class="link-image"><span class="link-image-title">&lt;script&gt;alert(3)&lt;/script&gt;</span></div><div class="link-embed-bottom"><span class="link-description">&lt;script&gt;alert(4)&lt;/script&gt;</span><span class="link-sitename">&lt;script&gt;alert(5)&lt;/script&gt;</span></div></div>',
+            """> [<script>alert(3)</script>](https://example.com/"/><script>alert(1)</script>)
+> <script>alert(4)</script>""",
         ),
     )
 
-    for data, expected_result in examples:
+    for data, expected_result_html, expected_result_markdown in examples:
         block = ContentBlockLink.from_dict(data)
         assert isinstance(block, ContentBlockLink)
-        assert block.to_html() == expected_result
+        assert block.to_html() == expected_result_html
+        assert block.to_markdown() == expected_result_markdown
 
 
 def test_block_video():
@@ -737,6 +675,7 @@ def test_block_video():
         block = ContentBlockVideo.from_dict(data)
         assert isinstance(block, ContentBlockVideo)
         assert block.to_html() == expected_result
+        assert block.to_markdown() == "(video)"
 
 
 def test_block_audio():
@@ -799,6 +738,7 @@ def test_block_audio():
         block = ContentBlockAudio.from_dict(data)
         assert isinstance(block, ContentBlockAudio)
         assert block.to_html() == expected_result
+        assert block.to_markdown() == "(audio)"
 
 
 async def test_block_poll(tumblr_api):
@@ -830,7 +770,11 @@ async def test_block_poll(tumblr_api):
                 "timestamp": 1697044184,
                 "_fxt_test_data": {"blog": "knuxify", "post": 730903802869317632},
             },
-            '<div class="poll-block poll-over"><span class="poll-question">A poll!</span><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">I love NPF!</span><span class="poll-answer-percentage">50%</span></div><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">Why must thou do this to me, Tumblr.</span><span class="poll-answer-percentage">50%</span></div><span class="poll-meta">Final result</span></div>',
+            '<div class="poll-block poll-over"><span class="poll-question">A poll!</span><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">I love NPF!</span><span class="poll-answer-percentage">50%</span></div><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">Why must thou do this to me, Tumblr.</span><span class="poll-answer-percentage">50%</span></div><span class="poll-meta">2 votes · Final result</span></div>',
+            """### A poll!
+* [ ] I love NPF! (50%)
+* [ ] Why must thou do this to me, Tumblr. (50%)
+*(2 votes · Final result)*""",
         ),
         (
             {
@@ -857,11 +801,15 @@ async def test_block_poll(tumblr_api):
                 "timestamp": 1697044184,
                 "_fxt_test_data": {"blog": "knuxify", "post": 730903802869317632},
             },
-            '<div class="poll-block poll-over"><span class="poll-question">&lt;script&gt;alert(1)&lt;/script&gt;</span><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">&lt;script&gt;alert(2)&lt;/script&gt;</span><span class="poll-answer-percentage">50%</span></div><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">&lt;script&gt;alert(3)&lt;/script&gt;</span><span class="poll-answer-percentage">50%</span></div><span class="poll-meta">Final result</span></div>',
+            '<div class="poll-block poll-over"><span class="poll-question">&lt;script&gt;alert(1)&lt;/script&gt;</span><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">&lt;script&gt;alert(2)&lt;/script&gt;</span><span class="poll-answer-percentage">50%</span></div><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 50%;"></div><span class="poll-answer-text">&lt;script&gt;alert(3)&lt;/script&gt;</span><span class="poll-answer-percentage">50%</span></div><span class="poll-meta">2 votes · Final result</span></div>',
+            """### <script>alert(1)</script>
+* [ ] <script>alert(2)</script> (50%)
+* [ ] <script>alert(3)</script> (50%)
+*(2 votes · Final result)*""",
         ),
     )
 
-    for data, expected_result in examples:
+    for data, expected_result_html, expected_result_markdown in examples:
         block = ContentBlockPoll.from_dict(data)
         assert isinstance(block, ContentBlockPoll)
         await block.fetch_results(
@@ -870,4 +818,288 @@ async def test_block_poll(tumblr_api):
             data["_fxt_test_data"]["post"],
             skip_cache=True,
         )
-        assert block.to_html() == expected_result
+        assert block.to_html() == expected_result_html
+        assert block.to_markdown() == expected_result_markdown
+
+
+def test_npf_to_html():
+    """Test the npf_to_html function."""
+
+    # Test cases from Tumblr docs: 1
+
+    content = [
+        ContentBlock.from_dict(c)
+        for c in [
+            {"type": "text", "subtype": "heading1", "text": "Sward's Shopping List"},
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "First level: Fruit",
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "Second level: Apples",
+                "indent_level": 1,
+            },
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "Third level: Green",
+                "indent_level": 2,
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "Second level: Pears",
+                "indent_level": 1,
+            },
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "First level: Vegetables",
+            },
+        ]
+    ]
+    html = npf_to_html(content=content, layouts=[])
+    assert (
+        html
+        == '<div class="text-block"><h1>Sward\'s Shopping List</h1></div><ol class="text-list"><li>First level: Fruit</li><li><ul class="text-list"><li>Second level: Apples</li><li><ol class="text-list"><li>Third level: Green</li></ol></li><li>Second level: Pears</li></ul></li><li>First level: Vegetables</li></ol>'
+    )
+
+    content = [
+        ContentBlock.from_dict(c)
+        for c in [
+            {
+                "type": "text",
+                "subtype": "indented",
+                "text": "1: blockquote, not nested",
+            },
+            {
+                "type": "text",
+                "subtype": "indented",
+                "text": "2: blockquote, nested",
+                "indent_level": 1,
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "3: nested in two blockquotes",
+                "indent_level": 2,
+            },
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "4: nested in two blockquotes and a list",
+                "indent_level": 3,
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "3: back to level 3, double nesting",
+                "indent_level": 2,
+            },
+            {
+                "type": "text",
+                "subtype": "indented",
+                "text": "1: back to level 1, no nesting",
+            },
+        ]
+    ]
+    html = npf_to_html(content=content, layouts=[])
+    assert (
+        html
+        == '<blockquote class="text-block text-indented"><p>1: blockquote, not nested</p><blockquote class="text-block text-indented"><p>2: blockquote, nested</p><ul class="text-list"><li>3: nested in two blockquotes</li><li><ol class="text-list"><li>4: nested in two blockquotes and a list</li></ol></li><li>3: back to level 3, double nesting</li></ul></blockquote><p>1: back to level 1, no nesting</p></blockquote>'
+    )
+
+    content = [
+        ContentBlock.from_dict(c)
+        for c in [
+            {
+                "type": "text",
+                "text": "Line 1",
+            },
+            {
+                "type": "text",
+                "text": "Line 2",
+            },
+            {
+                "type": "text",
+                "text": "Line 3",
+            },
+            {
+                "type": "text",
+                "text": "Line 4",
+            },
+        ]
+    ]
+    layouts = [
+        LayoutBlock.from_dict(c)
+        for c in [
+            {
+                "type": "ask",
+                "attribution": {
+                    "type": "blog",
+                    "blog": {
+                        "uuid": "a",
+                        "name": "name",
+                        "url": "https://tumblr.com/name",
+                    },
+                    "url": "https://tumblr.com/name",
+                },
+                "blocks": [0],
+            }
+        ]
+    ]
+    html = npf_to_html(content=content, layouts=layouts)
+
+    assert (
+        html
+        == '<div class="question"><div class="question-header"><strong class="asking-name">name</strong> asked:</div><div class="question-content"><div class="text-block"><p>Line 1</p></div></div></div><div class="text-block"><p>Line 2</p></div><div class="text-block"><p>Line 3</p></div><div class="text-block"><p>Line 4</p></div>'
+    )
+
+
+def test_npf_to_markdown():
+    """Test the npf_to_markdown function."""
+    content = [
+        ContentBlock.from_dict(c)
+        for c in [
+            {"type": "text", "subtype": "heading1", "text": "Sward's Shopping List"},
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "First level: Fruit",
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "Second level: Apples",
+                "indent_level": 1,
+            },
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "Third level: Green",
+                "indent_level": 2,
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "Second level: Pears",
+                "indent_level": 1,
+            },
+            {
+                "type": "text",
+                "subtype": "ordered-list-item",
+                "text": "First level: Vegetables",
+            },
+        ]
+    ]
+    md = npf_to_markdown(content=content, layouts=[])
+
+    assert (
+        md
+        == """# Sward's Shopping List
+
+1. First level: Fruit
+  * Second level: Apples
+    1. Third level: Green
+  * Second level: Pears
+2. First level: Vegetables"""
+    )
+
+    content = [
+        ContentBlock.from_dict(c)
+        for c in [
+            {
+                "type": "text",
+                "text": "Line 1",
+            },
+            {
+                "type": "text",
+                "text": "Line 2, with newline\n\nHello!",
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "List item 1",
+            },
+            {
+                "type": "text",
+                "subtype": "unordered-list-item",
+                "text": "List item 2",
+            },
+            {
+                "type": "text",
+                "text": "Back to regular text.",
+            },
+        ]
+    ]
+    md = npf_to_markdown(content=content, layouts=[])
+
+    assert (
+        md
+        == """Line 1
+
+Line 2, with newline
+
+Hello!
+
+* List item 1
+* List item 2
+
+Back to regular text."""
+    )
+
+    content = [
+        ContentBlock.from_dict(c)
+        for c in [
+            {
+                "type": "text",
+                "text": "Line 1",
+            },
+            {
+                "type": "text",
+                "text": "Line 2",
+            },
+            {
+                "type": "text",
+                "text": "Line 3",
+            },
+            {
+                "type": "text",
+                "text": "Line 4",
+            },
+        ]
+    ]
+    layouts = [
+        LayoutBlock.from_dict(c)
+        for c in [
+            {
+                "type": "ask",
+                "attribution": {
+                    "type": "blog",
+                    "blog": {
+                        "uuid": "a",
+                        "name": "name",
+                        "url": "https://tumblr.com/name",
+                    },
+                    "url": "https://tumblr.com/name",
+                },
+                "blocks": [0],
+            }
+        ]
+    ]
+    md = npf_to_markdown(content=content, layouts=layouts)
+
+    assert (
+        md
+        == """💬 name asked:
+> Line 1
+
+Line 2
+
+Line 3
+
+Line 4"""
+    )

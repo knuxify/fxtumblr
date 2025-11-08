@@ -7,7 +7,8 @@ import itertools
 import urllib.parse
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum, StrEnum
+from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar, Self, Union
 
 import dateutil
@@ -93,14 +94,11 @@ def sanitize_html(html: str) -> str:
     )
 
 
-def _closing_tag(tag: str) -> str:
-    """Extract the tag name from a tag's content."""
-    out = ""
-    for i in tag:
-        if i == " ":
-            break
-        out += i
-    return out
+class WrapperType(Enum):
+    """Enum for wrapper types."""
+
+    HTML = 0
+    Markdown = 1
 
 
 @dataclass
@@ -126,6 +124,17 @@ class HTMLWrapper:
 
     #: Tag for going down an indent level (shallower).
     down: str = ""
+
+
+@dataclass
+class MarkdownWrapper:
+    """Helper class for storing markdown wrapper data."""
+
+    #: Opening tag.
+    open: str
+
+    #: Closing tag.
+    close: str
 
 
 ##
@@ -286,6 +295,16 @@ class Attribution:
         """
         raise NotImplementedError
 
+    def to_markdown(self) -> str:
+        """
+        Convert the attribution data to a human-viewable Markdown format.
+
+        To be implemented by subclasses.
+
+        :returns: The conversion result.
+        """
+        raise NotImplementedError
+
 
 @dataclass
 class AttributionApp(Attribution):
@@ -335,6 +354,22 @@ class AttributionApp(Attribution):
 
         return f'<div class="attribution app-attribution"><a href="{safe_url(self.url)}">{text}</a>{caret_tag}</div>'
 
+    def to_markdown(self) -> str:
+        """
+        Convert the attribution data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+        if self.app_name and self.display_text and self.app_name != "Twitter":
+            text = self.app_name + " | " + self.display_text
+        elif self.display_text:
+            text = self.display_text
+        elif self.app_name:
+            text = self.app_name
+        else:
+            text = urllib.parse.urlparse(self.url).netloc
+        return f"(from app: {text})"
+
 
 @dataclass
 class AttributionBlog(Attribution):
@@ -350,7 +385,7 @@ class AttributionBlog(Attribution):
     @classmethod
     def from_dict(cls, data: dict) -> Self:
         """
-        Turn the attibution entry into an AttributionPost object.
+        Turn the attibution entry into an AttributionBlog object.
 
         :param data: Data to use for object creation.
         :returns: The resulting object.
@@ -403,6 +438,14 @@ class AttributionLink(Attribution):
 
         return f'<div class="attribution image-attribution"><a href="{safe_url(self.url)}">{urllib.parse.urlparse(self.url).netloc}</a>{caret_tag}</div>'
 
+    def to_markdown(self) -> str:
+        """
+        Convert the attribution data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+        return f"(source: {urllib.parse.urlparse(self.url).netloc})"
+
 
 @dataclass
 class AttributionPost(Attribution):
@@ -436,6 +479,14 @@ class AttributionPost(Attribution):
         :returns: The conversion result, as a string containing valid HTML.
         """
         return f'<div class="attribution post-attribution"><a href="{safe_url(self.url)}">GIF by <b>{html.escape(self.blog.name)}</b></a></div>'
+
+    def to_markdown(self) -> str:
+        """
+        Convert the attribution data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+        return f"(GIF by {self.blog.name})"
 
 
 #: Mapping of type strings to attribution classes.
@@ -487,6 +538,14 @@ class ContentBlock:
         To be implemented by subclasses.
 
         :returns: The conversion result, as a string containing valid HTML.
+        """
+        raise NotImplementedError
+
+    def to_markdown(self) -> str:
+        """
+        Convert the block data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
         """
         raise NotImplementedError
 
@@ -568,25 +627,49 @@ class TextFormat:
         )
 
     @property
-    def html_tag(self) -> str:
-        """HTML opening tag contents for this format."""
+    def html_wrapper(self) -> HTMLWrapper:
+        """HTML opening and closing tags for this format."""
         if self.type == TextFormatType.bold:
-            return "b"
+            open_tag = "b"
         elif self.type == TextFormatType.italic:
-            return "i"
+            open_tag = "i"
         elif self.type == TextFormatType.strikethrough:
-            return "strike"
+            open_tag = "strike"
         elif self.type == TextFormatType.small:
-            return "small"
+            open_tag = "small"
         elif self.type == TextFormatType.link:
             # self.url is not None for TextFormatType.link
-            return f"a href={safe_url(self.url)}"  # type: ignore
+            open_tag = f"a href={safe_url(self.url)}"  # type: ignore
         elif self.type == TextFormatType.mention:
             # self.blog is not None for TextFormatType.mention
-            return f"a href={safe_url(self.blog['url'])}"  # type: ignore
+            open_tag = f"a href={safe_url(self.blog['url'])}"  # type: ignore
         elif self.type == TextFormatType.color:
-            return f'span style="color: {self.hex}"'
-        return "span"
+            open_tag = f'span style="color: {self.hex}"'
+        else:
+            open_tag = "span"
+
+        close_tag = open_tag.split(" ", 1)[0]
+
+        return HTMLWrapper(open=f"<{open_tag}>", close=f"</{close_tag}>")
+
+    @property
+    def markdown_wrapper(self) -> MarkdownWrapper:
+        """Markdown opening and closing tags for this format."""
+        if self.type == TextFormatType.bold:
+            return MarkdownWrapper(open="**", close="**")
+        elif self.type == TextFormatType.italic:
+            return MarkdownWrapper(open="*", close="*")
+        elif self.type == TextFormatType.strikethrough:
+            return MarkdownWrapper(open="~", close="~")
+        elif self.type == TextFormatType.link:
+            # self.url is not None for TextFormatType.link
+            return MarkdownWrapper(open="[", close=f"]({safe_url(self.url)})")  # type: ignore
+        elif self.type == TextFormatType.mention:
+            # self.blog is not None for TextFormatType.mention
+            return MarkdownWrapper(open="[", close=f"]({safe_url(self.blog['url'])})")  # type: ignore
+
+        # Other types do not have a direct Markdown counterpart.
+        return MarkdownWrapper(open="*", close="*")
 
     @property
     def blog(self) -> frozendict | None:
@@ -674,6 +757,78 @@ class ContentBlockText(ContentBlock):
             formatting=_formatting,
         )
 
+    def _apply_formats(self, text: str, wrapper: WrapperType) -> str:
+        """Apply formatting to the given text."""
+        if wrapper != WrapperType.HTML and wrapper != WrapperType.Markdown:
+            raise ValueError("Internal error: Invalid wrapper type")
+
+        if not self.formatting:
+            return text
+
+        out = ""
+
+        open_formats: deque[TextFormat] = deque()  # Stack of currently open formats
+        temp_closed: deque[TextFormat] = (
+            deque()
+        )  # Temporary stack used to store closed formats
+        # when fixing up HTML close tags
+        format_starts = defaultdict(list)  # character: list of formats
+        format_ends = defaultdict(list)  # character: list of formats
+
+        for fmt in self.formatting:
+            format_starts[fmt.start].append(fmt)
+            format_ends[fmt.end].append(fmt)
+
+        def _wrapper(fmt: TextFormat) -> HTMLWrapper | MarkdownWrapper:
+            """Get the wrapper for the format according to the passed type."""
+            nonlocal wrapper
+            if wrapper == WrapperType.HTML:
+                return fmt.html_wrapper
+            elif wrapper == WrapperType.Markdown:
+                return fmt.markdown_wrapper
+
+        n_char = 0  # Currently parsed character *in the original text*;
+        # used to determine format position
+        for n_char in range(len(self.text)):
+            # Open formats that need starting
+            for fmt in format_starts[n_char]:
+                out += _wrapper(fmt).open
+                open_formats.append(fmt)
+
+            # Close formats that need ending
+            if format_ends[n_char]:
+                # First, close tags until we close all the formats that end
+                # on this character
+                _ends = set(format_ends[n_char])
+                while not set(temp_closed).issuperset(_ends):
+                    fmt = open_formats.pop()
+                    temp_closed.append(fmt)
+                    out += _wrapper(fmt).close
+
+                # Then, only reopen the ones we closed on the way
+                for f in _ends:
+                    temp_closed.remove(f)
+
+                while temp_closed:
+                    fmt = temp_closed.pop()
+                    out += _wrapper(fmt).open
+                    open_formats.append(fmt)
+
+                del _ends
+
+            # For HTML, add HTML-escaped letter to output
+            if wrapper == WrapperType.HTML:
+                out += html.escape(self.text[n_char])
+            else:
+                out += self.text[n_char]
+
+        # Close all remaining open formats
+        while open_formats:
+            fmt = open_formats.pop()
+            out += _wrapper(fmt).close
+
+        return out
+
     def to_html(self) -> str:
         """
         Convert the block data to HTML format.
@@ -682,59 +837,8 @@ class ContentBlockText(ContentBlock):
         """
 
         if self.formatting:
-            out = ""
-
-            open_formats: deque[TextFormat] = deque()  # Stack of currently open formats
-            temp_closed: deque[TextFormat] = (
-                deque()
-            )  # Temporary stack used to store closed formats
-            # when fixing up HTML close tags
-            format_starts = defaultdict(list)  # character: list of formats
-            format_ends = defaultdict(list)  # character: list of formats
-
-            for fmt in self.formatting:
-                format_starts[fmt.start].append(fmt)
-                format_ends[fmt.end].append(fmt)
-
-            n_char = 0  # Currently parsed character *in the original text*;
-            # used to determine format position
-            for n_char in range(len(self.text) + 1):
-                # Open formats that need starting
-                for fmt in format_starts[n_char]:
-                    out += f"<{fmt.html_tag}>"
-                    open_formats.append(fmt)
-
-                # Close formats that need ending
-                if format_ends[n_char]:
-                    # First, close tags until we close all the formats that end
-                    # on this character
-                    _ends = set(format_ends[n_char])
-                    while not set(temp_closed).issuperset(_ends):
-                        fmt = open_formats.pop()
-                        temp_closed.append(fmt)
-                        out += f"</{_closing_tag(fmt.html_tag)}>"
-
-                    # Then, only reopen the ones we closed on the way
-                    for f in _ends:
-                        temp_closed.remove(f)
-
-                    while temp_closed:
-                        fmt = temp_closed.pop()
-                        out += f"<{fmt.html_tag}>"
-                        open_formats.append(fmt)
-
-                    del _ends
-
-                # Add HTML-escaped letter to output
-                try:
-                    out += html.escape(self.text[n_char])
-                except IndexError:
-                    # We parse one more character than the length of the text
-                    # so that tags that span the entire text get correctly closed
-                    # and we don't have to copy the tag closing logic after the loop.
-                    # As such, if the index is too large, that means the loop has
-                    # finished.
-                    break
+            # If formatting is present, apply formats to the text
+            out = self._apply_formats(self.text, WrapperType.HTML)
 
         else:
             # Otherwise, the output will simply be HTML-escaped
@@ -787,6 +891,51 @@ class ContentBlockText(ContentBlock):
 
         else:
             out = "<p>" + out + "</p>"
+
+        return out
+
+    def to_markdown(self) -> str:
+        """
+        Convert the block data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+
+        out: str = ""
+
+        if self.formatting:
+            # If formatting is present, apply formats to the text
+            out = self._apply_formats(self.text, WrapperType.Markdown)
+
+        else:
+            # Otherwise, the output will simply be the raw text
+            out = self.text
+
+        # If the text length is exactly 0, turn this text into a newline.
+        if len(out) == 0:
+            out = "\n"
+
+        # Apply subtype wrappers
+        if self.subtype:
+            indent_spacing = "  " * self.indent_level
+
+            if self.subtype == ContentTextSubtype.heading1:
+                out = "# " + out
+            elif self.subtype == ContentTextSubtype.heading2:
+                out = "## " + out
+
+            # TODO: We don't have a way to determine which list item this is
+            # at block level.
+            elif self.subtype == ContentTextSubtype.ordered_list_item:
+                out = indent_spacing + "#. " + out.replace("\n", "\n" + indent_spacing)
+            elif self.subtype == ContentTextSubtype.unordered_list_item:
+                out = indent_spacing + "* " + out.replace("\n", "\n" + indent_spacing)
+            elif self.subtype == ContentTextSubtype.quote:
+                out = (
+                    indent_spacing
+                    + "> "
+                    + out.replace("\n", "\n" + indent_spacing + "> ")
+                )
 
         return out
 
@@ -867,6 +1016,25 @@ class ContentBlockLink(ContentBlock):
 
         return out
 
+    def to_markdown(self) -> str:
+        """
+        Convert the block data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+        if self.title:
+            title = self.title
+        elif self.display_url:
+            title = self.display_url
+        else:
+            title = self.url
+
+        out = f"> [{title}]({self.url})"
+        if self.description:
+            out += f"\n> {self.description}"
+
+        return out
+
 
 @dataclass
 class ContentBlockImage(ContentBlock):
@@ -937,6 +1105,20 @@ class ContentBlockImage(ContentBlock):
             figure_tag += self.attribution.to_html()
 
         return figure_tag
+
+    def to_markdown(self) -> str:
+        """
+        Convert the block data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+
+        # Markdown does support images... but let me tell you a secret.
+        # This isn't actually Markdown. It's just sparkling plaintext.
+        # We use this for plaintext descriptions in embeds, which do not
+        # support embedding images, so we use a placeholder instead.
+
+        return "(image)"
 
 
 @dataclass
@@ -1036,6 +1218,18 @@ class ContentBlockVideo(ContentBlock):
 
         return figure_tag
 
+    def to_markdown(self) -> str:
+        """
+        Convert the block data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+
+        # See note about images; this is an identical situation.
+        # This is meant as a placeholder.
+
+        return "(video)"
+
 
 @dataclass
 class ContentBlockAudio(ContentBlock):
@@ -1117,6 +1311,15 @@ class ContentBlockAudio(ContentBlock):
         out += "</div>"
 
         return out
+
+    def to_markdown(self) -> str:
+        """
+        Convert the block data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+
+        return "(audio)"
 
 
 @dataclass
@@ -1228,18 +1431,30 @@ class ContentBlockPoll(ContentBlock):
 
         self.total_votes = total_votes
 
-    def to_html(self) -> str:
-        """
-        Convert the block data to HTML format.
+    @cached_property
+    def created_at_dt(self) -> datetime.datetime:
+        """Poll creation date as a datetime object."""
+        return dateutil.parser.parse(self.created_at)
 
-        :returns: The conversion result, as a string containing valid HTML.
-        """
-        if self.results:
-            # Get vote counts
-            most_votes = max(self.results.results.values())
-            total_votes_str = (
-                f"{self.total_votes:,} vote{'s' if self.total_votes != 1 else ''}"
-            )
+    @cached_property
+    def expire_delta(self) -> datetime.timedelta:
+        """Time delta for poll expiry."""
+        return datetime.timedelta(seconds=self.expire_after)
+
+    @cached_property
+    def end_time_dt(self) -> datetime.datetime:
+        """Time at which the poll ends."""
+        return self.created_at_dt + self.expire_delta
+
+    def is_over(self) -> bool:
+        """Check whether or not the poll is closed."""
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        return self.end_time_dt < now
+
+    @property
+    def remaining_time_str(self) -> str:
+        """Human-readable representation of the remaining time."""
 
         # Get creation date
         created_at = dateutil.parser.parse(self.created_at)
@@ -1250,7 +1465,7 @@ class ContentBlockPoll(ContentBlock):
         #: Human-readable "time left" string
         time_str = ""
 
-        if end_time > now:
+        if end_time >= now:
             time_remaining = end_time - now
 
             # https://stackoverflow.com/questions/14190045/how-do-i-convert-datetime-timedelta-to-minutes-hours-in-python
@@ -1259,19 +1474,31 @@ class ContentBlockPoll(ContentBlock):
             minutes = (seconds % 3600) // 60
             seconds = seconds % 60
 
-            if total_votes_str:
-                time_str = total_votes_str
-
             if days > 0:
-                time_str += f"Remaining time: {days} days {hours} hours"
+                time_str = f"Remaining time: {days} days {hours} hours"
             else:
-                time_str += f"Remaining time: {hours} hours {minutes} minutes"
-
-            is_over = False
+                time_str = f"Remaining time: {hours} hours {minutes} minutes"
 
         else:
             time_str = "Final result"
-            is_over = True
+
+        return time_str
+
+    @property
+    def total_votes_str(self) -> str:
+        """Total votes as a pluralized string."""
+        return f"{self.total_votes:,} vote{'s' if self.total_votes != 1 else ''}"
+
+    def to_html(self) -> str:
+        """
+        Convert the block data to HTML format.
+
+        :returns: The conversion result, as a string containing valid HTML.
+        """
+        is_over = self.is_over()
+
+        if self.results:
+            most_votes = max(self.results.results.values())
 
         out = f'<div class="poll-block{" poll-over" if is_over else ""}"><span class="poll-question">{html.escape(self.question)}</span>'
 
@@ -1299,7 +1526,37 @@ class ContentBlockPoll(ContentBlock):
                     f'<div class="poll-answer">{html.escape(answer.answer_text)}</div>'
                 )
 
-        out += f'<span class="poll-meta">{time_str}</span></div>'
+        out += f'<span class="poll-meta">{self.total_votes_str} · {self.remaining_time_str}</span></div>'
+
+        return out
+
+    def to_markdown(self) -> str:
+        """
+        Convert the block data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+
+        out = f"### {self.question}"
+
+        for answer in self.answers:
+            if self.results:
+                answer_count = self.results.results[answer.client_id]
+                if self.total_votes:
+                    _answer_percentage = (answer_count / self.total_votes) * 100
+                    answer_percentage = (
+                        "{:.2f}".format(_answer_percentage)
+                        if not str(_answer_percentage).endswith(".0")
+                        else str(int(_answer_percentage))
+                    )
+                else:
+                    answer_percentage = "0"
+            else:
+                answer_percentage = "0"
+
+            out += f"\n* [ ] {answer.answer_text} ({answer_percentage}%)"
+
+        out += f"\n*({self.total_votes_str} · {self.remaining_time_str})*"
 
         return out
 
@@ -1319,7 +1576,16 @@ class ContentBlockUnknown(ContentBlock):
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-        return "TODO"
+        return '<span class="unknown-block">Unknown block type. Please open an issue at https://github.com/knuxify/fxtumblr and link this post.</span>'
+
+    def to_markdown(self) -> str:
+        """
+        Convert the block data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+
+        return "Unknown block type. Please open an issue at https://github.com/knuxify/fxtumblr and link this post."
 
 
 #: Mapping of type strings to content block classes.
@@ -1373,16 +1639,17 @@ class RangedLayoutBlock:
     multiple blocks.
     """
 
-    #: List of block indeces covered by the block, counting from 0.
+    #: List of block indeces covered by the layout, counting from 0.
     blocks: list[int]
-
-    #: Indentation level for the layout.
-    #: For non-indented blocks, this is always at 0.
-    indent_level: int = 0
 
     @property
     def html_wrapper(self) -> HTMLWrapper:
         """Generate a HTMLWrapper object containing HTML wrappers for this layout."""
+        raise NotImplementedError
+
+    @property
+    def markdown_wrapper(self) -> MarkdownWrapper:
+        """Generate a MarkdownWrapper object containing Markdown wrappers for this layout."""
         raise NotImplementedError
 
 
@@ -1482,6 +1749,16 @@ class LayoutBlockAsk(LayoutBlock, RangedLayoutBlock):
                 close="</div></div>",
             )
 
+    @property
+    def markdown_wrapper(self) -> MarkdownWrapper:
+        """Generate a MarkdownWrapper object containing Markdown wrappers for this layout."""
+        if self.attribution and isinstance(self.attribution, AttributionBlog):
+            return MarkdownWrapper(
+                open=f"💬 {self.attribution.blog.name} asked:", close=""
+            )
+        else:
+            return MarkdownWrapper(open="💬 Anonymous asked:\n\n", close="")
+
 
 ##
 # Meta layouts (fxtumblr-specific, used to wrap multiple blocks)
@@ -1510,6 +1787,11 @@ class MetaLayoutMultiBlockRow(LayoutBlock, RangedLayoutBlock):
             open=f'<div class="row-multiple row-{len(self.blocks)}">',
             close="</div>",
         )
+
+    @property
+    def markdown_wrapper(self) -> MarkdownWrapper:
+        """Generate a MarkdownWrapper object containing Markdown wrappers for this layout."""
+        return MarkdownWrapper(open="", close="")
 
 
 #: HTMLWrapper objects for indented text block subtypes.
@@ -1630,18 +1912,31 @@ def _update_indented_block_wrappers(
     return out
 
 
-def npf_to_html(
-    content: list[ContentBlock], layouts: list[LayoutBlock], truncate: bool = True
-) -> str:
+def _parse_layouts(
+    layouts: list[LayoutBlock],
+    content: list[ContentBlock] | None = None,
+    truncate: bool = True,
+) -> tuple[
+    list[int],
+    dict[int, list[RangedLayoutBlock]],
+    dict[int, list[RangedLayoutBlock]],
+    bool,
+]:
     """
-    Given a list of content blocks and layouts, convert NPF data to HTML.
+    Parse a list of layouts and determine block order, layout start/end points
+    and whether the layout is truncated.
 
-    :param content: List of ContentBlock objects representing content blocks.
-    :param content: List of LayoutBlock objects representing layout blocks.
+    :param layouts: List of LayoutBlock objects representing layout blocks.
     :param truncate: Whether or not to add the "read more" block after the
         cutoff passed in the truncate_after variable of the rows layout.
         For posts without a truncate_after setting, this option does nothing.
-    :returns: Valid HTML representation of the data.
+    :returns: Tuple with 4 elements:
+        - block_order: list[int] - list of block indeces
+        - layout_starts: dict[int, list[RangedLayoutBlock]] - list of start points
+          of ranged layouts
+        - layout_ends: dict[int, list[RangedLayoutBlock]] - list of end points
+          of ranged layouts
+        - is_truncated: if True, the post is truncated
     """
 
     # The following lists contain start and end indeces for layouts;
@@ -1651,7 +1946,7 @@ def npf_to_html(
     layout_starts: dict[int, list[RangedLayoutBlock]] = defaultdict(list)
     layout_ends: dict[int, list[RangedLayoutBlock]] = defaultdict(list)
 
-    # 1. Calculate block order based on LayoutBlockRows.
+    # Calculate block order based on LayoutBlockRows.
     found_rows: bool = False
     is_truncated: bool = False
     block_order: list[int] = []
@@ -1685,10 +1980,10 @@ def npf_to_html(
 
     # Per Tumblr docs: if there is no rows layout, assume rows with one block
     # each
-    if not found_rows:
+    if not found_rows and content is not None:
         block_order = list(range(len(content)))
 
-    # 1.1. Set layout starts/ends for non-row layout blocks.
+    # 2. Set layout starts/ends for non-row layout blocks.
     # (We can only do this after block_order has been filled.)
     for layout in layouts:
         if isinstance(layout, LayoutBlockRows):
@@ -1697,6 +1992,28 @@ def npf_to_html(
         if isinstance(layout, RangedLayoutBlock):
             layout_starts[block_order.index(layout.blocks[0])].append(layout)
             layout_ends[block_order.index(layout.blocks[-1])].append(layout)
+
+    return block_order, layout_starts, layout_ends, is_truncated
+
+
+def npf_to_html(
+    content: list[ContentBlock], layouts: list[LayoutBlock], truncate: bool = True
+) -> str:
+    """
+    Given a list of content blocks and layouts, convert NPF data to HTML.
+
+    :param content: List of ContentBlock objects representing content blocks.
+    :param layouts: List of LayoutBlock objects representing layout blocks.
+    :param truncate: Whether or not to add the "read more" block after the
+        cutoff passed in the truncate_after variable of the rows layout.
+        For posts without a truncate_after setting, this option does nothing.
+    :returns: Valid HTML representation of the data.
+    """
+
+    # 1. Parse layouts to get block order and layouts
+    block_order, layout_starts, layout_ends, is_truncated = _parse_layouts(
+        layouts=layouts, content=content, truncate=truncate
+    )
 
     # 2. Iterate over all content blocks and convert them into HTML.
     out: str = ""
@@ -1762,6 +2079,96 @@ def npf_to_html(
 
     # 6. Return the resulting string.
     return sanitize_html(out)
+
+
+def npf_to_markdown(
+    content: list[ContentBlock], layouts: list[LayoutBlock], truncate: bool = True
+) -> str:
+    """
+    Given a list of content blocks and layouts, convert NPF data to a
+    Markdown-like format.
+
+    :param content: List of ContentBlock objects representing content blocks.
+    :param content: List of LayoutBlock objects representing layout blocks.
+    :param truncate: Whether or not to add the "read more" block after the
+        cutoff passed in the truncate_after variable of the rows layout.
+        For posts without a truncate_after setting, this option does nothing.
+    :returns: Valid HTML representation of the data.
+    """
+
+    out = ""
+
+    # 1. Parse layouts to get block order and layouts
+    block_order, layout_starts, layout_ends, is_truncated = _parse_layouts(
+        layouts=layouts, content=content, truncate=truncate
+    )
+
+    # 2. Convert all blocks to Markdown
+    ordered_list_counts: dict[int, int] = {}
+    in_ask: bool = False
+    in_indented_block: bool = False
+    prev_was_indented: bool = False
+    for block_index in block_order:
+        try:
+            block = content[block_index]
+        except IndexError as e:
+            raise NPFParseError(
+                "Invalid layout; content block index out of range"
+            ) from e
+
+        md = block.to_markdown()
+
+        # If a layout opens, open it
+        if layout_starts[block_index]:
+            for layout in layout_starts[block_index]:
+                if isinstance(layout, LayoutBlockAsk):
+                    # If we enter an ask block, note it down. We need to put the
+                    # ask content in a quote.
+                    in_ask = True
+
+                out += layout.markdown_wrapper.open
+
+        if isinstance(block, ContentBlockText) and block.indent_level >= 0:
+            # Custom parsing for ordered lists. Since we don't know the order of
+            # list items at block level, we need to keep track of it here.
+            if block.subtype == ContentTextSubtype.ordered_list_item:
+                if block.indent_level not in ordered_list_counts:
+                    ordered_list_counts[block.indent_level] = 1
+                else:
+                    ordered_list_counts[block.indent_level] += 1
+                md = md.replace("#.", f"{ordered_list_counts[block.indent_level]}.", 1)
+
+            in_indented_block = True
+
+        else:
+            # If we encounter a non-indented block, clear the ordered list item levels
+            ordered_list_counts.clear()
+
+            in_indented_block = False
+
+        # Wrap ask content in a quote
+        if in_ask:
+            md = "> " + md.replace("\n", "\n> ")
+
+        # Add newlines
+        if (in_indented_block and prev_was_indented) or in_ask:
+            out += "\n"
+        else:
+            out += "\n\n"
+
+        out += md
+
+        # If a layout closes, close it
+        if layout_ends[block_index]:
+            for layout in layout_ends[block_index]:
+                if isinstance(layout, LayoutBlockAsk):
+                    in_ask = False
+
+                out += layout.markdown_wrapper.close
+
+        prev_was_indented = in_indented_block
+
+    return out.strip()
 
 
 @dataclass
@@ -1847,17 +2254,37 @@ class NPFPost:
         :returns: A string with a valid HTML representation of the post.
         """
 
-        # Brief overview of HTML conversion steps:
-        # - Each ContentBlock subclass implements a .to_html() method which
-        #   converts the block content to HTML - *at single block level*.
-        # - Layouts and tags that span *multiple blocks* are instead handled
-        #   here, in NPFPost.to_html().
-        # The same mechanism is used for activity_html and plaintext conversions.
+        # Each ContentBlock subclass implements a .to_html() method which
+        # converts the block content to HTML - *at single block level*.
+        #
+        # Layouts and tags that span *multiple blocks* are instead handled
+        # in npf_to_html.
 
         out = npf_to_html(self.content, self.layout, truncate=truncate)
 
         if self.submitted_by:
             out += f'<div class="submitted-by">Submitted by <span class="submitter-username">{self.submitted_by}</span></div>'
+
+        return out
+
+    def to_markdown(self, truncate: bool = False) -> str:
+        """
+        Convert the post to Markdown.
+
+        :param truncate: Whether or not to add the "read more" block after the
+            cutoff passed in the truncate_after variable of the rows layout.
+            For posts without a truncate_after setting, this option does nothing.
+        :returns: A string containing a Markdown representation of the post.
+        """
+
+        # Markdown conversion works much the same as HTML conversion, but with
+        # to_markdown methods. Most things are handled at the block level
+        # except for ordered lists.
+
+        out = npf_to_markdown(self.content, self.layout, truncate=truncate)
+
+        if self.submitted_by:
+            out += f"*(Submitted by {self.submitted_by})*"
 
         return out
 
