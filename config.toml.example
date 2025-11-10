@@ -7,21 +7,6 @@ domain = "example.com"
 # Contact email listed on the index page.
 contact_email = "changeme@example.com"
 
-# Whether or not to enable anonymous statistics. The following data is
-# collected:
-#
-# - Hashed ID of the blog and post
-# - Whether embedding finished succesfully or not
-# - Whether the post was rendered or not
-# - Which optional parameters were used
-#
-# Note that disabling statistics also prevents the health endpoints from
-# being used.
-stats = true
-
-# Whether or not to enable health monitoring endpoints.
-health = true
-
 # List of strings to show next to the instance name.
 motd = [""]
 
@@ -36,3 +21,23 @@ consumer_secret = "FIXME"
 host = "localhost"
 port = 6379
 # password = ""
+
+[stats]
+
+# Whether or not to enable anonymous statistics. The following data is
+# collected:
+#
+# - Hashed ID of the blog and post
+# - Whether embedding finished succesfully or not
+# - Whether the post was rendered or not
+# - Which optional parameters were used
+#
+# The statistics are available over a Prometheus endpoint.
+enabled = true
+
+# The password for the stats endpoint.
+password = "FIXME"
+
+# Timeout after which statistics data is cleared, in seconds.
+# Defaults to 30 days (60 * 60 * 24 * 30).
+# timeout = 2592000

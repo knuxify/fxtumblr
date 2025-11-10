@@ -2263,7 +2263,7 @@ class NPFPost:
         out = npf_to_html(self.content, self.layout, truncate=truncate)
 
         if self.submitted_by:
-            out += f'<div class="submitted-by">Submitted by <span class="submitter-username">{self.submitted_by}</span></div>'
+            out += f'<div class="submitted-by">Submitted by <span class="submitter-username">{html.escape(self.submitted_by)}</span></div>'
 
         return out
 

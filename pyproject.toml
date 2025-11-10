@@ -13,7 +13,7 @@ dependencies = [
 	"frozendict",
 	"emoji",
 	"python-dateutil",
-	"nh3 (>=0.3.2,<0.4.0)",
+	"nh3",
 ]
 
 [tool.ruff.lint]
@@ -38,7 +38,7 @@ typing = [
     "types-redis",
 ]
 tests = [
-    "aiofiles (>=25.1.0,<26.0.0)"
+    "aiofiles"
 ]
 
 [tool.pytest.ini_options]

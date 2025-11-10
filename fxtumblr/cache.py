@@ -72,13 +72,25 @@ class Cache:
         serialized = json.dumps(value)
         return await self.set(key, serialized, timeout)
 
-    async def delete(self, key: str):
+    async def delete(self, key: str) -> None:
         """Delete element from the cache."""
         await self.cache.delete(key)
 
-    async def ping(self):
+    async def ping(self) -> bool:
         """Test the connection to Redis."""
-        await self.cache.ping()
+        return bool(await self.cache.ping())
+
+    async def increment(self, key: str) -> int:
+        """
+        Increment a numerical key.
+
+        :returns: The new value.
+        """
+        return await self.cache.incr(key)
+
+    async def timeout(self, key: str, timeout: int):
+        """Set timeout for the given key."""
+        return await self.cache.expire(key, timeout)
 
 
 #: Global cache access object.

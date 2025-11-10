@@ -2,17 +2,26 @@
 """Test configuration and fixtures for fxtumblr tests."""
 
 import json
-import logging
 import os
 from inspect import getsourcefile
 
 import pytest
 
+import fxtumblr
 import fxtumblr.app
 from fxtumblr.tumblr.api import TumblrAPI
 
-# Override the default logger
-fxtumblr.app.logger = logging.Logger(__name__)
+# Override the config
+fxtumblr.config = {
+    "instance": {
+        "name": "Example instance",
+        "domain": "example.com",
+        "motd": ["Test MOTD"],
+    },
+    "stats": {
+        "enabled": False,
+    },
+}
 
 
 def _get_tumblr_test_data(filename: str) -> os.PathLike:

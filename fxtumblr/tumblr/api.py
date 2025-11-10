@@ -7,7 +7,7 @@ from typing import Optional, Self
 
 from authlib.integrations.httpx_client import AsyncOAuth1Client
 
-from ..app import logger
+from .. import logger
 from ..cache import cache
 from .types import Blog, PollResults, Post
 
