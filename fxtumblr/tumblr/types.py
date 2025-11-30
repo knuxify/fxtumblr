@@ -12,6 +12,28 @@ if TYPE_CHECKING:
 
 
 @dataclass
+class Avatar:
+    """Represents a blog's avatar."""
+
+    #: URL to the avatar image.
+    url: str
+    #: Width of the avatar.
+    width: int
+    #: Height of the avatar.
+    height: int
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """
+        Create an Avatar object from avatar data.
+
+        :param data: Data to create the Avatar object from.
+        :returns: the resulting Avatar object.
+        """
+        return cls(url=data["url"], width=data["width"], height=data["height"])
+
+
+@dataclass
 class Blog:
     """
     Represents a Tumblr blog.
@@ -23,6 +45,9 @@ class Blog:
     name: str
     uuid: str
     url: str | None
+
+    #: Different sizes of avatars.
+    avatars: list[Avatar]
 
     #: Whether or not this Blog object represents a deleted/suspended/otherwise
     #: "broken" blog.
@@ -40,6 +65,7 @@ class Blog:
             name=data["name"],
             uuid=data["uuid"],
             url=data["url"],
+            avatars=[Avatar.from_dict(data) for data in data.get("avatars", [])],
             is_broken=False,
         )
 
@@ -50,6 +76,7 @@ class Blog:
             uuid="",
             name=username,
             url=None,
+            avatars=[],
             is_broken=True,
         )
 
@@ -67,12 +94,38 @@ class Post:
     id: int
     #: Blog which posted this post.
     blog: Blog
-    #: URL to the post.
+    #: URL to the post, on the blog site.
     post_url: str
+    #: URL to the post, in Tumblr's UI.
+    dash_url: str
 
     #: List of NPFPost objects representing each "post" that makes up this
     #: post - first the reblog trail, then the post itself.
+    #:
+    #: Note that this is different from Tumblr's definition of the trail,
+    #: which specifically covers only the reblog trail; we include the post
+    #: itself at the end for ease-of-use.
     trail: list[NPFPost]
+
+    @property
+    def is_reblog(self) -> bool:
+        """True if the post is a reblog, False otherwise."""
+
+        # If the post has more than 1 item in self.trail (so, more than 0 items
+        # in the reblog trail, besides itself), it's a reblog.
+
+        return len(self.trail) > 1
+
+    @property
+    def reblogged_from(self) -> Blog | None:
+        """
+        Returns the blog from which this post was reblogged, or None if the
+        post is not a reblog.
+        """
+
+        if len(self.trail) > 1:
+            return self.trail[-2].blog
+        return None
 
     @classmethod
     def from_api(cls, data: dict) -> Self:
@@ -89,10 +142,13 @@ class Post:
                 trail.append(NPFPost.from_trail_dict(i))
         trail.append(NPFPost.from_post_dict(data))
 
+        blog = Blog.from_api(data["blog"])
+
         return cls(
-            blog=Blog.from_api(data["blog"]),
+            blog=blog,
             id=data["id"],
             post_url=data["post_url"],
+            dash_url=f"https://tumblr.com/{blog.name}/{data['id']}",
             trail=trail,
         )
 

@@ -6,10 +6,17 @@ import logging
 import secrets
 import traceback
 
-from quart import Quart, Response, render_template, request, send_from_directory
+from quart import (
+    Quart,
+    Response,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+)
 
 from . import config
-from .embed import Embed
+from .embed import Embed, ImageEmbed, ProfileEmbed, VideoEmbed
 from .stats import stats
 from .tumblr import TumblrAPI
 
@@ -42,6 +49,14 @@ STATS_ENABLED = config["stats"]["enabled"]
 async def robots_txt():
     """Provide the robots.txt file."""
     return await send_from_directory(app.static_folder, "robots.txt")
+
+
+# Without the favicon in place, 404 requests from browsers get logged.
+# This allows us to use Tumblr's favicon without bundling it in the repo.
+@app.route("/favicon.ico")
+async def favicon():
+    """Provide the favicon."""
+    return redirect("https://www.tumblr.com/favicon.ico")
 
 
 @app.route("/")
@@ -141,3 +156,33 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
     _t = asyncio.create_task(stats.register_post_hit(blog_id, post_id))
 
     return await render_template("embed.html", post=post, embed=embed)
+
+
+@app.route("/_api/oembed.json")
+def api_oembed():
+    """Generate oEmbed JSON from parameters."""
+
+    embed_type = request.args.get("type")
+    if embed_type == "image":
+        embed_class = ImageEmbed
+    elif embed_type == "video":
+        embed_class = VideoEmbed
+    elif embed_type == "profile":
+        embed_class = ProfileEmbed
+    else:
+        embed_class = Embed
+
+    params = dict(
+        (k, v) for k, v in request.args.items() if k in embed_class.oembed_props
+    )
+
+    if "height" in params:
+        params["height"] = int(params["height"])
+    if "width" in params:
+        params["width"] = int(params["width"])
+
+    try:
+        embed = embed_class(**params)
+    except TypeError as e:
+        return {"error": f"Unknown argument: {e}"}, 500
+    return embed.to_oembed()

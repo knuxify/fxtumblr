@@ -1,18 +1,26 @@
 # SPDX-License-Identifier: MIT
 """Code for generating embeds."""
 
-import html
 import urllib.parse
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import ClassVar, Self
 
+from markupsafe import Markup
+
 from . import config
-from .tumblr.types import Post
+from .tumblr.types import Blog, Post
+
+
+class Modifier(StrEnum):
+    """Embed modifiers."""
 
 
 @dataclass
 class Embed:
     """Standard embed data container."""
+
+    type: ClassVar[str] = "standard"
 
     title: str | None = None
     description: str | None = None
@@ -23,13 +31,6 @@ class Embed:
     provider_url: str | None = None
     theme_color: str | None = None
 
-    is_profile: bool = False
-
-    image_url: str | None = None
-    video_url: str | None = None
-    media_width: int = 0
-    media_height: int = 0
-
     #: Binding of properties to meta tag names.
     _meta_binds: ClassVar[dict[str, list[str]]] = {
         "title": ["og:title", "twitter:title"],
@@ -38,34 +39,78 @@ class Embed:
         "theme_color": ["theme-color"],
     }
 
+    #: oEmbed properties.
+    oembed_props: ClassVar[list[str]] = [
+        "title",
+        "description",
+        "author_name",
+        "author_url",
+        "provider_name",
+        "provider_url",
+    ]
+
     @classmethod
-    def from_post(cls, post: Post) -> Self:
+    def from_blog(cls, blog: Blog) -> "ProfileEmbed":
+        """
+        Create an Embed object from a Tumblr blog.
+
+        :param blog: The blog to use for embed generation.
+        :returns: Embed object representing the embed for the blog.
+        """
+        return ProfileEmbed(title=blog.name)
+
+    @classmethod
+    def from_post(cls, post: Post, modifiers: list[Modifier] | None = None) -> Self:
         """
         Create an Embed object from a Tumblr post.
 
         :param post: The post to use for embed generation.
+        :param modifiers: List of modifiers.
         :returns: Embed object representing the embed for the post.
         """
-        return cls()  # TODO
 
-    def to_meta_tags(self, oembed_link: bool = False) -> str:
+        if post.is_reblog and post.reblogged_from:
+            if post.reblogged_from.name == post.blog.name:
+                header = post.blog.name + " 🔁"
+            else:
+                header = post.blog.name + " 🔁 " + post.reblogged_from.name
+        else:
+            header = post.blog.name
+
+        return cls(author_name=post.blog.name, title=header)
+
+    def to_meta_tags(self, oembed_link: bool = False) -> Markup:
         """
         Convert the embed data to <meta> HTML tags.
 
         :param oembed_link: If True, also fills in the oEmbed link tag.
-        :returns: String containing <meta> tags; valid, safe HTML.
+        :returns: Markup string containing <meta> tags; valid, safe HTML.
         """
-        out = ""
+        out = Markup("")
+
+        if self.type == "video":
+            out += Markup('<meta property="og:type" content="video.other"/>')
+            out += Markup('<meta property="twitter:card" content="player"/>')
+        elif self.type == "profile":
+            out += Markup('<meta property="og:type" content="profile"/>')
+            out += Markup('<meta property="twitter:card" content="summary"/>')
+        else:
+            out += Markup(
+                '<meta property="twitter:card" content="summary_large_image""/>'
+            )
 
         for prop, tags in self._meta_binds.items():
             value = getattr(self, prop)
-            if value and isinstance(value, str):
-                value = html.escape(value)
+            if value:
                 for tag in tags:
-                    out += f'<meta property="{tag}" content="{value}"/>'
+                    out += Markup('<meta property="{tag}" content="{value}"/>').format(
+                        tag=tag, value=value
+                    )
 
         if oembed_link:
-            out += f'<link rel="alternate" type="application/json+oembed" href="{self.to_oembed_url()}"/>'
+            out += Markup(
+                '<link rel="alternate" type="application/json+oembed" href="{oembed_url}"/>'
+            ).format(oembed_url=self.to_oembed_url())
 
         return out
 
@@ -78,28 +123,14 @@ class Embed:
 
         out: dict[str, str | int] = {"version": "1.0"}
 
-        if self.image_url:
+        if isinstance(self, ImageEmbed):
             out["type"] = "photo"
-            out["url"] = self.image_url
-            out["width"] = self.media_width
-            out["height"] = self.media_height
-
-        elif self.video_url:
+        elif isinstance(self, VideoEmbed):
             out["type"] = "video"
-            out["url"] = self.video_url
-            out["width"] = self.media_width
-            out["height"] = self.media_height
-
         else:
             out["type"] = "link"
 
-        for prop in (
-            "title",
-            "author_name",
-            "author_url",
-            "provider_name",
-            "provider_url",
-        ):
+        for prop in self.oembed_props:
             value = getattr(self, prop)
             if value:
                 out[prop] = value
@@ -116,6 +147,61 @@ class Embed:
             + "/_api/oembed.json?"
             + urllib.parse.urlencode(oembed)
         )
+
+
+@dataclass
+class ImageEmbed(Embed):
+    """Photo/image embed containing an image."""
+
+    type: ClassVar[str] = "image"
+
+    url: str | None = None
+    width: int = 0
+    height: int = 0
+
+    _meta_binds: ClassVar[dict[str, list[str]]] = Embed._meta_binds | {
+        "url": ["og:image", "twitter:image"],
+        "width": ["og:image:width"],
+        "height": ["og:image:height"],
+    }
+
+    oembed_props: ClassVar[list[str]] = Embed.oembed_props + ["url", "width", "height"]
+
+
+@dataclass
+class VideoEmbed(Embed):
+    """Video embed."""
+
+    type: ClassVar[str] = "video"
+
+    url: str | None = None
+    width: int = 0
+    height: int = 0
+    thumbnail_url: str | None = None
+    mimetype: str = "video/mp4"
+
+    _meta_binds: ClassVar[dict[str, list[str]]] = Embed._meta_binds | {
+        "url": ["og:url", "og:video", "og:video:secure_url", "twitter:player:stream"],
+        "width": ["og:video:width", "twitter:player:width"],
+        "height": ["og:video:height", "twitter:player:height"],
+        "thumbnail_url": ["og:image", "twitter:image"],
+        "mimetype": ["og:video:type", "twitter:player:stream:content_type"],
+    }
+
+    oembed_props: ClassVar[list[str]] = Embed.oembed_props + ["url", "width", "height"]
+
+
+@dataclass
+class ProfileEmbed(Embed):
+    """Embed containing information about a profile."""
+
+    type: ClassVar[str] = "profile"
+
+    pfp_url: str | None = None
+
+    _meta_binds: ClassVar[dict[str, list[str]]] = Embed._meta_binds | {
+        "pfp_url": ["og:image", "twitter:image"],
+    }
 
 
 @dataclass
