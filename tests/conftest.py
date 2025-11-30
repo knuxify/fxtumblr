@@ -7,21 +7,7 @@ from inspect import getsourcefile
 
 import pytest
 
-import fxtumblr
-import fxtumblr.app
 from fxtumblr.tumblr.api import TumblrAPI
-
-# Override the config
-fxtumblr.config = {
-    "instance": {
-        "name": "Example instance",
-        "domain": "example.com",
-        "motd": ["Test MOTD"],
-    },
-    "stats": {
-        "enabled": False,
-    },
-}
 
 
 def _get_tumblr_test_data(filename: str) -> os.PathLike:
@@ -69,6 +55,17 @@ def tumblr_api_server(httpserver):
             "/blog/knuxify/posts",
             query_string={
                 "id": "732094755733929984",
+                "npf": "true",
+                "api_key": "consumer_key",
+            },
+        ).respond_with_json(json.load(test_data))
+
+    # Test post 4: Self-reblog, tags only
+    with open(_get_tumblr_test_data("post_self_reblog_tags_only.json")) as test_data:
+        httpserver.expect_request(
+            "/blog/knuxify/posts",
+            query_string={
+                "id": "799921945450840064",
                 "npf": "true",
                 "api_key": "consumer_key",
             },

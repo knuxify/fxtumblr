@@ -12,6 +12,7 @@ async def test_get_post(tumblr_api):
     for username, post_id in (
         ("punkitt-is-here", 781681205274886144),
         ("knuxify", 730903802869317632),
+        ("knuxify", 799921945450840064),
     ):
         # Test regular post
         post = await tumblr_api.get_post(username, post_id, skip_cache=True)
