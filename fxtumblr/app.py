@@ -86,9 +86,6 @@ async def handle_500(e):
 
 
 if STATS_ENABLED:
-    stats.register_counter("error_count", "Error count")
-    stats.register_counter("post_error_count", "Post fetching error count")
-    stats.register_counter("embed_error_count", "Embed generation error count")
 
     @app.route("/_stats")
     async def stats_route():

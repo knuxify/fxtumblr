@@ -26,6 +26,11 @@ class Statistics:
         self.register_counter("post_count", "Post embed count")
         self.register_counter("unique_post_count", "Unique post embed count")
 
+        # Register counters for errors
+        self.register_counter("error_count", "Error count")
+        self.register_counter("post_error_count", "Post fetching error count")
+        self.register_counter("embed_error_count", "Embed generation error count")
+
     def register_counter(self, name: str, description: str):
         """Register a counter with the given name."""
         self.counters.append(name)
