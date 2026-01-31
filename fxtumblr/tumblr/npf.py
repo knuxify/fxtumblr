@@ -301,7 +301,7 @@ class Attribution(ABC):
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def to_markdown(self) -> str:
@@ -312,7 +312,7 @@ class Attribution(ABC):
 
         :returns: The conversion result.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 @dataclass
@@ -580,7 +580,7 @@ class ContentBlock(ABC):
 
         :returns: The conversion result, as a Markup string containing valid HTML.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def to_markdown(self) -> str:
@@ -589,7 +589,7 @@ class ContentBlock(ABC):
 
         :returns: The conversion result.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 class ContentTextSubtype(StrEnum):
@@ -1769,12 +1769,12 @@ class RangedLayoutBlock:
     @property
     def html_wrapper(self) -> HTMLWrapper:
         """Generate a HTMLWrapper object containing HTML wrappers for this layout."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @property
     def markdown_wrapper(self) -> MarkdownWrapper:
         """Generate a MarkdownWrapper object containing Markdown wrappers for this layout."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 @dataclass
