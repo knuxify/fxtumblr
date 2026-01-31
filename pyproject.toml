@@ -14,6 +14,7 @@ dependencies = [
 	"emoji",
 	"python-dateutil",
 	"nh3",
+	"markupsafe",
 ]
 
 [tool.ruff.lint]
