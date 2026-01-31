@@ -5,6 +5,7 @@ import datetime
 import html
 import itertools
 import urllib.parse
+from abc import ABC, abstractmethod
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from enum import Enum, StrEnum
@@ -267,7 +268,7 @@ class MediaList(list):
 
 
 @dataclass
-class Attribution:
+class Attribution(ABC):
     """Contains attribution information for an image or other media."""
 
     type: ClassVar[str]
@@ -288,6 +289,7 @@ class Attribution:
             return ATTRIBUTION_TYPES[data["type"]].from_dict(data)
         raise NPFParseError("Unknown attribution type {data.get('type')}]}")
 
+    @abstractmethod
     def to_html(self) -> str:
         """
         Convert the attribution data to a human-viewable HTML format.
@@ -298,6 +300,7 @@ class Attribution:
         """
         raise NotImplementedError
 
+    @abstractmethod
     def to_markdown(self) -> str:
         """
         Convert the attribution data to a human-viewable Markdown format.
@@ -417,6 +420,14 @@ class AttributionBlog(Attribution):
             '<div class="attribution blog-attribution"><a href="{url}">{blog_name}</a></div>'
         ).format(url=safe_url(self.url), blog_name=self.blog.name)
 
+    def to_markdown(self) -> str:
+        """
+        Convert the attribution data to a human-viewable Markdown format.
+
+        :returns: The conversion result.
+        """
+        return f"(from {self.blog.name})"
+
 
 @dataclass
 class AttributionLink(Attribution):
@@ -530,7 +541,7 @@ ATTRIBUTION_TYPES: dict[str, type[Attribution]] = {
 
 
 @dataclass
-class ContentBlock:
+class ContentBlock(ABC):
     """Base class for NPF content blocks."""
 
     #: Content block type; defined by subclasses.
@@ -557,6 +568,7 @@ class ContentBlock:
                 msg=f'Unknown content block type "{data["type"]}"'
             )
 
+    @abstractmethod
     def to_html(self) -> Markup:
         """
         Convert the block data to HTML format.
@@ -567,6 +579,7 @@ class ContentBlock:
         """
         raise NotImplementedError
 
+    @abstractmethod
     def to_markdown(self) -> str:
         """
         Convert the block data to a human-viewable Markdown format.
@@ -1713,7 +1726,7 @@ CONTENT_BLOCK_TYPES: dict[str, type[ContentBlock]] = {
 
 
 @dataclass
-class LayoutBlock:
+class LayoutBlock(ABC):
     """Base class for NPF layout blocks."""
 
     #: Layout block type; defined by subclasses.
