@@ -24,6 +24,6 @@ To do this, install `pre-commit` and run `pre-commit install` in the repo's root
 
 The test suite uses `pytest`. Note that you will need test dependencies to run the tests; you can get them with `poetry install --with test`.
 
-To run the tests, run `python3 -m pytest`.
+To run the tests, run `poetry run python3 -m pytest`.
 
-By default, tests that interact with the Tumblr API use a mock server; however, you can provide a custom API consumer key/secret for testing with the real Tumblr API through the `FXTUMBLR_TEST_TUMBLR_KEY` and `FXTUMBLR_TEST_TUMBLR_SECRET` environment variables.
+By default, tests that interact with the Tumblr API use a mock server; however, you can provide a custom API consumer key/secret for testing with the real Tumblr API through the `FXTUMBLR_TEST_TUMBLR_KEY` and `FXTUMBLR_TEST_TUMBLR_SECRET` environment variables. (pytest-env is in test dependencies, so you can also create a file called `.env` in the repository root and place the variables there.)
