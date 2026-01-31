@@ -9,12 +9,13 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from functools import cached_property
-from typing import TYPE_CHECKING, ClassVar, Self, Union
+from typing import TYPE_CHECKING, ClassVar, Literal, Self, Union, overload
 
 import dateutil
 import emoji
 import nh3
 from frozendict import frozendict
+from markupsafe import Markup, escape
 
 if TYPE_CHECKING:
     # Placed in TYPE_CHECKING due to circular import
@@ -35,15 +36,15 @@ def safe_url(url: str) -> str:
     return urllib.parse.quote(url, safe="/:?&=")
 
 
-def sanitize_html(html: str) -> str:
+def sanitize_html(html: Markup) -> Markup:
     """
     Sanitizes HTML to only include elements we add; second line of defense
     against arbitrary code execution.
 
     Update this whenever you add a new object.
     """
-    return nh3.clean(
-        html,
+    clean = nh3.clean(
+        str(html),
         tags={
             "p",
             "b",
@@ -93,6 +94,8 @@ def sanitize_html(html: str) -> str:
         },
     )
 
+    return Markup(clean)  # noqa: S704
+
 
 class WrapperType(Enum):
     """Enum for wrapper types."""
@@ -106,10 +109,10 @@ class HTMLWrapper:
     """Helper class for storing HTML wrapper data."""
 
     #: First-level opening tag.
-    open: str
+    open: Markup
 
     #: First-level closing tag.
-    close: str
+    close: Markup
 
     # The next two variables are named after the indent_level
     # value in text blocks, which starts at 0 and increases
@@ -120,10 +123,10 @@ class HTMLWrapper:
     # consider indentation levels.
 
     #: Tag for going up an indent level (deeper).
-    up: str = ""
+    up: Markup = Markup("")
 
     #: Tag for going down an indent level (shallower).
-    down: str = ""
+    down: Markup = Markup("")
 
 
 @dataclass
@@ -335,13 +338,15 @@ class AttributionApp(Attribution):
             display_text=data.get("display_text", None),
         )
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the attribution data to a human-viewable HTML format.
 
-        :returns: The conversion result, as a string containing valid HTML.
+        :returns: The conversion result, as a Markup string containing valid HTML.
         """
-        caret_tag = '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
+        caret_tag = Markup(
+            '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
+        )
 
         if self.app_name and self.display_text and self.app_name != "Twitter":
             text = self.app_name + " | " + self.display_text
@@ -350,9 +355,15 @@ class AttributionApp(Attribution):
         elif self.app_name:
             text = self.app_name
         else:
-            text = urllib.parse.urlparse(self.url).netloc
+            text = safe_url(urllib.parse.urlparse(self.url).netloc)
 
-        return f'<div class="attribution app-attribution"><a href="{safe_url(self.url)}">{text}</a>{caret_tag}</div>'
+        return Markup(
+            '<div class="attribution app-attribution"><a href="{url}">{text}</a>{caret_tag}</div>'
+        ).format(
+            url=safe_url(self.url),
+            text=text,
+            caret_tag=caret_tag,
+        )
 
     def to_markdown(self) -> str:
         """
@@ -367,7 +378,7 @@ class AttributionApp(Attribution):
         elif self.app_name:
             text = self.app_name
         else:
-            text = urllib.parse.urlparse(self.url).netloc
+            text = safe_url(urllib.parse.urlparse(self.url).netloc)
         return f"(from app: {text})"
 
 
@@ -396,13 +407,15 @@ class AttributionBlog(Attribution):
 
         return cls(url=data["url"], blog=Blog.from_api(data["blog"]))
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the attribution data to a human-viewable HTML format.
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-        return f'<div class="attribution blog-attribution"><a href="{safe_url(self.url)}">{self.blog.name}</a></div>'
+        return Markup(
+            '<div class="attribution blog-attribution"><a href="{url}">{blog_name}</a></div>'
+        ).format(url=safe_url(self.url), blog_name=self.blog.name)
 
 
 @dataclass
@@ -428,15 +441,23 @@ class AttributionLink(Attribution):
             url=data["url"],
         )
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the attribution data to a human-viewable HTML format.
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-        caret_tag = '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
+        caret_tag = Markup(
+            '<span class="attribution-go-icon"><svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" role="presentation"><use href="#managed-icon__caret-fat"></use></svg></span>'
+        )
 
-        return f'<div class="attribution image-attribution"><a href="{safe_url(self.url)}">{urllib.parse.urlparse(self.url).netloc}</a>{caret_tag}</div>'
+        return Markup(
+            '<div class="attribution image-attribution"><a href="{url}">{base_url}</a>{caret_tag}</div>'
+        ).format(
+            url=safe_url(self.url),
+            base_url=safe_url(urllib.parse.urlparse(self.url).netloc),
+            caret_tag=caret_tag,
+        )
 
     def to_markdown(self) -> str:
         """
@@ -444,7 +465,7 @@ class AttributionLink(Attribution):
 
         :returns: The conversion result.
         """
-        return f"(source: {urllib.parse.urlparse(self.url).netloc})"
+        return f"(source: {safe_url(urllib.parse.urlparse(self.url).netloc)})"
 
 
 @dataclass
@@ -472,13 +493,18 @@ class AttributionPost(Attribution):
 
         return cls(url=data["url"], blog=Blog.from_api(data["blog"]))
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the attribution data to a human-viewable HTML format.
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-        return f'<div class="attribution post-attribution"><a href="{safe_url(self.url)}">GIF by <b>{html.escape(self.blog.name)}</b></a></div>'
+        return Markup(
+            '<div class="attribution post-attribution"><a href="{url}">GIF by <b>{blog_name}</b></a></div>'
+        ).format(
+            url=safe_url(self.url),
+            blog_name=self.blog.name,
+        )
 
     def to_markdown(self) -> str:
         """
@@ -531,13 +557,13 @@ class ContentBlock:
                 msg=f'Unknown content block type "{data["type"]}"'
             )
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the block data to HTML format.
 
         To be implemented by subclasses.
 
-        :returns: The conversion result, as a string containing valid HTML.
+        :returns: The conversion result, as a Markup string containing valid HTML.
         """
         raise NotImplementedError
 
@@ -630,27 +656,30 @@ class TextFormat:
     def html_wrapper(self) -> HTMLWrapper:
         """HTML opening and closing tags for this format."""
         if self.type == TextFormatType.bold:
-            open_tag = "b"
+            open_tag = Markup("b")
         elif self.type == TextFormatType.italic:
-            open_tag = "i"
+            open_tag = Markup("i")
         elif self.type == TextFormatType.strikethrough:
-            open_tag = "strike"
+            open_tag = Markup("strike")
         elif self.type == TextFormatType.small:
-            open_tag = "small"
-        elif self.type == TextFormatType.link:
-            # self.url is not None for TextFormatType.link
-            open_tag = f"a href={safe_url(self.url)}"  # type: ignore
-        elif self.type == TextFormatType.mention:
-            # self.blog is not None for TextFormatType.mention
-            open_tag = f"a href={safe_url(self.blog['url'])}"  # type: ignore
+            open_tag = Markup("small")
+        elif self.type == TextFormatType.link and self.url:
+            open_tag = Markup('a href="{url}"').format(url=safe_url(self.url))
+        elif self.type == TextFormatType.mention and self.blog:
+            open_tag = Markup("a href={blog_url}").format(
+                blog_url=safe_url(self.blog["url"])
+            )
         elif self.type == TextFormatType.color:
-            open_tag = f'span style="color: {self.hex}"'
+            open_tag = Markup('span style="color: {hex}"').format(hex=self.hex)
         else:
-            open_tag = "span"
+            open_tag = Markup("span")
 
         close_tag = open_tag.split(" ", 1)[0]
 
-        return HTMLWrapper(open=f"<{open_tag}>", close=f"</{close_tag}>")
+        return HTMLWrapper(
+            open=Markup("<{open_tag}>").format(open_tag=open_tag),
+            close=Markup("</{close_tag}>").format(close_tag=close_tag),
+        )
 
     @property
     def markdown_wrapper(self) -> MarkdownWrapper:
@@ -757,7 +786,21 @@ class ContentBlockText(ContentBlock):
             formatting=_formatting,
         )
 
-    def _apply_formats(self, text: str, wrapper: WrapperType) -> str:
+    @overload
+    def _apply_formats(
+        self, text: str, wrapper: Literal[WrapperType.HTML]
+    ) -> Markup: ...
+
+    @overload
+    def _apply_formats(
+        self, text: str, wrapper: Literal[WrapperType.Markdown]
+    ) -> str: ...
+
+    def _apply_formats(
+        self,
+        text: str,
+        wrapper: Literal[WrapperType.HTML] | Literal[WrapperType.Markdown],
+    ) -> str | Markup:
         """Apply formatting to the given text."""
         if wrapper != WrapperType.HTML and wrapper != WrapperType.Markdown:
             raise ValueError("Internal error: Invalid wrapper type")
@@ -765,7 +808,11 @@ class ContentBlockText(ContentBlock):
         if not self.formatting:
             return text
 
-        out = ""
+        out: str | Markup
+        if wrapper == WrapperType.HTML:
+            out = Markup("")
+        else:
+            out = ""
 
         open_formats: deque[TextFormat] = deque()  # Stack of currently open formats
         temp_closed: deque[TextFormat] = (
@@ -829,7 +876,7 @@ class ContentBlockText(ContentBlock):
 
         return out
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the block data to HTML format.
 
@@ -843,36 +890,36 @@ class ContentBlockText(ContentBlock):
         else:
             # Otherwise, the output will simply be HTML-escaped
             # content.
-            out = html.escape(self.text)
+            out = escape(self.text)
 
         # If the text length is exactly 0, turn this text into a newline.
         if len(out) == 0:
             if not self.subtype:
-                return ""
-            out = "<br>"
+                return Markup("")
+            out = Markup("<br>")
 
         # Apply subtype wrappers
         if self.subtype:
             if self.subtype == ContentTextSubtype.heading1:
-                out = "<h1>" + out + "</h1>"
+                out = Markup("<h1>{out}</h1>").format(out=out)
             elif self.subtype == ContentTextSubtype.heading2:
-                out = "<h2>" + out + "</h2>"
+                out = Markup("<h2>{out}</h2>").format(out=out)
 
             # Note that the <ul>/<ol> wrappers are applied in NPFPost.to_html().
             elif self.subtype == ContentTextSubtype.ordered_list_item:
-                out = "<li>" + out + "</li>"
+                out = Markup("<li>{out}</li>").format(out=out)
             elif self.subtype == ContentTextSubtype.unordered_list_item:
-                out = "<li>" + out + "</li>"
+                out = Markup("<li>{out}</li>").format(out=out)
 
             elif self.subtype == ContentTextSubtype.chat:
-                out = '<p class="npf_chat">' + out + "</p>"
+                out = Markup('<p class="npf_chat">{out}</p>').format(out=out)
             elif self.subtype == ContentTextSubtype.quote:
-                out = '<p class="npf_quote">' + out + "</p>"
+                out = Markup('<p class="npf_quote">{out}</p>').format(out=out)
             elif self.subtype == ContentTextSubtype.quirky:
-                out = '<p class="npf_quirky">' + out + "</p>"
+                out = Markup('<p class="npf_quirky">{out}</p>').format(out=out)
 
             else:
-                out = "<p>" + out + "</p>"
+                out = Markup("<p>{out}</p>").format(out=out)
 
         # Apply emoji styling. (The use of self.text instead of out is deliberate;
         # it means that formatting tags are ignored.)
@@ -885,12 +932,12 @@ class ContentBlockText(ContentBlock):
             if len(emoji_tuple) <= 3 and [e.chars for e in emoji_tuple] == [
                 e.chars for e in emoji_and_char_tuple
             ]:
-                out = '<p class="emoji-large">' + out + "</p>"
+                out = Markup('<p class="emoji-large">{out}</p>').format(out=out)
             else:
-                out = "<p>" + out + "</p>"
+                out = Markup("<p>{out}</p>").format(out=out)
 
         else:
-            out = "<p>" + out + "</p>"
+            out = Markup("<p>{out}</p>").format(out=out)
 
         return out
 
@@ -981,38 +1028,49 @@ class ContentBlockLink(ContentBlock):
             poster=_poster,
         )
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the block data to HTML format.
 
         :returns: The conversion result, as a string containing valid HTML.
         """
         if self.title:
-            title = html.escape(self.title)
+            title = self.title
         elif self.display_url:
-            title = html.escape(self.display_url)
+            title = self.display_url
         else:
-            title = html.escape(self.url)
+            title = self.url
 
-        out = '<div class="link-embed">'
+        out = Markup('<div class="link-embed">')
 
         if self.poster:
             selected_size_poster = self.poster.get_by_width(640)
             if selected_size_poster:
-                out += f'<div class="link-embed-image-top"><img src="{safe_url(selected_size_poster.url)}" class="link-image"><span class="link-image-title">{title}</span></div>'
+                out += Markup(
+                    '<div class="link-embed-image-top"><img src="{image_url}" class="link-image"><span class="link-image-title">{title}</span></div>'
+                ).format(
+                    image_url=safe_url(selected_size_poster.url),
+                    title=title,
+                )
             else:
-                out += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
+                out += Markup(
+                    '<div class="link-embed-top"><span class="link-title">{title}</span></div>'
+                ).format(title=title)
         else:
-            out += f'<div class="link-embed-top"><span class="link-title">{title}</span></div>'
+            out += Markup(
+                '<div class="link-embed-top"><span class="link-title">{title}</span></div>'
+            ).format(title=title)
 
-        out += '<div class="link-embed-bottom">'
+        out += Markup('<div class="link-embed-bottom">')
         if self.description:
-            out += (
-                f'<span class="link-description">{html.escape(self.description)}</span>'
+            out += Markup('<span class="link-description">{description}</span>').format(
+                description=self.description
             )
         if self.site_name:
-            out += f'<span class="link-sitename">{html.escape(self.site_name)}</span>'
-        out += "</div></div>"
+            out += Markup('<span class="link-sitename">{site_name}</span>').format(
+                site_name=self.site_name
+            )
+        out += Markup("</div></div>")
 
         return out
 
@@ -1075,7 +1133,7 @@ class ContentBlockImage(ContentBlock):
             caption=data.get("caption", None),
         )
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the block data to HTML format.
 
@@ -1085,13 +1143,13 @@ class ContentBlockImage(ContentBlock):
         media_small = self.media.get_by_width(640)
 
         if not media_orig or not media_small or not media_orig.width:
-            return "<p>(broken image)</p>"
+            return Markup("<p>(broken image)</p>")
 
-        badge_tag = ""
+        badge_tag = Markup("")
         if ".gif" in media_small.url:
-            badge_tag = '<span class="tmblr-alt-text-helper">GIF</span>'
+            badge_tag = Markup('<span class="tmblr-alt-text-helper">GIF</span>')
         elif self.alt_text:
-            badge_tag = '<span class="tmblr-alt-text-helper">ALT</span>'
+            badge_tag = Markup('<span class="tmblr-alt-text-helper">ALT</span>')
 
         classes = "tmblr-full"
         if media_orig.width < 300:
@@ -1099,7 +1157,13 @@ class ContentBlockImage(ContentBlock):
         if ".gif" in media_small.url:
             classes += " gif"
 
-        figure_tag = f'<figure class="{classes}"><img src="{safe_url(media_small.url)}"/>{badge_tag}</figure>'
+        figure_tag = Markup(
+            '<figure class="{classes}"><img src="{media_url}"/>{badge_tag}</figure>'
+        ).format(
+            classes=classes,
+            media_url=safe_url(media_small.url),
+            badge_tag=badge_tag,
+        )
 
         if self.attribution:
             figure_tag += self.attribution.to_html()
@@ -1190,7 +1254,7 @@ class ContentBlockVideo(ContentBlock):
             attribution=attribution,
         )
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the block data to HTML format.
 
@@ -1199,19 +1263,29 @@ class ContentBlockVideo(ContentBlock):
         if self.poster:
             poster = self.poster.get_by_width(640)
             if poster:
-                poster_img_tag = (
-                    f'<img class="video-poster" src="{safe_url(poster.url)}"/>'
-                )
+                poster_img_tag = Markup(
+                    '<img class="video-poster" src="{poster_url}"/>'
+                ).format(poster_url=safe_url(poster.url))
         else:
-            poster_img_tag = '<div class="video-poster video-poster-dummy"></div>'
+            poster_img_tag = Markup(
+                '<div class="video-poster video-poster-dummy"></div>'
+            )
 
-        play_button_tag = '<span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span>'
+        play_button_tag = Markup(
+            '<span class="tmblr-play-button-helper"><svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" role="presentation" style="--icon-color-primary: RGB(255, 255, 255);"><use href="#managed-icon__play-cropped"></use></svg></span>'
+        )
 
-        alt_tag = ""
+        alt_tag = Markup("")
         if self.alt_text:
-            alt_tag = '<span class="tmblr-alt-text-helper">ALT</span>'
+            alt_tag = Markup('<span class="tmblr-alt-text-helper">ALT</span>')
 
-        figure_tag = f'<figure class="tmblr-full video-block">{poster_img_tag}{play_button_tag}{alt_tag}</figure>'
+        figure_tag = Markup(
+            '<figure class="tmblr-full video-block">{poster_img_tag}{play_button_tag}{alt_tag}</figure>'
+        ).format(
+            poster_img_tag=poster_img_tag,
+            play_button_tag=play_button_tag,
+            alt_tag=alt_tag,
+        )
 
         if self.attribution:
             figure_tag += self.attribution.to_html()
@@ -1276,7 +1350,7 @@ class ContentBlockAudio(ContentBlock):
             provider=data.get("provider"),
         )
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the block data to HTML format.
 
@@ -1291,24 +1365,37 @@ class ContentBlockAudio(ContentBlock):
         if selected_size_poster:
             poster_url = selected_size_poster.url
 
-        out = f'<div class="audio-player{" audio-" + self.provider if self.provider else ""}">'
+        out = Markup('<div class="audio-player{classes_extra}">').format(
+            classes_extra=" audio-" + self.provider if self.provider else ""
+        )
 
         # Play button/service icon
-        out += f'<div class="play-button"><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__{self.provider if self.provider in ("spotify", "soundcloud") else "play-cropped"}"></use></svg></div>'
+        out += Markup(
+            '<div class="play-button"><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" role="presentation" style="--icon-color-primary: RGB(var(--white));"><use href="#managed-icon__{icon_name}"></use></svg></div>'
+        ).format(
+            icon_name=self.provider
+            if self.provider in ("spotify", "soundcloud")
+            else "play-cropped"
+        )
 
         # Audio info
-        out += '<div class="audio-info">'
+        out += Markup('<div class="audio-info">')
         if self.title:
-            out += f'<div class="title">{html.escape(self.title)}</div>'
+            out += Markup('<div class="title">{title}</div>').format(title=self.title)
         if self.artist:
-            out += f'<div class="artist">{html.escape(self.artist)}</div>'
+            out += Markup('<div class="artist">{artist}</div>').format(
+                artist=self.artist
+            )
         if self.album:
-            out += f'<div class="album">{html.escape(self.album)}</div>'
-        out += "</div>"
+            out += Markup('<div class="album">{album}</div>').format(album=self.album)
+        out += Markup("</div>")
 
         if poster_url:
-            out += f'<div class="audio-image"><img src="{safe_url(poster_url)}"></div>'
-        out += "</div>"
+            out += Markup(
+                '<div class="audio-image"><img src="{poster_url}"></div>'
+            ).format(poster_url=safe_url(poster_url))
+
+        out += Markup("</div>")
 
         return out
 
@@ -1489,7 +1576,7 @@ class ContentBlockPoll(ContentBlock):
         """Total votes as a pluralized string."""
         return f"{self.total_votes:,} vote{'s' if self.total_votes != 1 else ''}"
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the block data to HTML format.
 
@@ -1500,7 +1587,12 @@ class ContentBlockPoll(ContentBlock):
         if self.results:
             most_votes = max(self.results.results.values())
 
-        out = f'<div class="poll-block{" poll-over" if is_over else ""}"><span class="poll-question">{html.escape(self.question)}</span>'
+        out = Markup(
+            '<div class="poll-block{classes_extra}"><span class="poll-question">{question}</span>'
+        ).format(
+            classes_extra=" poll-over" if is_over else "",
+            question=self.question,
+        )
 
         # Generate poll answer divs
         if is_over:
@@ -1519,14 +1611,28 @@ class ContentBlockPoll(ContentBlock):
                 else:
                     answer_count = 0
                     answer_percentage = "0"
-                out += f'<div class="poll-answer{" poll-answer-win" if answer_count == most_votes else ""}"><div class="poll-answer-filler" style="width: {answer_percentage}%;"></div><span class="poll-answer-text">{html.escape(answer.answer_text)}</span><span class="poll-answer-percentage">{answer_percentage}%</span></div>'
-        else:
-            for answer in self.answers:
-                out += (
-                    f'<div class="poll-answer">{html.escape(answer.answer_text)}</div>'
+                out += Markup(
+                    '<div class="poll-answer{classes_extra}"><div class="poll-answer-filler" style="width: {answer_percentage}%;"></div><span class="poll-answer-text">{answer_text}</span><span class="poll-answer-percentage">{answer_percentage}%</span></div>'
+                ).format(
+                    classes_extra=" poll-answer-win"
+                    if answer_count == most_votes
+                    else "",
+                    answer_percentage=answer_percentage,
+                    answer_text=answer.answer_text,
                 )
 
-        out += f'<span class="poll-meta">{self.total_votes_str} · {self.remaining_time_str}</span></div>'
+        else:
+            for answer in self.answers:
+                out += Markup('<div class="poll-answer">{answer_text}</div>').format(
+                    answer_text=answer.answer_text
+                )
+
+        out += Markup(
+            '<span class="poll-meta">{total_votes} · {remaining_time}</span></div>'
+        ).format(
+            total_votes=self.total_votes_str,
+            remaining_time=self.remaining_time_str,
+        )
 
         return out
 
@@ -1570,13 +1676,15 @@ class ContentBlockUnknown(ContentBlock):
     #: An optional message to include in the block.
     msg: str | None = None
 
-    def to_html(self) -> str:
+    def to_html(self) -> Markup:
         """
         Convert the block data to HTML format.
 
         :returns: The conversion result, as a string containing valid HTML.
         """
-        return '<span class="unknown-block">Unknown block type. Please open an issue at https://github.com/knuxify/fxtumblr and link this post.</span>'
+        return Markup(
+            '<span class="unknown-block">Unknown block type. Please open an issue at <a href="https://github.com/knuxify/fxtumblr">https://github.com/knuxify/fxtumblr</a> and link this post.</span>'
+        )
 
     def to_markdown(self) -> str:
         """
@@ -1740,13 +1848,17 @@ class LayoutBlockAsk(LayoutBlock, RangedLayoutBlock):
         """Generate a HTMLWrapper object containing HTML wrappers for this layout."""
         if self.attribution and isinstance(self.attribution, AttributionBlog):
             return HTMLWrapper(
-                open=f'<div class="question"><div class="question-header"><strong class="asking-name">{html.escape(self.attribution.blog.name)}</strong> asked:</div><div class="question-content">',
-                close="</div></div>",
+                open=Markup(
+                    '<div class="question"><div class="question-header"><strong class="asking-name">{asking_name}</strong> asked:</div><div class="question-content">'
+                ).format(asking_name=self.attribution.blog.name),
+                close=Markup("</div></div>"),
             )
         else:
             return HTMLWrapper(
-                open='<div class="question"><div class="question-header"><strong class="asking-name">Anonymous</strong> asked:</div><div class="question-content">',
-                close="</div></div>",
+                open=Markup(
+                    '<div class="question"><div class="question-header"><strong class="asking-name">Anonymous</strong> asked:</div><div class="question-content">'
+                ),
+                close=Markup("</div></div>"),
             )
 
     @property
@@ -1784,8 +1896,10 @@ class MetaLayoutMultiBlockRow(LayoutBlock, RangedLayoutBlock):
     def html_wrapper(self) -> HTMLWrapper:
         """Generate a HTMLWrapper object containing HTML wrappers for this layout."""
         return HTMLWrapper(
-            open=f'<div class="row-multiple row-{len(self.blocks)}">',
-            close="</div>",
+            open=Markup('<div class="row-multiple row-{block_count}">').format(
+                block_count=len(self.blocks)
+            ),
+            close=Markup("</div>"),
         )
 
     @property
@@ -1797,22 +1911,22 @@ class MetaLayoutMultiBlockRow(LayoutBlock, RangedLayoutBlock):
 #: HTMLWrapper objects for indented text block subtypes.
 INDENTED_BLOCK_WRAPPERS: dict[ContentTextSubtype, HTMLWrapper] = {
     ContentTextSubtype.unordered_list_item: HTMLWrapper(
-        open='<ul class="text-list">',
-        close="</ul>",
-        up="<li>",
-        down="</li>",
+        open=Markup('<ul class="text-list">'),
+        close=Markup("</ul>"),
+        up=Markup("<li>"),
+        down=Markup("</li>"),
     ),
     ContentTextSubtype.ordered_list_item: HTMLWrapper(
-        open='<ol class="text-list">',
-        close="</ol>",
-        up="<li>",
-        down="</li>",
+        open=Markup('<ol class="text-list">'),
+        close=Markup("</ol>"),
+        up=Markup("<li>"),
+        down=Markup("</li>"),
     ),
     ContentTextSubtype.indented: HTMLWrapper(
-        open='<blockquote class="text-block text-indented">',
-        close="</blockquote>",
-        up="",
-        down="",
+        open=Markup('<blockquote class="text-block text-indented">'),
+        close=Markup("</blockquote>"),
+        up=Markup(""),
+        down=Markup(""),
     ),
 }
 
@@ -1998,7 +2112,7 @@ def _parse_layouts(
 
 def npf_to_html(
     content: list[ContentBlock], layouts: list[LayoutBlock], truncate: bool = True
-) -> str:
+) -> Markup:
     """
     Given a list of content blocks and layouts, convert NPF data to HTML.
 
@@ -2016,7 +2130,7 @@ def npf_to_html(
     )
 
     # 2. Iterate over all content blocks and convert them into HTML.
-    out: str = ""
+    out: Markup = Markup("")
     i: int = 0  # index in block_index
     indent_stack: list[
         ContentBlockText
@@ -2041,7 +2155,9 @@ def npf_to_html(
         # 3.3.1. If we're dealing with a text block but aren't in an indent,
         #        add <div class="text-block"> wrapper.
         if not indent_stack and isinstance(block, ContentBlockText):
-            out += '<div class="text-block">' + block.to_html() + "</div>"
+            out += Markup('<div class="text-block">{html}</div>').format(
+                html=block.to_html()
+            )
         else:
             out += block.to_html()
 
@@ -2075,7 +2191,7 @@ def npf_to_html(
 
     # 5. If the post is truncated, add the "Read more" block.
     if is_truncated:
-        out += '<div class="read-more">Keep reading</div>'
+        out += Markup('<div class="read-more">Keep reading</div>')
 
     # 6. Return the resulting string.
     return sanitize_html(out)
@@ -2244,7 +2360,7 @@ class NPFPost:
             submitted_by=_submitted_by,
         )
 
-    def to_html(self, truncate: bool = False) -> str:
+    def to_html(self, truncate: bool = False) -> Markup:
         """
         Convert the post content into an HTML representation.
 
@@ -2263,7 +2379,9 @@ class NPFPost:
         out = npf_to_html(self.content, self.layout, truncate=truncate)
 
         if self.submitted_by:
-            out += f'<div class="submitted-by">Submitted by <span class="submitter-username">{html.escape(self.submitted_by)}</span></div>'
+            out += Markup(
+                '<div class="submitted-by">Submitted by <span class="submitter-username">{submitted_by}</span></div>'
+            ).format(submitted_by=self.submitted_by)
 
         return out
 
