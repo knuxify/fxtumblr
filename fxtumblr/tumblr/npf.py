@@ -95,6 +95,9 @@ def sanitize_html(html: Markup) -> Markup:
         },
     )
 
+    # The output of nh3 is guaranteed to be safe HTML, doubly so since we
+    # only call sanitize_html with a Markup object. Thus it can be safely
+    # converted directly into a Markup object.
     return Markup(clean)  # noqa: S704
 
 
