@@ -30,6 +30,7 @@ class Statistics:
         self.register_counter("error_count", "Error count")
         self.register_counter("post_error_count", "Post fetching error count")
         self.register_counter("embed_error_count", "Embed generation error count")
+        self.register_counter("api_error_count", "Tumblr API access error count")
 
     def register_counter(self, name: str, description: str):
         """Register a counter with the given name."""
@@ -85,11 +86,14 @@ class Statistics:
 
         await self.increment_counter("post_count")
 
+        # Post-specific cache key, used to determine uniqueness
         post_hash = await self.get_post_hash(blog_id, post_id)
         post_key = f"fxt-stats:post:{post_hash}"
 
-        is_unique = not await cache.get(post_key)
-        if is_unique:
+        # If the post key does not exist in the cache, it is considered
+        # unique; the key times out after 24 hours, so it will automatically
+        # become non-unique 24 hours after it was first parsed.
+        if not await cache.exists(post_key):
             await self.increment_counter("unique_post_count")
             await cache.set(post_key, "hit")
             # Post remains unique for 24 hours

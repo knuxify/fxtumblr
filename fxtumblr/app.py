@@ -18,7 +18,7 @@ from quart import (
 from . import config
 from .embed import Embed, ImageEmbed, ProfileEmbed, VideoEmbed
 from .stats import stats
-from .tumblr import TumblrAPI
+from .tumblr import TumblrAPI, TumblrAPIException
 
 #: Main Quart application object.
 app = Quart(__name__)
@@ -131,12 +131,22 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
 
     try:
         post = await tumblr.get_post(blog_id, post_id)
-    except Exception as e:
-        logger.error(f"Failed to get post ({blog_id}-{post_id}): {e}")
+    except TumblrAPIException as e:
+        logger.error(f"Failed to get post ({blog_id}-{post_id}) from API: {e}")
         traceback.print_exc()
         if STATS_ENABLED:
-            await stats.increment_counter("error_counter")
-            await stats.increment_counter("post_error_counter")
+            await stats.increment_counter("error_count")
+            await stats.increment_counter("api_error_count")
+        return await render_template("error.html", msg="Failed to contact Tumblr."), 500
+    except Exception as e:
+        logger.error(f"Failed to parse post ({blog_id}-{post_id}): {e}")
+        traceback.print_exc()
+        if STATS_ENABLED:
+            await stats.increment_counter("error_count")
+            await stats.increment_counter("post_error_count")
+        return await render_template(
+            "error.html", msg="An error occured while parsing this post."
+        ), 500
 
     if not post:
         return await render_template("error.html", msg="Post not found."), 404
@@ -147,8 +157,11 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
         logger.error(f"Failed to create embed for post ({blog_id}-{post_id}): {e}")
         traceback.print_exc()
         if STATS_ENABLED:
-            await stats.increment_counter("error_counter")
-            await stats.increment_counter("embed_error_counter")
+            await stats.increment_counter("error_count")
+            await stats.increment_counter("embed_error_count")
+        return await render_template(
+            "error.html", msg="An error occured while embedding this post."
+        ), 500
 
     _t = asyncio.create_task(stats.register_post_hit(blog_id, post_id))
 

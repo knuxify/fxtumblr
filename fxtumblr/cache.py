@@ -44,6 +44,10 @@ class Cache:
         else:
             await cache.persist(key)
 
+    async def exists(self, key: str) -> bool:
+        """Check whether or not the key exists in the cache."""
+        return not not self.cache.exists(key)
+
     async def get(self, key: str) -> Union[str, None]:
         """Get element by key, as a string."""
         return await self.cache.get(key)
