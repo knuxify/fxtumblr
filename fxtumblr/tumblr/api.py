@@ -37,6 +37,9 @@ class TumblrAPIError:
 class TumblrAPIResponse:
     """Tumblr API response."""
 
+    #: Raw JSON data as a dictionary.
+    raw: dict
+
     #: The status code of the response, according to the "meta" array.
     status: int
 
@@ -58,6 +61,7 @@ class TumblrAPIResponse:
             status=data.get("meta", {}).get("status", 500),
             errors=errors,
             response=data.get("response", None) or None,
+            raw=data,
         )
 
 
@@ -157,6 +161,7 @@ class TumblrAPI:
                         title="Failed to parse API data as JSON; likely something is wrong with Tumblr",
                     ),
                 ],
+                raw={},
             )
 
         # import json
@@ -183,7 +188,7 @@ class TumblrAPI:
             if cached_data:
                 return Blog.from_api(cached_data)
 
-        resp = await self._get(f"/blog/{blog_id}/posts")
+        resp = await self._get(f"/blog/{blog_id}/info")
 
         if resp.status == 200 and resp.response:
             blog = Blog.from_api(resp.response)
