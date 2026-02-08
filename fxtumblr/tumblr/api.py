@@ -102,7 +102,7 @@ class TumblrAPI:
     """Provides access to the Tumblr API and handles caching."""
 
     #: Tumblr API base URL. Can be changed for testing.
-    api_base = "https://api.tumblr.com/v2"
+    api_base = "https://api.tumblr.com"
 
     def __init__(self, consumer_key: str, consumer_secret: str):
         """
@@ -188,7 +188,7 @@ class TumblrAPI:
             if cached_data:
                 return Blog.from_api(cached_data)
 
-        resp = await self._get(f"/blog/{blog_id}/info")
+        resp = await self._get(f"/v2/blog/{blog_id}/info")
 
         if resp.status == 200 and resp.response:
             blog = Blog.from_api(resp.response)
@@ -238,7 +238,7 @@ class TumblrAPI:
                 return post
 
         resp = await self._get(
-            f"/blog/{blog_id}/posts", params={"id": post_id, "npf": "true"}
+            f"/v2/blog/{blog_id}/posts", params={"id": post_id, "npf": "true"}
         )
 
         if resp.status == 200 and resp.response:
@@ -286,7 +286,7 @@ class TumblrAPI:
             if cached_data:
                 return PollResults.from_api(cached_data)
 
-        resp = await self._get(f"/polls/{blog_id}/{post_id}/{poll_id}/results")
+        resp = await self._get(f"/v2/polls/{blog_id}/{post_id}/{poll_id}/results")
 
         if resp.status == 200 and resp.response:
             ret = PollResults.from_api(resp.response)

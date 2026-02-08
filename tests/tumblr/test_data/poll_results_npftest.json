@@ -1,1 +1,1 @@
-{"meta": {"status": 200, "msg": "OK"}, "response": {"results": {"0e094aec-5f4a-42c3-aa5f-4dc79cebabe7": 1, "3fd6cbc9-a929-4a71-a9ea-945fc2bceee3": 1}, "timestamp": 1770536501}, "_fxt_meta_fetch": ["/polls/knuxify/730903802869317632/e040d07a-ca6a-4751-8df5-ebaa1719222e/results", null]}
+{"meta": {"status": 200, "msg": "OK"}, "response": {"results": {"0e094aec-5f4a-42c3-aa5f-4dc79cebabe7": 1, "3fd6cbc9-a929-4a71-a9ea-945fc2bceee3": 1}, "timestamp": 1770536982}}

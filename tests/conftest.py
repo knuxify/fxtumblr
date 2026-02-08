@@ -29,7 +29,7 @@ def tumblr_api_server(httpserver):
     # https://www.tumblr.com/knuxify/730903802869317632/the-ultimate-test-post-v2
     with open(_get_tumblr_test_data("post_npftest.json")) as test_data:
         httpserver.expect_request(
-            "/blog/knuxify/posts",
+            "/v2/blog/knuxify/posts",
             query_string={
                 "id": "730903802869317632",
                 "npf": "true",
@@ -41,7 +41,7 @@ def tumblr_api_server(httpserver):
     # https://www.tumblr.com/punkitt-is-here/781681205274886144
     with open(_get_tumblr_test_data("post_reblogs.json")) as test_data:
         httpserver.expect_request(
-            "/blog/punkitt-is-here/posts",
+            "/v2/blog/punkitt-is-here/posts",
             query_string={
                 "id": "781681205274886144",
                 "npf": "true",
@@ -52,7 +52,7 @@ def tumblr_api_server(httpserver):
     # Test post 3: Answer to ask
     with open(_get_tumblr_test_data("post_ask.json")) as test_data:
         httpserver.expect_request(
-            "/blog/knuxify/posts",
+            "/v2/blog/knuxify/posts",
             query_string={
                 "id": "732094755733929984",
                 "npf": "true",
@@ -63,7 +63,7 @@ def tumblr_api_server(httpserver):
     # Test post 4: Self-reblog, tags only
     with open(_get_tumblr_test_data("post_self_reblog_tags_only.json")) as test_data:
         httpserver.expect_request(
-            "/blog/knuxify/posts",
+            "/v2/blog/knuxify/posts",
             query_string={
                 "id": "799921945450840064",
                 "npf": "true",
@@ -74,14 +74,14 @@ def tumblr_api_server(httpserver):
     # Result of post_id=0
     with open(_get_tumblr_test_data("post_id0.json")) as test_data:
         httpserver.expect_request(
-            "/blog/knuxify/posts",
+            "/v2/blog/knuxify/posts",
             query_string={"id": "0", "npf": "true", "api_key": "consumer_key"},
         ).respond_with_json(json.load(test_data))
 
     # Poll results for Ultimate NPF Test Post
     with open(_get_tumblr_test_data("poll_results_npftest.json")) as test_data:
         httpserver.expect_request(
-            "/polls/knuxify/730903802869317632/e040d07a-ca6a-4751-8df5-ebaa1719222e/results",
+            "/v2/polls/knuxify/730903802869317632/e040d07a-ca6a-4751-8df5-ebaa1719222e/results",
             query_string={
                 "api_key": "consumer_key",
             },
@@ -90,7 +90,7 @@ def tumblr_api_server(httpserver):
     # Poll results: invalid poll ID
     with open(_get_tumblr_test_data("poll_results_invalid_id.json")) as test_data:
         httpserver.expect_request(
-            "/polls/knuxify/730903802869317632/bogus/results",
+            "/v2/polls/knuxify/730903802869317632/bogus/results",
             query_string={
                 "api_key": "consumer_key",
             },
@@ -101,26 +101,26 @@ def tumblr_api_server(httpserver):
         data = json.load(test_data)
 
         httpserver.expect_request(
-            "/blog/a/posts",
+            "/v2/blog/a/posts",
         ).respond_with_json(data, status=404)
 
         httpserver.expect_request(
-            "/blog/knuxify/posts",
+            "/v2/blog/knuxify/posts",
             query_string={"id": "1234", "npf": "true", "api_key": "consumer_key"},
         ).respond_with_json(data, status=404)
 
         httpserver.expect_request(
-            "/polls/knuxify/730903802869317632/f040d07a-ca6a-4751-8df5-ebaa1719222e/results",
+            "/v2/polls/knuxify/730903802869317632/f040d07a-ca6a-4751-8df5-ebaa1719222e/results",
             query_string={"api_key": "consumer_key"},
         ).respond_with_json(data, status=404)
 
         httpserver.expect_request(
-            "/polls/knuxify/1234/e040d07a-ca6a-4751-8df5-ebaa1719222e/results",
+            "/v2/polls/knuxify/1234/e040d07a-ca6a-4751-8df5-ebaa1719222e/results",
             query_string={"api_key": "consumer_key"},
         ).respond_with_json(data, status=404)
 
         httpserver.expect_request(
-            "/polls/a/1234/e040d07a-ca6a-4751-8df5-ebaa1719222e/results",
+            "/v2/polls/a/1234/e040d07a-ca6a-4751-8df5-ebaa1719222e/results",
             query_string={"api_key": "consumer_key"},
         ).respond_with_json(data, status=404)
 

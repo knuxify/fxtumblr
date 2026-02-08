@@ -70,6 +70,11 @@ async def update_one(filename: Path | str):
 
     api_response = await tumblr._get(url, params)
 
+    if api_response.status != 200:
+        print(
+            f"{os.path.basename(filename)}: API response status {api_response.status}"
+        )
+
     async with aiofiles.open(full_path, "w") as data:
         data_json = json.dumps(api_response.raw)
         await data.write(data_json)
@@ -102,16 +107,21 @@ async def new(obj_type: str, obj_ids: list[str], filename: str):
 
     params = None
     if obj_type == "blog":
-        url = f"/blog/{obj_ids[0]}/info"
+        url = f"/v2/blog/{obj_ids[0]}/info"
     elif obj_type == "post":
-        url = f"/blog/{obj_ids[0]}/posts"
+        url = f"/v2/blog/{obj_ids[0]}/posts"
         params = {"id": obj_ids[1], "npf": "true"}
     elif obj_type == "poll_results":
-        url = f"/polls/{obj_ids[0]}/{obj_ids[1]}/{obj_ids[2]}/results"
+        url = f"/v2/polls/{obj_ids[0]}/{obj_ids[1]}/{obj_ids[2]}/results"
     else:
         raise ValueError("Unknown object type")
 
     api_response = await tumblr._get(url, params)
+
+    if api_response.status != 200:
+        print(
+            f"{os.path.basename(filename)}: API response status {api_response.status}"
+        )
 
     data_dict = api_response.raw.copy()
     data_dict["_fxt_meta_fetch"] = (url, params)
