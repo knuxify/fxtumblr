@@ -16,9 +16,10 @@ from quart import (
 )
 
 from . import config
-from .embed import Embed, ImageEmbed, ProfileEmbed, VideoEmbed
+from .embed.meta import MetaEmbed, MetaImageEmbed, MetaProfileEmbed, MetaVideoEmbed
+from .post_embed import PostEmbed
 from .stats import stats
-from .tumblr import TumblrAPI, TumblrAPIException
+from .tumblr import PrivateBlogException, TumblrAPI, TumblrAPIException
 
 #: Main Quart application object.
 app = Quart(__name__)
@@ -130,7 +131,13 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
     """Embed generation endpoint."""
 
     try:
-        post = await tumblr.get_post(blog_id, post_id)
+        post = await tumblr.get_post(blog_id, post_id, raise_on_private_blog=True)
+
+    except PrivateBlogException:
+        return await render_template(
+            "locked.html", url=f"https://tumblr.com/{blog_id}/{post_id}"
+        )
+
     except TumblrAPIException as e:
         logger.error(f"Failed to get post ({blog_id}-{post_id}) from API: {e}")
         traceback.print_exc()
@@ -138,6 +145,7 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
             await stats.increment_counter("error_count")
             await stats.increment_counter("api_error_count")
         return await render_template("error.html", msg="Failed to contact Tumblr."), 500
+
     except Exception as e:
         logger.error(f"Failed to parse post ({blog_id}-{post_id}): {e}")
         traceback.print_exc()
@@ -152,7 +160,8 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
         return await render_template("error.html", msg="Post not found."), 404
 
     try:
-        embed = Embed.from_post(post)
+        embed = PostEmbed.from_post(post)
+
     except Exception as e:
         logger.error(f"Failed to create embed for post ({blog_id}-{post_id}): {e}")
         traceback.print_exc()
@@ -173,14 +182,14 @@ def api_oembed():
     """Generate oEmbed JSON from parameters."""
 
     embed_type = request.args.get("type")
-    if embed_type == "image":
-        embed_class = ImageEmbed
+    if embed_type == "photo":
+        embed_class = MetaImageEmbed
     elif embed_type == "video":
-        embed_class = VideoEmbed
+        embed_class = MetaVideoEmbed
     elif embed_type == "profile":
-        embed_class = ProfileEmbed
+        embed_class = MetaProfileEmbed
     else:
-        embed_class = Embed
+        embed_class = MetaEmbed
 
     params = dict(
         (k, v) for k, v in request.args.items() if k in embed_class.oembed_props

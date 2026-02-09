@@ -4,6 +4,8 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Self
 
+from markupsafe import Markup
+
 from .npf import NPFPost
 
 if TYPE_CHECKING:
@@ -98,6 +100,8 @@ class Post:
     post_url: str
     #: URL to the post, in Tumblr's UI.
     dash_url: str
+    #: Total amount of received notes.
+    note_count: int
 
     #: List of NPFPost objects representing each "post" that makes up this
     #: post - first the reblog trail, then the post itself.
@@ -149,6 +153,7 @@ class Post:
             id=data["id"],
             post_url=data["post_url"],
             dash_url=f"https://tumblr.com/{blog.name}/{data['id']}",
+            note_count=data["note_count"],
             trail=trail,
         )
 
@@ -161,6 +166,52 @@ class Post:
         """
         for post in self.trail:
             await post.fetch_poll_results(api, skip_cache=skip_cache)
+
+    def to_html(self, truncate: bool = False) -> Markup:
+        """
+        Convert the post content into an HTML representation.
+
+        :param truncate: Whether or not to add the "read more" block after the
+            cutoff passed in the truncate_after variable of the rows layout.
+            For posts without a truncate_after setting, this option does nothing.
+        :returns: A string with a valid HTML representation of the post.
+        """
+        out = Markup("")
+        i = 0
+        n_posts = len(self.trail)
+        for post in self.trail:
+            # If the post is a reblog, the last post in the trail will be empty.
+            # Skip it while converting.
+            if not post.content and i == (n_posts - 1):
+                continue
+            out += f"▪ {post.blog.name}:\n"
+            out += post.to_html(truncate=truncate).strip()
+            i += 1
+
+        return out
+
+    def to_markdown(self, truncate: bool = False) -> str:
+        """
+        Convert the post to Markdown.
+
+        :param truncate: Whether or not to add the "read more" block after the
+            cutoff passed in the truncate_after variable of the rows layout.
+            For posts without a truncate_after setting, this option does nothing.
+        :returns: a string containing a Markdown representation of the post.
+        """
+        out = ""
+        i = 0
+        n_posts = len(self.trail)
+        for post in self.trail:
+            # If the post is a reblog, the last post in the trail will be empty.
+            # Skip it while converting.
+            if not post.content and i == (n_posts - 1):
+                continue
+            out += f"▪ {post.blog.name}:\n"
+            out += post.to_markdown(truncate=truncate).strip()
+            i += 1
+
+        return out
 
 
 @dataclass

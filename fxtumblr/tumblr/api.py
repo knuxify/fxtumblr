@@ -98,6 +98,13 @@ class TumblrAPIException(Exception):
         return ret
 
 
+class PrivateBlogException(Exception):
+    """
+    Custom exception for private blogs, which can be enabled
+    for get_blog and get_post endpoints for more granular error handling.
+    """
+
+
 class TumblrAPI:
     """Provides access to the Tumblr API and handles caching."""
 
@@ -172,14 +179,23 @@ class TumblrAPI:
 
         return TumblrAPIResponse.from_api(data)
 
-    async def get_blog(self, blog_id: str, skip_cache: bool = False) -> Blog | None:
+    async def get_blog(
+        self,
+        blog_id: str,
+        skip_cache: bool = False,
+        raise_on_private_blog: bool = False,
+    ) -> Blog | None:
         """
         Get information about a blog with the given identifier.
 
         :param blog_id: Blog identifier: username, URL or ID.
         :param skip_cache: If True, always skips the cache.
+        :param raise_on_private_blog: If True, and the blog is private,
+            raises PrivateBlogException.
         :returns: Blog object representing the blog if it was found, None otherwise.
         :raises TumblrAPIException: if the API returns an error.
+        :raises PrivateBlogException: if the blog is private and
+            raise_on_private_blog is set.
         """
         cache_key: str = f"fxt-blog:{blog_id}"
 
@@ -199,6 +215,9 @@ class TumblrAPI:
             return blog
 
         elif resp.status == 404:
+            # Handle private blog
+            if raise_on_private_blog and resp.errors[0].code == 4012:
+                raise PrivateBlogException
             return None
 
         else:
@@ -210,6 +229,7 @@ class TumblrAPI:
         post_id: int,
         skip_cache: bool = False,
         fetch_poll_results: bool = True,
+        raise_on_private_blog: bool = False,
     ) -> Post | None:
         """
         Get a post from the blog with the given identifier.
@@ -222,8 +242,12 @@ class TumblrAPI:
         :param fetch_poll_results: If True (the default), fetches poll results
             for all polls in the post. This requires additional API calls; if
             such behavior is undesirable, set this to False.
+        :param raise_on_private_blog: If True, and the blog is private,
+            raises PrivateBlogException.
         :returns: Post object representing the post if it was found, None otherwise.
         :raises TumblrAPIException: if the API returns an error.
+        :raises PrivateBlogException: if the blog is private and
+            raise_on_private_blog is set.
         """
         cache_key: str = f"fxt-post:{blog_id}:{post_id}"
 
@@ -261,6 +285,9 @@ class TumblrAPI:
                 return None
 
         elif resp.status == 404:
+            # Handle private blog
+            if raise_on_private_blog and resp.errors[0].code == 4012:
+                raise PrivateBlogException
             return None
 
         else:

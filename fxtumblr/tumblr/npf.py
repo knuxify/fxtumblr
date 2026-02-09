@@ -2408,7 +2408,7 @@ class NPFPost:
         :param truncate: Whether or not to add the "read more" block after the
             cutoff passed in the truncate_after variable of the rows layout.
             For posts without a truncate_after setting, this option does nothing.
-        :returns: A string containing a Markdown representation of the post.
+        :returns: a string containing a Markdown representation of the post.
         """
 
         # Markdown conversion works much the same as HTML conversion, but with
