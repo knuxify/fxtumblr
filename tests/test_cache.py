@@ -25,7 +25,7 @@ def cache() -> Cache:  # noqa: F811
 @pytest.mark.asyncio
 async def test_cache_ping(cache):
     """Test the cache ping function."""
-    assert await cache.ping()
+    assert await cache.ping() is True
 
 
 @pytest.mark.asyncio
@@ -93,3 +93,21 @@ async def test_cache_bin(cache):
     await cache.delete("fxt-test:3:removeme")
     assert not await cache.exists("fxt-test:3:removeme")
     assert not await cache.get_bin("fxt-test:3:removeme")
+
+
+@pytest.mark.asyncio
+async def test_cache_increment(cache):
+    """Test the cache increment function."""
+    await cache.set("fxt-test:number", "1", 0)
+    assert await cache.increment("fxt-test:number")
+    assert await cache.get("fxt-test:number") == "2"
+
+
+@pytest.mark.asyncio
+async def test_cache_timeout(cache):
+    """Test the cache timeout function."""
+    await cache.set("fxt-test:timeout", "1", 0)
+    assert await cache.timeout("fxt-test:timeout", 2)
+    await asyncio.sleep(3)
+    assert await cache.exists("fxt-test:timeout") is False
+    assert await cache.get("fxt-test:timeout") is None
