@@ -27,8 +27,8 @@ test = [
 	"pytest-asyncio",
 	"pytest-dotenv",
     "pytest-httpserver",
-    "pytest-redis",
     "pytest-cov",
+    "fakeredis",
 ]
 typing = [
     "mypy",
