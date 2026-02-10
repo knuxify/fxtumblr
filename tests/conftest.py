@@ -10,11 +10,13 @@ import pytest
 from fxtumblr.tumblr.api import TumblrAPI
 
 
-def _get_tumblr_test_data(filename: str) -> os.PathLike:
+def _get_tumblr_test_data(filename: str) -> str:
     """Get the path to a file in tumblr/test_data."""
     # https://stackoverflow.com/a/18489147
+    base_path = getsourcefile(lambda: 0)
+    assert base_path is not None
     return os.path.join(
-        os.path.dirname(os.path.abspath(getsourcefile(lambda: 0))),
+        os.path.dirname(os.path.abspath(base_path)),
         "tumblr",
         "test_data",
         filename,
@@ -87,6 +89,16 @@ def tumblr_api_server(httpserver):
             },
         ).respond_with_json(json.load(test_data))
 
+    # Test blog 1: knuxify
+    # https://www.tumblr.com/knuxify
+    with open(_get_tumblr_test_data("blog_knuxify.json")) as test_data:
+        httpserver.expect_request(
+            "/v2/blog/knuxify/info",
+            query_string={
+                "api_key": "consumer_key",
+            },
+        ).respond_with_json(json.load(test_data))
+
     # Poll results: invalid poll ID
     with open(_get_tumblr_test_data("poll_results_invalid_id.json")) as test_data:
         httpserver.expect_request(
@@ -99,6 +111,10 @@ def tumblr_api_server(httpserver):
     # 404 responses
     with open(_get_tumblr_test_data("resp_404.json")) as test_data:
         data = json.load(test_data)
+
+        httpserver.expect_request(
+            "/v2/blog/a/info",
+        ).respond_with_json(data, status=404)
 
         httpserver.expect_request(
             "/v2/blog/a/posts",
@@ -123,6 +139,24 @@ def tumblr_api_server(httpserver):
             "/v2/polls/a/1234/e040d07a-ca6a-4751-8df5-ebaa1719222e/results",
             query_string={"api_key": "consumer_key"},
         ).respond_with_json(data, status=404)
+
+    # Private blog
+    with open(_get_tumblr_test_data("blog_private.json")) as test_data:
+        httpserver.expect_request(
+            "/v2/blog/private-blog-test/info",
+            query_string={"api_key": "consumer_key"},
+        ).respond_with_json(json.load(test_data), status=404)
+
+    # Private post
+    with open(_get_tumblr_test_data("post_private.json")) as test_data:
+        httpserver.expect_request(
+            "/v2/blog/private-blog-test/posts",
+            query_string={
+                "id": "808188296199094272",
+                "npf": "true",
+                "api_key": "consumer_key",
+            },
+        ).respond_with_json(json.load(test_data), status=404)
 
     return httpserver
 

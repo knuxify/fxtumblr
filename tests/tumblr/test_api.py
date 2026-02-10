@@ -1,9 +1,37 @@
 # SPDX-License-Identifier: MIT
 """Tests for Tumblr API access functions."""
 
+import pytest
+
 # from fxtumblr.tumblr.npf import NPFContent
-from fxtumblr.tumblr.api import TumblrAPIException
-from fxtumblr.tumblr.types import PollResults, Post
+from fxtumblr.tumblr.api import PrivateBlogException, TumblrAPIException
+from fxtumblr.tumblr.types import Blog, PollResults, Post
+
+
+async def test_get_blog(tumblr_api):
+    """Test blog fetching."""
+
+    # Test regular blog
+    blog = await tumblr_api.get_blog("knuxify", skip_cache=True)
+
+    assert blog is not None
+    assert isinstance(blog, Blog)
+    assert blog.name == "knuxify"
+
+    # Test 404
+    blog = await tumblr_api.get_blog("a", skip_cache=True)
+    assert blog is None
+
+    # Test private blog with and without raise_on_private_blog
+    blog = await tumblr_api.get_blog(
+        "private-blog-test", skip_cache=True, raise_on_private_blog=False
+    )
+    assert blog is None
+
+    with pytest.raises(PrivateBlogException):
+        await tumblr_api.get_blog(
+            "private-blog-test", skip_cache=True, raise_on_private_blog=True
+        )
 
 
 async def test_get_post(tumblr_api):
@@ -33,6 +61,23 @@ async def test_get_post(tumblr_api):
     # Test non-existent blog
     post = await tumblr_api.get_post("a", 1234, skip_cache=True)
     assert post is None
+
+    # Test private blog with and without raise_on_private_blog
+    post = await tumblr_api.get_post(
+        "private-blog-test",
+        808188296199094272,
+        skip_cache=True,
+        raise_on_private_blog=False,
+    )
+    assert post is None
+
+    with pytest.raises(PrivateBlogException):
+        await tumblr_api.get_post(
+            "private-blog-test",
+            808188296199094272,
+            skip_cache=True,
+            raise_on_private_blog=True,
+        )
 
 
 async def test_get_poll_results(tumblr_api):
@@ -70,11 +115,7 @@ async def test_get_poll_results(tumblr_api):
     assert poll is None
 
     # Test invalid poll ID
-    try:
+    with pytest.raises(TumblrAPIException):
         poll = await tumblr_api.get_poll_results(
             "knuxify", 730903802869317632, "bogus", skip_cache=True
         )
-    except TumblrAPIException:
-        pass
-    else:
-        raise Exception("Did not raise exception")

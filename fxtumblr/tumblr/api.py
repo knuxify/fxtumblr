@@ -207,12 +207,16 @@ class TumblrAPI:
         resp = await self._get(f"/v2/blog/{blog_id}/info")
 
         if resp.status == 200 and resp.response:
-            blog = Blog.from_api(resp.response)
-            # Set cache keys for both blog ID and blog name
-            if not skip_cache:
-                await cache.set_json(f"fxt-blog:{blog.uuid}", resp.response)
-                await cache.set_json(f"fxt-blog:{blog.name}", resp.response)
-            return blog
+            if "blog" in resp.response:
+                blog_data = resp.response["blog"]
+                blog = Blog.from_api(blog_data)
+                # Set cache keys for both blog ID and blog name
+                if not skip_cache:
+                    await cache.set_json(f"fxt-blog:{blog.uuid}", blog_data)
+                    await cache.set_json(f"fxt-blog:{blog.name}", blog_data)
+                return blog
+            else:
+                return None
 
         elif resp.status == 404:
             # Handle private blog
