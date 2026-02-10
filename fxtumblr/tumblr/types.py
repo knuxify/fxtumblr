@@ -67,7 +67,7 @@ class Blog:
             name=data["name"],
             uuid=data["uuid"],
             url=data["url"],
-            avatars=[Avatar.from_dict(data) for data in data.get("avatars", [])],
+            avatars=[Avatar.from_dict(data) for data in data.get("avatar", [])],
             is_broken=False,
         )
 
