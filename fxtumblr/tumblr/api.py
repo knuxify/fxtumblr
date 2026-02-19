@@ -152,7 +152,9 @@ class TumblrAPI:
 
         logger.debug(f"Tumblr API query: {url}, params {_params}")
 
-        r = await self.client.get(url, params=_params)
+        # Typing ignore; authlib type stubs are incorrect and claim .get
+        # does not exist (it does)
+        r = await self.client.get(url, params=_params)  # type: ignore[attr-defined]
 
         try:
             data = r.json()

@@ -30,7 +30,7 @@ port = 6379
 # - Hashed ID of the blog and post
 # - Whether embedding finished succesfully or not
 # - Whether the post was rendered or not
-# - Which optional parameters were used
+# - Which optional parameters (modifiers) were used
 #
 # The statistics are available over a Prometheus endpoint.
 enabled = true
@@ -41,3 +41,20 @@ password = "FIXME"
 # Timeout after which statistics data is cleared, in seconds.
 # Defaults to 30 days (60 * 60 * 24 * 30).
 # timeout = 2592000
+
+[render]
+
+# Renderer process host/port.
+host = "localhost"
+port = 6500
+
+# Render backend. Available options are:
+# **Playwright-based** (requires "playwright"):
+#  - playwright-chromium
+backend = "playwright-chromium"
+
+# Path to the directory where renders will be cached
+path = "/full/path/FIXME"
+
+# Amount of renders that can happen simultaneously; default is 3
+# worker_count = 3

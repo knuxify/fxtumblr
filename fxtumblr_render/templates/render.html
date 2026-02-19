@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+	<meta name="viewport" content="width=device-width">
+
+	<!-- Portions of this CSS and the SVG icons have been adapted from tumblr.com. Copyright Tumblr staff. -->
+	<style>
+		{% include "render-style.css" with context %}
+	</style>
+</head>
+<body>
+	<aside id="icons" style="width:0;height:0;overflow:hidden;display:none;">
+		<svg id="managed-icon__play-cropped" fill="var(--icon-color-primary, #ffffff)" viewBox="18 15 13 16">
+			<path d="M30.592 23.578L19.52 30.3a1 1 0 0 1-1.52-.854V16a1 1 0 0 1 1.519-.855l11.073 6.723a1 1 0 0 1 0 1.71z"></path>
+		</svg>
+		<svg id="managed-icon__caret-fat" fill="var(--icon-color-primary, currentcolor)" viewBox="0 0 13 20.1">
+		  <path d="M0 2.9l7.2 7.2-7.1 7.1L3 20.1l7.1-7.1 2.9-2.9L2.9 0 0 2.9"></path>
+		</svg>
+
+		<svg id="managed-icon__badge-reblog" viewBox="0 0 16 16" fill="var(--icon-color-primary, rgb(0, 207, 53)">
+		  <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
+		  <path fill="var(--icon-color-accent, rgb(255, 255, 255)" d="M10.5 7.05c-.344.227-.5 0-.5-.23V5.75H5.593A.594.594 0 0 0 5 6.343v1.324a.625.625 0 0 1-1.25 0V6.343c0-1.016.827-1.843 1.843-1.843H10V3.32c0-.27.315-.398.5-.27s2 2 2 2l-2 2zM6 10.542h4.406A.594.594 0 0 0 11 9.949V8.625a.625.625 0 0 1 1.25 0V9.95a1.845 1.845 0 0 1-1.844 1.843H6v1.032s-.057.498-.5.208l-2-1.978 2-2c.173-.138.5 0 .5.286v1.202z"></path>
+		</svg>
+
+		<svg id="managed-icon__badge-reblog-20" fill="none" viewBox="0 0 20 20"><path stroke="var(--icon-color-primary, currentColor)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5.75 9.75v-1.5a2 2 0 0 1 2-2h5.75"></path><path stroke="var(--icon-color-primary, currentColor)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m12.5 4.25 2 2-2 2"></path><path stroke="var(--icon-color-primary, currentColor)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m7.5 11.75-2 2 2 2"></path><path stroke="var(--icon-color-primary, currentColor)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6.5 13.75h5.75a2 2 0 0 0 2-2V11"></path></svg>
+
+		<!-- Brand icons for embeds -->
+		<svg id="managed-icon__spotify" fill="var(--icon-color-primary, currentcolor)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) -->
+			<path d="M248 8C111.1 8 0 119.1 0 256s111.1 248 248 248 248-111.1 248-248S384.9 8 248 8zm100.7 364.9c-4.2 0-6.8-1.3-10.7-3.6-62.4-37.6-135-39.2-206.7-24.5-3.9 1-9 2.6-11.9 2.6-9.7 0-15.8-7.7-15.8-15.8 0-10.3 6.1-15.2 13.6-16.8 81.9-18.1 165.6-16.5 237 26.2 6.1 3.9 9.7 7.4 9.7 16.5s-7.1 15.4-15.2 15.4zm26.9-65.6c-5.2 0-8.7-2.3-12.3-4.2-62.5-37-155.7-51.9-238.6-29.4-4.8 1.3-7.4 2.6-11.9 2.6-10.7 0-19.4-8.7-19.4-19.4s5.2-17.8 15.5-20.7c27.8-7.8 56.2-13.6 97.8-13.6 64.9 0 127.6 16.1 177 45.5 8.1 4.8 11.3 11 11.3 19.7-.1 10.8-8.5 19.5-19.4 19.5zm31-76.2c-5.2 0-8.4-1.3-12.9-3.9-71.2-42.5-198.5-52.7-280.9-29.7-3.6 1-8.1 2.6-12.9 2.6-13.2 0-23.3-10.3-23.3-23.6 0-13.6 8.4-21.3 17.4-23.9 35.2-10.3 74.6-15.2 117.5-15.2 73 0 149.5 15.2 205.4 47.8 7.8 4.5 12.9 10.7 12.9 22.6 0 13.6-11 23.3-23.2 23.3z"/>
+		</svg>
+
+		<svg id="managed-icon__soundcloud" fill="var(--icon-color-primary, currentcolor)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) -->
+			<path d="M111.4 256.3l5.8 65-5.8 68.3c-.3 2.5-2.2 4.4-4.4 4.4s-4.2-1.9-4.2-4.4l-5.6-68.3 5.6-65c0-2.2 1.9-4.2 4.2-4.2 2.2 0 4.1 2 4.4 4.2zm21.4-45.6c-2.8 0-4.7 2.2-5 5l-5 105.6 5 68.3c.3 2.8 2.2 5 5 5 2.5 0 4.7-2.2 4.7-5l5.8-68.3-5.8-105.6c0-2.8-2.2-5-4.7-5zm25.5-24.1c-3.1 0-5.3 2.2-5.6 5.3l-4.4 130 4.4 67.8c.3 3.1 2.5 5.3 5.6 5.3 2.8 0 5.3-2.2 5.3-5.3l5.3-67.8-5.3-130c0-3.1-2.5-5.3-5.3-5.3zM7.2 283.2c-1.4 0-2.2 1.1-2.5 2.5L0 321.3l4.7 35c.3 1.4 1.1 2.5 2.5 2.5s2.2-1.1 2.5-2.5l5.6-35-5.6-35.6c-.3-1.4-1.1-2.5-2.5-2.5zm23.6-21.9c-1.4 0-2.5 1.1-2.5 2.5l-6.4 57.5 6.4 56.1c0 1.7 1.1 2.8 2.5 2.8s2.5-1.1 2.8-2.5l7.2-56.4-7.2-57.5c-.3-1.4-1.4-2.5-2.8-2.5zm25.3-11.4c-1.7 0-3.1 1.4-3.3 3.3L47 321.3l5.8 65.8c.3 1.7 1.7 3.1 3.3 3.1 1.7 0 3.1-1.4 3.1-3.1l6.9-65.8-6.9-68.1c0-1.9-1.4-3.3-3.1-3.3zm25.3-2.2c-1.9 0-3.6 1.4-3.6 3.6l-5.8 70 5.8 67.8c0 2.2 1.7 3.6 3.6 3.6s3.6-1.4 3.9-3.6l6.4-67.8-6.4-70c-.3-2.2-2-3.6-3.9-3.6zm241.4-110.9c-1.1-.8-2.8-1.4-4.2-1.4-2.2 0-4.2.8-5.6 1.9-1.9 1.7-3.1 4.2-3.3 6.7v.8l-3.3 176.7 1.7 32.5 1.7 31.7c.3 4.7 4.2 8.6 8.9 8.6s8.6-3.9 8.6-8.6l3.9-64.2-3.9-177.5c-.4-3-2-5.8-4.5-7.2zm-26.7 15.3c-1.4-.8-2.8-1.4-4.4-1.4s-3.1.6-4.4 1.4c-2.2 1.4-3.6 3.9-3.6 6.7l-.3 1.7-2.8 160.8s0 .3 3.1 65.6v.3c0 1.7.6 3.3 1.7 4.7 1.7 1.9 3.9 3.1 6.4 3.1 2.2 0 4.2-1.1 5.6-2.5 1.7-1.4 2.5-3.3 2.5-5.6l.3-6.7 3.1-58.6-3.3-162.8c-.3-2.8-1.7-5.3-3.9-6.7zm-111.4 22.5c-3.1 0-5.8 2.8-5.8 6.1l-4.4 140.6 4.4 67.2c.3 3.3 2.8 5.8 5.8 5.8 3.3 0 5.8-2.5 6.1-5.8l5-67.2-5-140.6c-.2-3.3-2.7-6.1-6.1-6.1zm376.7 62.8c-10.8 0-21.1 2.2-30.6 6.1-6.4-70.8-65.8-126.4-138.3-126.4-17.8 0-35 3.3-50.3 9.4-6.1 2.2-7.8 4.4-7.8 9.2v249.7c0 5 3.9 8.6 8.6 9.2h218.3c43.3 0 78.6-35 78.6-78.3.1-43.6-35.2-78.9-78.5-78.9zm-296.7-60.3c-4.2 0-7.5 3.3-7.8 7.8l-3.3 136.7 3.3 65.6c.3 4.2 3.6 7.5 7.8 7.5 4.2 0 7.5-3.3 7.5-7.5l3.9-65.6-3.9-136.7c-.3-4.5-3.3-7.8-7.5-7.8zm-53.6-7.8c-3.3 0-6.4 3.1-6.4 6.7l-3.9 145.3 3.9 66.9c.3 3.6 3.1 6.4 6.4 6.4 3.6 0 6.4-2.8 6.7-6.4l4.4-66.9-4.4-145.3c-.3-3.6-3.1-6.7-6.7-6.7zm26.7 3.4c-3.9 0-6.9 3.1-6.9 6.9L227 321.3l3.9 66.4c.3 3.9 3.1 6.9 6.9 6.9s6.9-3.1 6.9-6.9l4.2-66.4-4.2-141.7c0-3.9-3-6.9-6.9-6.9z"/>
+		</svg>
+	</aside>
+	<div id="container">
+		{% if post.is_reblog %}
+		<header class="main-header">
+			<div class="avatar-wrapper"><img class="avatar" src="{{ post.blog.avatars.get_by_width(48).url }}"><svg class="avatar-reblog-badge" xmlns="http://www.w3.org/2000/svg" {% if "oldstyle" in modifiers %}height="14" width="14"{% else %}height="20" width="20"{% endif %} role="presentation"><use href="{% if "oldstyle" in modifiers %}#managed-icon__badge-reblog{% else %}#managed-icon__badge-reblog-20{% endif %}"></use></svg></div>
+			<div class="user-info-wrapper"><span class="username reblogged-by">{{ post.reblogged_by }}</span> <span class="reblogged-from-wrapper"> {% if "oldstyle" in modifiers %}r{% else %}R{% endif %}eblogged{% if post.reblogged_by != post.reblogged_from%} <span class="username reblogged-from">{{ post.reblogged_from }}</span>{% endif %}</span></div>
+		</header>
+			{% endif %}
+		{% for npf_post in post.trail %}
+			<div class="post">
+				<div class="post-header">
+					<div class="avatar-wrapper"><img class="avatar" src="{{ npf_post.blog.avatars.get_by_width(48).url }}">{% if not loop.first %}<svg class="avatar-reblog-badge" xmlns="http://www.w3.org/2000/svg" {% if "oldstyle" in modifiers %}height="14" width="14"{% else %}height="20" width="20"{% endif %} role="presentation"><use href="{% if "oldstyle" in modifiers %}#managed-icon__badge-reblog{% else %}#managed-icon__badge-reblog-20{% endif %}"></use></svg>{% endif %}</div>
+					<span class="username">{{ npf_post.blog.name }}</span>
+				</div>
+				<div class="post-content">
+					{{ npf_post.to_html(truncate="unroll" not in modifiers) }}
+				</div>
+			</div>
+		{% endfor %}
+		{% if post.tags %}
+		<div class="tags">{%- for tag in post.tags -%}<span class="tag">#{{tag}}</span>{%- endfor -%}</div>
+		{% endif %}
+	</div>
+</body>
+</html>

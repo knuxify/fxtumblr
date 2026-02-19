@@ -2,7 +2,6 @@
 """Parser for Tumblr's NPF ("Neue Post Format") format."""
 
 import datetime
-import html
 import itertools
 import urllib.parse
 from abc import ABC, abstractmethod
@@ -18,10 +17,11 @@ import nh3
 from frozendict import frozendict
 from markupsafe import Markup, escape
 
+from .types import Blog, Media, MediaList, PollResults
+
 if TYPE_CHECKING:
     # Placed in TYPE_CHECKING due to circular import
     from .api import TumblrAPI
-    from .types import Blog, PollResults
 
 ##
 # Helper classes/functions
@@ -142,126 +142,6 @@ class MarkdownWrapper:
 
     #: Closing tag.
     close: str
-
-
-##
-# Media objects
-# https://www.tumblr.com/docs/npf#media-objects
-##
-
-
-@dataclass
-class Media:
-    """Information about a single piece of media."""
-
-    #: Mimetype of the media.
-    type: str
-    #: URL to the media.
-    url: str
-    #: Width of the media, if applicable.
-    width: int | None
-    #: Height of the media, if applicable.
-    height: int | None
-    #: Whether or not the media has its original dimensions.
-    has_original_dimensions: bool = False
-
-    @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        """
-        Turn a media dict into a Media object.
-
-        :param data: Data to use for object creation.
-        :returns: The resulting object.
-        """
-        return cls(
-            type=data["type"],
-            url=data["url"],
-            width=data.get("width", None),
-            height=data.get("height", None),
-            has_original_dimensions=data.get("has_original_dimensions", False),
-        )
-
-
-class MediaList(list):
-    """List of Media objects. Provides a convenience method for finding media of a specific size."""
-
-    @property
-    def no_dimensions(self) -> bool:
-        """
-        Check if the media in this list has no width/height.
-
-        :returns: True if the media contained in the list is dimensionless,
-        i.e. is not an image or video.
-        """
-        for media in self:
-            if media.width is None or media.height is None:
-                return True
-        return False
-
-    @property
-    def original_dimensions(self) -> tuple[int, int] | None:
-        """
-        Get the original dimensions of the media, if present.
-
-        :returns: Tuple of width and height, or None if original dimensions could
-            not be determined.
-        """
-        if self.no_dimensions:
-            return None
-
-        for media in self:
-            if media.has_original_dimensions:
-                return (media.width, media.height)
-        return None
-
-    def get_hq(self) -> Media | None:
-        """
-        Find the highest-quality Media object.
-
-        Returns either the media with original dimensions or the largest available
-        media.
-
-        :returns: Media object representing highest-quality media, or None if the list
-            is empty.
-        """
-        if self.no_dimensions:
-            return None
-
-        _self_sorted = sorted(self, key=lambda m: m.width, reverse=True)
-
-        for media in _self_sorted:
-            if media.has_original_dimensions:
-                return media
-
-        return _self_sorted[0]
-
-    def get_by_width(self, target_width: int) -> Media | None:
-        """
-        Find the closest Media object that fits the given width.
-
-        :param target_width: Width to target.
-        :returns: A matching Media object, or None if the list is empty.
-        """
-        if self.no_dimensions:
-            return None
-
-        _self_sorted = sorted(self, key=lambda m: m.width, reverse=True)
-
-        for media in _self_sorted:
-            if media.width <= target_width:
-                return media
-
-        return _self_sorted[-1]
-
-    @classmethod
-    def from_list_of_dicts(cls, data: list) -> Self:
-        """Convert a list of media dicts to a MediaList."""
-        out = cls()
-
-        for m_data in data:
-            out.append(Media.from_dict(m_data))
-
-        return out
 
 
 ##
@@ -879,11 +759,9 @@ class ContentBlockText(ContentBlock):
 
                 del _ends
 
-            # For HTML, add HTML-escaped letter to output
-            if wrapper == WrapperType.HTML:
-                out += html.escape(self.text[n_char])
-            else:
-                out += self.text[n_char]
+            # Add letter to output (for HTML this will get autoescaped since
+            # we use markupsafe's Markup)
+            out += self.text[n_char]
 
         # Close all remaining open formats
         while open_formats:
@@ -1972,10 +1850,12 @@ def _update_indented_block_wrappers(
         """Remove an item off the top of the indent stack."""
         nonlocal indent_stack
         nonlocal out
+        # Type ignores: indented blocks will always have a subtype,
+        # it's up to callers to ensure this
         indent_block = indent_stack.pop()
-        wrapper = INDENTED_BLOCK_WRAPPERS[indent_block.subtype]
+        wrapper = INDENTED_BLOCK_WRAPPERS[indent_block.subtype]  # type: ignore[index]
         if indent_block.indent_level > 0:
-            wrapper_outer = INDENTED_BLOCK_WRAPPERS[indent_stack[-1].subtype]
+            wrapper_outer = INDENTED_BLOCK_WRAPPERS[indent_stack[-1].subtype]  # type: ignore[index]
             out += wrapper.close + wrapper_outer.down
         else:
             out += wrapper.close

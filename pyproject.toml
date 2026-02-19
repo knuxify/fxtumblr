@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 package-mode = false
 dependencies = [
+	"aiofiles",
 	"authlib",
 	"httpx",
 	"redis",
@@ -37,9 +38,10 @@ typing = [
     "types-emoji",
 	"types-python-dateutil",
     "types-redis",
+    "types-aiofiles",
 ]
-tests = [
-    "aiofiles"
+render-playwright = [
+	"playwright",
 ]
 
 [tool.pytest.ini_options]
@@ -49,3 +51,5 @@ log_cli_level = "INFO"
 
 [tool.mypy]
 exclude = ["tests"]
+mypy_path = [".", "fxtumblr_render"]
+check_untyped_defs = true

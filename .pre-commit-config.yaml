@@ -13,7 +13,8 @@ repos:
   hooks:
     - id: mypy
       exclude: tests
-      additional_dependencies: ["types-authlib",
+      additional_dependencies: ["types-aiofiles",
+                                "types-authlib",
                                 "types-frozendict",
                                 "types-emoji",
                                 "types-python-dateutil",

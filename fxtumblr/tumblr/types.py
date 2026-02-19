@@ -1,38 +1,143 @@
 # SPDX-License-Identifier: MIT
 """Data classes representing Tumblr data objects."""
 
+import mimetypes
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Self
 
 from markupsafe import Markup
 
-from .npf import NPFPost
-
 if TYPE_CHECKING:
     # Placed in TYPE_CHECKING due to circular import
     from .api import TumblrAPI
+    from .npf import NPFPost
+
+
+##
+# Media objects
+# https://www.tumblr.com/docs/npf#media-objects
+##
 
 
 @dataclass
-class Avatar:
-    """Represents a blog's avatar."""
+class Media:
+    """Information about a single piece of media."""
 
-    #: URL to the avatar image.
+    #: Mimetype of the media.
+    type: str
+    #: URL to the media.
     url: str
-    #: Width of the avatar.
-    width: int
-    #: Height of the avatar.
-    height: int
+    #: Width of the media, if applicable.
+    width: int | None
+    #: Height of the media, if applicable.
+    height: int | None
+    #: Whether or not the media has its original dimensions.
+    has_original_dimensions: bool = False
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
         """
-        Create an Avatar object from avatar data.
+        Turn a media dict into a Media object.
 
-        :param data: Data to create the Avatar object from.
-        :returns: the resulting Avatar object.
+        :param data: Data to use for object creation.
+        :returns: The resulting object.
         """
-        return cls(url=data["url"], width=data["width"], height=data["height"])
+        if "type" not in data:
+            _type = mimetypes.guess_type(data["url"].replace(".pnj", ".jpg"))[0]
+            if _type is None:
+                _type = ""
+        else:
+            _type = data["type"]
+
+        return cls(
+            type=_type,
+            url=data["url"],
+            width=data.get("width", None),
+            height=data.get("height", None),
+            has_original_dimensions=data.get("has_original_dimensions", False),
+        )
+
+
+class MediaList(list):
+    """List of Media objects. Provides a convenience method for finding media of a specific size."""
+
+    @property
+    def no_dimensions(self) -> bool:
+        """
+        Check if the media in this list has no width/height.
+
+        :returns: True if the media contained in the list is dimensionless,
+        i.e. is not an image or video.
+        """
+        for media in self:
+            if media.width is None or media.height is None:
+                return True
+        return False
+
+    @property
+    def original_dimensions(self) -> tuple[int, int] | None:
+        """
+        Get the original dimensions of the media, if present.
+
+        :returns: Tuple of width and height, or None if original dimensions could
+            not be determined.
+        """
+        if self.no_dimensions:
+            return None
+
+        for media in self:
+            if media.has_original_dimensions:
+                return (media.width, media.height)
+        return None
+
+    def get_hq(self) -> Media | None:
+        """
+        Find the highest-quality Media object.
+
+        Returns either the media with original dimensions or the largest available
+        media.
+
+        :returns: Media object representing highest-quality media, or None if the list
+            is empty.
+        """
+        if self.no_dimensions:
+            return None
+
+        _self_sorted = sorted(self, key=lambda m: m.width, reverse=True)
+
+        for media in _self_sorted:
+            if media.has_original_dimensions:
+                return media
+
+        return _self_sorted[0]
+
+    def get_by_width(self, target_width: int) -> Media | None:
+        """
+        Find the closest Media object that fits the given width.
+
+        :param target_width: Width to target.
+        :returns: A matching Media object, or None if the list is empty.
+        """
+        if self.no_dimensions:
+            return None
+
+        _self_sorted = sorted(self, key=lambda m: m.width, reverse=True)
+
+        for media in _self_sorted:
+            if media.width <= target_width:
+                return media
+
+        return _self_sorted[-1]
+
+    @classmethod
+    def from_list_of_dicts(cls, data: list) -> Self:
+        """Convert a list of media dicts to a MediaList."""
+        out = cls()
+
+        for m_data in data:
+            out.append(Media.from_dict(m_data))
+
+        return out
 
 
 @dataclass
@@ -49,7 +154,7 @@ class Blog:
     url: str | None
 
     #: Different sizes of avatars.
-    avatars: list[Avatar]
+    avatars: MediaList
 
     #: Whether or not this Blog object represents a deleted/suspended/otherwise
     #: "broken" blog.
@@ -67,7 +172,7 @@ class Blog:
             name=data["name"],
             uuid=data["uuid"],
             url=data["url"],
-            avatars=[Avatar.from_dict(data) for data in data.get("avatar", [])],
+            avatars=MediaList.from_list_of_dicts(data.get("avatar", [])),
             is_broken=False,
         )
 
@@ -78,7 +183,7 @@ class Blog:
             uuid="",
             name=username,
             url=None,
-            avatars=[],
+            avatars=MediaList(),
             is_broken=True,
         )
 
@@ -102,6 +207,8 @@ class Post:
     dash_url: str
     #: Total amount of received notes.
     note_count: int
+    #: List of tags on the post.
+    tags: list[str]
 
     #: List of NPFPost objects representing each "post" that makes up this
     #: post - first the reblog trail, then the post itself.
@@ -109,7 +216,7 @@ class Post:
     #: Note that this is different from Tumblr's definition of the trail,
     #: which specifically covers only the reblog trail; we include the post
     #: itself at the end for ease-of-use.
-    trail: list[NPFPost]
+    trail: list["NPFPost"]
 
     @property
     def is_reblog(self) -> bool:
@@ -140,6 +247,9 @@ class Post:
         :returns: the resulting Post object.
         """
 
+        # Lazy import to avoid circular dependency
+        from .npf import NPFPost
+
         trail = []
         if "trail" in data:
             for i in data["trail"]:
@@ -155,6 +265,7 @@ class Post:
             dash_url=f"https://tumblr.com/{blog.name}/{data['id']}",
             note_count=data["note_count"],
             trail=trail,
+            tags=data["tags"],
         )
 
     async def fetch_poll_results(self, api: "TumblrAPI", skip_cache: bool = False):

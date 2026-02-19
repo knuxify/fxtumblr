@@ -22,3 +22,4 @@ htmlcov
 .mypy-cache
 
 TODO.md
+renders/
