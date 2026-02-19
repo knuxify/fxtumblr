@@ -5,6 +5,7 @@ import asyncio
 import logging
 import secrets
 import traceback
+from typing import Type
 
 from quart import (
     Quart,
@@ -49,6 +50,7 @@ STATS_ENABLED = config["stats"]["enabled"]
 @app.route("/robots.txt")
 async def robots_txt():
     """Provide the robots.txt file."""
+    assert app.static_folder is not None
     return await send_from_directory(app.static_folder, "robots.txt")
 
 
@@ -182,6 +184,7 @@ def api_oembed():
     """Generate oEmbed JSON from parameters."""
 
     embed_type = request.args.get("type")
+    embed_class: Type[MetaEmbed]
     if embed_type == "photo":
         embed_class = MetaImageEmbed
     elif embed_type == "video":
@@ -196,9 +199,9 @@ def api_oembed():
     )
 
     if "height" in params:
-        params["height"] = int(params["height"])
+        params["height"] = int(params["height"])  # type: ignore[assignment]
     if "width" in params:
-        params["width"] = int(params["width"])
+        params["width"] = int(params["width"])  # type: ignore[assignment]
 
     try:
         embed = embed_class(**params)
