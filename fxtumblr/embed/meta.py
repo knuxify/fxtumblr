@@ -109,7 +109,7 @@ class MetaEmbed:
         del oembed["version"]
         return (
             "https://"
-            + config["instance"]["domain"]
+            + config.instance.domain
             + "/_api/oembed.json?"
             + urllib.parse.urlencode(oembed)
         )

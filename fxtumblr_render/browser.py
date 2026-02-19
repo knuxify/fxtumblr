@@ -6,8 +6,7 @@ from abc import ABC, abstractmethod
 from os import PathLike
 from typing import ClassVar, Type
 
-from fxtumblr import config
-
+from . import config
 from .screenshot import ScreenshotFiletype
 
 # Imports for specific libraries
@@ -73,7 +72,7 @@ class BrowserPlaywright(Browser):
         self.playwright_async = await playwright.async_api.async_playwright().start()
         browser_base = getattr(self.playwright_async, self.browser_type)
 
-        executable_path = config["render"].get("browser_executable")
+        executable_path = config.render.browser_executable
         if executable_path:
             self.browser = await browser_base.launch(executable_path=executable_path)
         else:
@@ -151,11 +150,11 @@ def get_browser() -> Browser:
     :raises ValueError: if the browser backend in the config is invalid.
     """
 
-    backend = config["render"]["backend"]
+    backend = config.render.backend
 
     if backend not in AVAILABLE_BACKENDS:
         raise ValueError(
-            f"Unknown backend {backend}; available backends are {AVAILABLE_BACKENDS.keys()}. (Are you missing dependencies? See README for backend dependencies.)"
+            f"Backend {backend} is unavailable; available backends are {AVAILABLE_BACKENDS.keys()}. (Are you missing dependencies? See README for backend dependencies.)"
         )
 
     return AVAILABLE_BACKENDS[backend]()

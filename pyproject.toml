@@ -16,6 +16,7 @@ dependencies = [
 	"python-dateutil",
 	"nh3",
 	"markupsafe",
+	"pydantic",
 ]
 
 [tool.ruff.lint]

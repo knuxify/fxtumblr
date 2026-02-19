@@ -7,9 +7,9 @@ import time
 import traceback
 from dataclasses import dataclass
 
-from fxtumblr import config
 from fxtumblr.tumblr import TumblrAPI
 
+from . import config
 from .browser import Browser, get_browser
 from .render import RenderTask
 
@@ -71,8 +71,8 @@ class Server:
 
         self.browser = get_browser()
         self.tumblr = TumblrAPI(
-            config["tumblr"]["consumer_key"],
-            config["tumblr"]["consumer_secret"],
+            config.tumblr.consumer_key,
+            config.tumblr.consumer_secret,
         )
 
         print("Starting browser...")
@@ -83,14 +83,14 @@ class Server:
         self.workers = []
 
         # Spawn workers
-        for _ in range(config["render"].get("worker_count", 3)):
+        for _ in range(config.render.worker_count):
             worker = Worker(server=self)
             worker.task = asyncio.create_task(worker.worker_loop())
             self.workers.append(worker)
 
         # Spawn server
-        host = config["render"].get("host", "localhost")
-        port = int(config["render"].get("port", 6500))
+        host = config.render.host
+        port = int(config.render.port)
         server = await asyncio.start_server(self.handle_request, host, port)
         print(f"Render server listening @ {host}:{port}")
         async with server:
@@ -114,7 +114,6 @@ class Server:
             return
 
         self.queue.put_nowait(task)
-        print("put task", task, "in queue")
 
     async def on_close(self):
         """Clean up after the server."""

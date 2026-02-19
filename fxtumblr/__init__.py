@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: MIT
 """fxtumblr - fix Tumblr embeds on other websites."""
 
-import tomllib
+import os
 from logging import getLogger
 
-with open("config.toml", "rb") as config_file:
-    config = tomllib.load(config_file)
+from .config_parser import Config
+
+if "PYTEST_CURRENT_TEST" not in os.environ:
+    config = Config.from_file("config.toml")
 
 logger = getLogger("fxtumblr")

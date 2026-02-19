@@ -57,7 +57,7 @@ def get_render_path(
 
     filename = f"{blog_name}_{post_id}_{modifier_str}.{str(filetype)}"
 
-    return os.path.join(config["render"]["path"], filename)
+    return os.path.join(config.render.path, filename)
 
 
 # URL functions
@@ -85,6 +85,6 @@ def get_render_url(
 
     return (
         "https://"
-        + config["instance"]["domain"]
+        + config.instance.domain
         + f"/_api/render/{blog_name}/{post_id}/render.{modifier_str}.{str(filetype)}"
     )

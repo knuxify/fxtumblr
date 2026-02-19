@@ -8,13 +8,12 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, ClassVar
 
 import aiofiles
-import aiofiles.os
 import jinja2
 
-from fxtumblr import config
 from fxtumblr.render import RenderFiletype, RenderModifier
 from fxtumblr.render.paths import get_render_path
 
+from . import config
 from .screenshot import ScreenshotFiletype
 
 if TYPE_CHECKING:
@@ -107,7 +106,7 @@ class RenderTaskPost(RenderTask):
         html = render_template.render(post=post, modifiers=self.modifiers)
 
         # If render debugging is enabled, save the HTML to a file
-        if config["render"].get("debug", False):
+        if config.render.debug:
 
             async def _save_render(self, blog_name, html):
                 path = get_render_path(

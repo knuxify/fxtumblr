@@ -7,7 +7,7 @@ import hashlib
 from . import config
 from .cache import cache
 
-STATS_TIMEOUT = config["stats"].get("timeout", 2592000)
+STATS_TIMEOUT = config.stats.timeout
 
 
 class Statistics:

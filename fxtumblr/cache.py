@@ -9,28 +9,34 @@ import redis.asyncio as redis
 from . import config
 
 #: Default cache timeout.
-DEFAULT_TIMEOUT: int = config.get("cache", {}).get("timeout", 360)
+DEFAULT_TIMEOUT: int = config.redis.timeout
 
 
 class Cache:
     """Class representing Redis cache."""
 
-    def __init__(self):
-        """Initialize the Cache object."""
+    def __init__(self, host: str, port: int, password: str | None = None):
+        """
+        Initialize the Cache object.
+
+        :param host: Redis host.
+        :param port: Redis port.
+        :param password: The password to use, if any.
+        """
 
         #: Redis configuration.
         self.cache = redis.Redis(
-            host=config["redis"]["host"],
-            port=config["redis"]["port"],
-            password=config["redis"].get("password", None),
+            host=host,
+            port=port,
+            password=password,
             decode_responses=True,
         )
 
         #: Redis configuration without decoded responses.
         self.cache_bin = redis.Redis(
-            host=config["redis"]["host"],
-            port=config["redis"]["port"],
-            password=config["redis"].get("password", None),
+            host=host,
+            port=port,
+            password=password,
             decode_responses=False,
         )
 
@@ -98,4 +104,4 @@ class Cache:
 
 
 #: Global cache access object.
-cache = Cache()
+cache = Cache(config.redis.host, config.redis.port, config.redis.password)

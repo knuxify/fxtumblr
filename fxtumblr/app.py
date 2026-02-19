@@ -28,23 +28,23 @@ app = Quart(__name__)
 logger = logging.getLogger(__name__)
 
 # Template globals for use in Jinja templates.
-app.jinja_env.globals["app_name"] = config["instance"].get("name", "fxtumblr")
-app.jinja_env.globals["domain"] = config["instance"]["domain"]
+app.jinja_env.globals["app_name"] = config.instance.name
+app.jinja_env.globals["domain"] = config.instance.domain
 app.jinja_env.globals["instance"] = {
-    "name": config["instance"].get("name", "fxtumblr"),
-    "contact_email": config["instance"]["contact_email"],
+    "name": config.instance.name,
+    "contact_email": config.instance.contact_email,
 }
 
 
 #: Main Tumblr API instance.
 tumblr = TumblrAPI(
-    config["tumblr"]["consumer_key"],
-    config["tumblr"]["consumer_secret"],
+    config.tumblr.consumer_key,
+    config.tumblr.consumer_secret,
 )
 
 
 #: Whether or not statistics are enabled.
-STATS_ENABLED = config["stats"]["enabled"]
+STATS_ENABLED: bool = config.stats.enabled
 
 
 @app.route("/robots.txt")
@@ -94,15 +94,19 @@ if STATS_ENABLED:
     async def stats_route():
         """Get the Prometheus stats for this instance."""
 
-        if config["stats"].get("password"):
+        if config.stats.password:
 
             async def _stats_auth():
                 """Perform bearer token verification."""
+                # The below assertion is never hit, as this function is only
+                # defined/used when the password is not None; however mypy
+                # doesn't realize that, so we specify it manually.
+                assert config.stats.password is not None
                 auth_header = request.headers.get("Authorization", "")
                 if not auth_header.startswith("Bearer "):
                     return False
                 token = auth_header[7:]
-                return secrets.compare_digest(token, config["stats"]["password"])
+                return secrets.compare_digest(token, config.stats.password)
 
             if not await _stats_auth():
                 return Response(

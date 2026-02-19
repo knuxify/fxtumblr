@@ -13,7 +13,8 @@ from fxtumblr.cache import Cache
 def cache() -> Cache:  # noqa: F811
     """Generate a cache object fixture."""
 
-    cache = Cache()
+    # Provide dummy connection values, we override the server later
+    cache = Cache("", 0)
 
     redis_server = FakeServer()
     cache.cache = FakeAsyncRedis(server=redis_server, decode_responses=True)

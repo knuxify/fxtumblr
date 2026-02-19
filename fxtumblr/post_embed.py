@@ -101,15 +101,15 @@ class PostEmbed:
 
         common_options = {
             # site_name and theme_color are set directly in the template
-            "provider_name": config["instance"]["name"],
-            "provider_url": "https://" + config["instance"]["domain"],
+            "provider_name": config.instance.name,
+            "provider_url": "https://" + config.instance.domain,
         }
 
         meta_embed: MetaEmbed
 
         if should_render:
             meta_embed = MetaImageEmbed(
-                **common_options,
+                **common_options,  # type: ignore[arg-type]
                 title=header,
                 author_name=subheader,
                 author_url=post.dash_url,
