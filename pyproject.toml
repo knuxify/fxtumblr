@@ -51,5 +51,4 @@ log_cli_level = "INFO"
 
 [tool.mypy]
 exclude = ["tests"]
-mypy_path = [".", "fxtumblr_render"]
 check_untyped_defs = true
