@@ -16,8 +16,8 @@ from fxtumblr.tumblr import TumblrAPI
 TEST_DATA_PATH = Path(os.path.dirname(os.path.realpath(__file__))) / "test_data"
 
 tumblr = TumblrAPI(
-    config["tumblr"]["consumer_key"],
-    config["tumblr"]["consumer_secret"],
+    config.tumblr.consumer_key,
+    config.tumblr.consumer_secret,
 )
 
 # Argument parsing
