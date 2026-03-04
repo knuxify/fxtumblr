@@ -72,6 +72,9 @@ class Server:
     #: Locks to indicate the status of each work.
     status: dict[str, asyncio.Event]
 
+    #: Count of tasks waiting for a result.
+    result_refcounts: dict[str, int]
+
     #: Return values of each work.
     results: dict[str, Any]
 
@@ -90,6 +93,7 @@ class Server:
 
         self.queue = asyncio.Queue()
         self.status = {}
+        self.result_refcounts = {}
         self.results = {}
         self.workers = []
 
@@ -133,6 +137,13 @@ class Server:
             # Add the task to the queue
             await self.queue.put(task)
 
+        # Acquire semaphore; this is done to sync multiple tasks that are
+        # waiting for the same ID
+        if task.task_id in self.result_refcounts:
+            self.result_refcounts[task.task_id] += 1
+        else:
+            self.result_refcounts[task.task_id] = 1
+
         # Wait for the task to complete
         await self.status[task.task_id].wait()
 
@@ -141,8 +152,11 @@ class Server:
         await writer.drain()
         writer.close()
 
-        # Delete the status event
-        del self.status[task.task_id]
+        self.result_refcounts[task.task_id] -= 1
+        if self.result_refcounts[task.task_id] == 0:
+            del self.status[task.task_id]
+            del self.result_refcounts[task.task_id]
+            del self.results[task.task_id]
 
     async def handle_request(self, reader, writer):
         """
