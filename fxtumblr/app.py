@@ -261,7 +261,9 @@ async def api_render_post(
     else:
         modifiers = []
 
-    ret = await render_client.render_post(blog_id, post_id, modifiers, filetype)
+    ret = await render_client.render_post(
+        blog_id, post_id, modifiers, filetype, skip_cache="skip_cache" in request.args
+    )
 
     # No return value: internal error
     if not ret:
