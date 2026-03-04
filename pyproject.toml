@@ -1,10 +1,13 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "fxtumblr"
 version = "2.0.0"
 description = "Tumblr embed wrapper"
 readme = "README.md"
 requires-python = ">=3.11"
-package-mode = false
 dependencies = [
 	"aiofiles",
 	"authlib",
@@ -16,6 +19,15 @@ dependencies = [
 	"nh3",
 	"markupsafe",
 	"pydantic",
+]
+
+[project.optional-dependencies]
+embed-server = [
+	"Quart",
+]
+render-playwright = [
+	"playwright",
+	"jinja2",
 ]
 
 [tool.ruff.lint]
@@ -40,12 +52,6 @@ typing = [
     "types-redis",
     "types-aiofiles",
 ]
-embed = [
-	"Quart",
-]
-render-playwright = [
-	"playwright",
-]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -55,3 +61,6 @@ log_cli_level = "INFO"
 [tool.mypy]
 exclude = ["tests"]
 check_untyped_defs = true
+
+[tool.setuptools]
+packages = ["fxtumblr", "fxtumblr_render"]

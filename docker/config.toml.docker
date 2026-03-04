@@ -1,0 +1,56 @@
+[instance]
+
+# Name of the instance; shows up in embeds.
+name = "fxtumblr"
+# Base domain of the instance.
+domain = "example.com"
+# Contact email listed on the index page.
+contact_email = "changeme@example.com"
+
+# List of strings to show next to the instance name.
+motd = [""]
+
+[tumblr]
+
+# Tumblr API key:
+consumer_key = "FIXME"
+consumer_secret = "FIXME"
+
+[redis]
+
+# --- DOCKER: DO NOT MODIFY ---
+host = "redis"
+port = 6379
+# --- DOCKER: DO NOT MODIFY ---
+
+[stats]
+
+# Whether or not to enable anonymous statistics. The following data is
+# collected:
+#
+# - Hashed ID of the blog and post
+# - Whether embedding finished succesfully or not
+# - Whether the post was rendered or not
+# - Which optional parameters (modifiers) were used
+#
+# The statistics are available over a Prometheus endpoint.
+enabled = true
+
+# The password for the stats endpoint.
+password = "FIXME"
+
+# Timeout after which statistics data is cleared, in seconds.
+# Defaults to 30 days (60 * 60 * 24 * 30).
+# timeout = 2592000
+
+[render]
+
+# --- DOCKER: DO NOT MODIFY ---
+host = "localhost"
+port = 6500
+backend = "playwright-chromium"
+path = "/opt/fxtumblr/renders"
+# --- DOCKER: DO NOT MODIFY ---
+
+# Amount of renders that can happen simultaneously; default is 3
+# worker_count = 3
