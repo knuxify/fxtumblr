@@ -38,7 +38,7 @@
 		{% if post.is_reblog %}
 		<header class="main-header">
 			<div class="avatar-wrapper"><img class="avatar" src="{{ post.blog.avatars.get_by_width(48).url }}"><svg class="avatar-reblog-badge" xmlns="http://www.w3.org/2000/svg" {% if "oldstyle" in modifiers %}height="14" width="14"{% else %}height="20" width="20"{% endif %} role="presentation"><use href="{% if "oldstyle" in modifiers %}#managed-icon__badge-reblog{% else %}#managed-icon__badge-reblog-20{% endif %}"></use></svg></div>
-			<div class="user-info-wrapper"><span class="username reblogged-by">{{ post.reblogged_by }}</span> <span class="reblogged-from-wrapper"> {% if "oldstyle" in modifiers %}r{% else %}R{% endif %}eblogged{% if post.reblogged_by != post.reblogged_from%} <span class="username reblogged-from">{{ post.reblogged_from }}</span>{% endif %}</span></div>
+			<div class="user-info-wrapper"><span class="username reblogged-by">{{ post.blog.name }}</span> <span class="reblogged-from-wrapper">Reblogged{% if post.blog.name != post.reblogged_from.name %} <span class="username reblogged-from">{{ post.reblogged_from.name }}</span>{% endif %}</span></div>
 		</header>
 			{% endif %}
 		{% for npf_post in post.trail %}

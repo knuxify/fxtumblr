@@ -10,7 +10,6 @@ dependencies = [
 	"authlib",
 	"httpx",
 	"redis",
-	"Quart",
 	"frozendict",
 	"emoji",
 	"python-dateutil",
@@ -40,6 +39,9 @@ typing = [
 	"types-python-dateutil",
     "types-redis",
     "types-aiofiles",
+]
+embed = [
+	"Quart",
 ]
 render-playwright = [
 	"playwright",

@@ -6,6 +6,7 @@ import json
 import time
 import traceback
 from dataclasses import dataclass
+from typing import Any
 
 from fxtumblr.tumblr import TumblrAPI
 
@@ -42,12 +43,14 @@ class Worker:
 
             t1 = time.time()
             try:
-                await task.run(worker=self)
+                ret = await task.run(worker=self)
             except:  # noqa: E722
                 traceback.print_exc()
             t2 = time.time()
             print("Task execution time:", t2 - t1)
 
+            self.server.results[task.task_id] = ret
+            self.server.status[task.task_id].set()
             self.server.queue.task_done()
 
 
@@ -66,6 +69,12 @@ class Server:
     #: Workers created by the server.
     workers: list[Worker]
 
+    #: Locks to indicate the status of each work.
+    status: dict[str, asyncio.Event]
+
+    #: Return values of each work.
+    results: dict[str, Any]
+
     async def main_loop(self):
         """Perform renderer setup and run main loop."""
 
@@ -80,6 +89,8 @@ class Server:
         print("Done, starting the server...")
 
         self.queue = asyncio.Queue()
+        self.status = {}
+        self.results = {}
         self.workers = []
 
         # Spawn workers
@@ -96,7 +107,7 @@ class Server:
         async with server:
             await server.serve_forever()
 
-    async def handle_request(self, reader, writer):
+    async def _handle_request(self, reader, writer):
         """Handle a request from the asyncio server."""
         data = await reader.read(1024)
         try:
@@ -104,6 +115,7 @@ class Server:
         except (ValueError, json.decoder.JSONDecodeError):
             traceback.print_exc()
             print("Malformed render task:", data)
+            writer.close()
             return
 
         try:
@@ -111,9 +123,39 @@ class Server:
         except ValueError:
             traceback.print_exc()
             print("Malformed render task:", data)
+            writer.close()
             return
 
-        self.queue.put_nowait(task)
+        # If we're not dealing with a duplicate task, add it to the queue
+        if task.task_id not in self.status:
+            self.status[task.task_id] = asyncio.Event()
+
+            # Add the task to the queue
+            await self.queue.put(task)
+
+        # Wait for the task to complete
+        await self.status[task.task_id].wait()
+
+        # Get result and return it
+        writer.write(self.results[task.task_id])
+        await writer.drain()
+        writer.close()
+
+        # Delete the status event
+        del self.status[task.task_id]
+
+    async def handle_request(self, reader, writer):
+        """
+        Handle request.
+
+        Wrapper for _handle_request which handles uncaught exceptions.
+        """
+        try:
+            return await self._handle_request(reader, writer)
+        except:  # noqa: E722
+            print("Uncaught exception in task")
+            traceback.print_exc()
+            writer.close()
 
     async def on_close(self):
         """Clean up after the server."""

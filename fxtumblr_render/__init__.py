@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: MIT
-"""Renderer server code."""
+"""Render server code."""
 
-import os
+from logging import getLogger
 
-from fxtumblr.config_parser import Config
+from fxtumblr import config as config
 
-if "PYTEST_CURRENT_TEST" not in os.environ:
-    config = Config.from_file("config.toml")
+logger = getLogger("fxtumblr_render")

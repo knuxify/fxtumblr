@@ -19,6 +19,13 @@ from quart import (
 from . import config
 from .embed.meta import MetaEmbed, MetaImageEmbed, MetaProfileEmbed, MetaVideoEmbed
 from .post_embed import PostEmbed
+from .render import RENDER_FILETYPE_MIMES, RenderFiletype
+from .render.client import render_client
+from .render.paths import (
+    decode_legacy_filename,
+    get_modifier_list,
+    get_render_url,
+)
 from .stats import stats
 from .tumblr import PrivateBlogException, TumblrAPI, TumblrAPIException
 
@@ -210,5 +217,57 @@ def api_oembed():
     try:
         embed = embed_class(**params)
     except TypeError as e:
-        return {"error": f"Unknown argument: {e}"}, 500
+        return {"error": f"Unknown argument: {e}"}, 400
     return embed.to_oembed()
+
+
+# Render routes
+
+
+if config.render.redirect_legacy_urls:
+
+    @app.route("/renders/<string:filename>")
+    async def renders_legacy(filename: str):
+        """Redirect legacy render URL to new URL."""
+        try:
+            blog_name, post_id, modifiers, filetype = decode_legacy_filename(filename)
+        except ValueError as e:
+            return {"error": str(e)}, 400
+
+        return redirect(get_render_url(blog_name, post_id, modifiers, filetype))
+
+
+@app.route(
+    "/_api/renders/post/<string:blog_id>/<int:post_id>/render.<string:filetype_str>"
+)
+@app.route(
+    "/_api/renders/post/<string:blog_id>/<int:post_id>/<string:modifiers_str>/render.<string:filetype_str>"
+)
+async def api_render_post(
+    blog_id: str, post_id: int, filetype_str: str, modifiers_str: str | None = None
+):
+    """Get the cached post render or queue a new render."""
+
+    try:
+        filetype = RenderFiletype(filetype_str)
+    except ValueError:
+        return {"error": f"Unknown filetype {filetype_str}"}, 400
+
+    if modifiers_str:
+        try:
+            modifiers = get_modifier_list(modifiers_str)
+        except ValueError as e:
+            return {"error": str(e)}, 400
+    else:
+        modifiers = []
+
+    ret = await render_client.render_post(blog_id, post_id, modifiers, filetype)
+
+    # No return value: internal error
+    if not ret:
+        return {"error": "Internal render error"}, 500
+    # Return value is JSON: error
+    elif ret.startswith(b"{"):
+        return ret, 400, {"Content-Type": "application/json"}
+    # Otherwise, return the render
+    return ret, 200, {"Content-Type": RENDER_FILETYPE_MIMES[filetype]}

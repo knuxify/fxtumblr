@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Server mainloop."""
+"""Execute the server mainloop."""
 
 import asyncio
 import traceback

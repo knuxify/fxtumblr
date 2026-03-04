@@ -5,9 +5,9 @@
 	<meta name="viewport" content="width=device-width">
 
 	<meta content="#002651" name="theme-color" />
-	<meta property="og:site_name" content="{{ app_name }}{% if motd %} | {{ motd }}{% endif %}">
+	<meta property="og:site_name" content="{{ app_name }}{% if motd %} | {{ motd | random }}{% endif %}">
 	{{ embed.meta_embed.to_meta_tags(oembed_link=True) }}
-	<!--<meta http-equiv="refresh" content="0; url={{ post.dash_url }}" />-->
+	<meta http-equiv="refresh" content="0; url={{ post.dash_url }}" />
 	<style>
 		body { background-color: rgb(0, 25, 53); color: #fff; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: arial; height: 100vh; margin: 0; padding: 0 10px; }
 		.small { color: rgba(255, 255, 255, .65); font-size: .875rem; font-weight: 400; }

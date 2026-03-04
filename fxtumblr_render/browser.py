@@ -43,7 +43,7 @@ class Browser(ABC):
         height: int = 100,
         full_page: bool = True,
         html_data: str | None = None,
-    ):
+    ) -> bytes:
         """
         Take a screenshot of the page.
 
@@ -54,6 +54,7 @@ class Browser(ABC):
         :param height: Viewport height.
         :param full_page: If True, takes a screenshot of the full page.
         :param html_data: If set, uses the given HTML data instead of the URL.
+        :returns: The captured screenshot, as bytes.
         """
 
 
@@ -91,7 +92,7 @@ class BrowserPlaywright(Browser):
         height: int = 100,
         full_page: bool = True,
         html_data: str | None = None,
-    ):
+    ) -> bytes:
         """
         Take a screenshot of the page.
 
@@ -102,6 +103,7 @@ class BrowserPlaywright(Browser):
         :param height: Viewport height.
         :param full_page: If True, takes a screenshot of the full page.
         :param html_data: If set, uses the given HTML data instead of the URL.
+        :returns: The captured screenshot, as bytes.
         """
         page = await self.browser.new_page()
 
@@ -114,7 +116,7 @@ class BrowserPlaywright(Browser):
                 else:
                     await page.goto(url)
 
-                await page.screenshot(
+                buffer = await page.screenshot(
                     path=str(target_path),
                     full_page=full_page,
                     omit_background=True,
@@ -124,6 +126,8 @@ class BrowserPlaywright(Browser):
             raise e
 
         await page.close()
+
+        return buffer
 
 
 class BrowserPlaywrightChromium(BrowserPlaywright):

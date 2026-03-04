@@ -87,8 +87,24 @@ class ConfigRender(BaseModel):
     #: Amount of render workers (decides how many renders that can happen simultaneously).
     worker_count: int = 3
 
+    #: If True, enables redirects from legacy render URLs to new URLs.
+    #: (example.com/renders/blogname-postid.png)
+    #: This is a compatiblity feature for instances that used to run v1,
+    #: which is used to; new instances do not need to enable this.
+    redirect_legacy_urls: bool = False
+
     #: Enable miscelaneous debug features.
     debug: bool = False
+
+    #: Time after which renders cached in memory will be removed from the cache,
+    #: in seconds.
+    #: Set to 0 to disable memory caching.
+    mem_cache_timeout: int = 60
+
+    #: Time after whhich renders cached on the disk will be removed from the cache,
+    #: in seconds.
+    #: Set to 0 to disable disk caching (not recommended).
+    disk_cache_timeout: int = 600
 
 
 CONFIG_SECTIONS: dict[str, Type[BaseModel]] = {

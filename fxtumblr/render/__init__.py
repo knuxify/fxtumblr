@@ -1,8 +1,5 @@
 # SPDX-License-Identifier
-"""
-Code for interfacing with renders. For the renderer server, see the
-fxtumblr_render module.
-"""
+"""Code for interfacing with the renderer."""
 
 from enum import StrEnum
 
@@ -19,3 +16,9 @@ class RenderFiletype(StrEnum):
 
     PNG = "png"
     HTML = "html"
+
+
+RENDER_FILETYPE_MIMES: dict[RenderFiletype, str] = {
+    RenderFiletype.PNG: "image/png",
+    RenderFiletype.HTML: "text/html",
+}
