@@ -25,3 +25,7 @@ TODO.md
 renders/
 
 poetry.lock
+
+fonts/
+
+docker-compose.yml

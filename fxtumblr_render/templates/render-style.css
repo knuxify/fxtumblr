@@ -1,11 +1,13 @@
+
+
 @font-face {
 	font-family: "Favorit";
-	src: local("Favorit"), url("file://{{fxtumblr_path}}/fonts/favorit-85.woff2"), url("file://{{fxtumblr_path}}/fonts/favorit-85-italic.woff2"), url("file://{{fxtumblr_path}}/fonts/favorit-medium.woff2");
+	src: local("Favorit"), url("{{get_font_uri('favorit-85')}}"), url("{{get_font_uri('favorit-85-italic')}}"), url("{{get_font_uri('favorit-medium')}}");
 }
 
 @font-face {
 	font-family: "Fairwater";
-	src: local("Fairwater"), url("file://{{fxtumblr_path}}/fonts/fairwater-regular.woff2");
+	src: local("Fairwater"), url("{{get_font_uri('fairwater-regular')}}");
 }
 
 html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video {

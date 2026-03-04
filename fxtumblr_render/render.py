@@ -18,6 +18,7 @@ from fxtumblr.render.paths import (
 )
 
 from . import config
+from .fonts import get_font_uri
 from .screenshot import ScreenshotFiletype
 
 if TYPE_CHECKING:
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
 # Render template setup
 template_loader = jinja2.PackageLoader("fxtumblr_render")
 template_env = jinja2.Environment(loader=template_loader, autoescape=True)
+template_env.globals["get_font_uri"] = get_font_uri
 render_template = template_env.get_template("render.html")
 
 
