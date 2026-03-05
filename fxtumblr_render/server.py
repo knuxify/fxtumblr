@@ -12,6 +12,7 @@ from fxtumblr.tumblr import TumblrAPI
 
 from . import config
 from .browser import Browser, get_browser
+from .prune import prune_renders_thread
 from .render import RenderTask
 
 
@@ -86,6 +87,8 @@ class Server:
             config.tumblr.consumer_key,
             config.tumblr.consumer_secret,
         )
+
+        asyncio.create_task(prune_renders_thread())
 
         print("Starting browser...")
         await self.browser.start()
