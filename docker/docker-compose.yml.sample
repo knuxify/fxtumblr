@@ -9,21 +9,21 @@ services:
     restart: unless-stopped
 
   fxtumblr-render:
-    image: fxtumblr-render:latest
     build:
       context: .
-      dockerfile: docker/fxtumblr-render/Dockerfile
+      dockerfile: docker/Dockerfile
+      target: fxtumblr-render
+
     restart: unless-stopped
     volumes:
-      - ./fonts:/opt/fxtumblr/fonts
       - ./config.toml:/opt/fxtumblr/config.toml
       - renders:/opt/fxtumblr/renders
 
   fxtumblr:
-    image: fxtumblr:latest
     build:
       context: .
-      dockerfile: docker/fxtumblr/Dockerfile
+      dockerfile: docker/Dockerfile
+      target: fxtumblr
     restart: unless-stopped
     volumes:
       - ./config.toml:/opt/fxtumblr/config.toml
@@ -35,3 +35,4 @@ services:
 
 volumes:
   renders:
+  fonts:
