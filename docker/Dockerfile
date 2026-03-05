@@ -69,7 +69,7 @@ FROM base AS fxtumblr-render
 # Install render server dependencies
 RUN --mount=type=cache,target=/root/.cache/pip \
     apt update && \
-    apt install -y fonts-noto-color-emoji && \
+    apt install -y fonts-noto fonts-noto-cjk fonts-noto-cjk-extra fonts-noto-extra fonts-noto-color-emoji && \
     python -m pip install .[render-playwright] && \
     playwright install-deps chromium
 
