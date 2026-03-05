@@ -2,7 +2,10 @@
 
 @font-face {
 	font-family: "Favorit";
-	src: local("Favorit"), url("{{get_font_uri('favorit-85')}}"), url("{{get_font_uri('favorit-85-italic')}}"), url("{{get_font_uri('favorit-medium')}}");
+	src: local("Favorit"), url("{{get_font_uri('favorit-85')}}"), url("{{get_font_uri('favorit-85-italic')}}"),
+	url("{{get_font_uri('favorit-regular')}}"),
+	url("{{get_font_uri('favorit-medium')}}"),
+	url("{{get_font_uri('favorit-bold')}}");
 }
 
 @font-face {
