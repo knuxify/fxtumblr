@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width">
 
 	<meta content="#002651" name="theme-color" />
-	<meta property="og:site_name" content="{{ app_name }}{% if motd %} | {{ motd | random }}{% endif %}">
+	<meta property="og:site_name" content="{{ instance.name }}{% if instance.motd %} | {{ instance.motd | random }}{% endif %}">
 	{{ embed.meta_embed.to_meta_tags(oembed_link=True) }}
 	<meta http-equiv="refresh" content="0; url={{ post.dash_url }}" />
 	<style>

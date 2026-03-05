@@ -37,12 +37,11 @@ app = Quart(__name__)
 logger = logging.getLogger(__name__)
 
 # Template globals for use in Jinja templates.
-app.jinja_env.globals["app_name"] = config.instance.name
-app.jinja_env.globals["domain"] = config.instance.domain
 app.jinja_env.globals["instance"] = {
     "name": config.instance.name,
     "domain": config.instance.domain,
     "contact_email": config.instance.contact_email,
+    "motd": config.instance.motd,
 }
 app.jinja_env.globals["get_font_uri"] = get_font_uri
 
