@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Code for generating post embeds."""
 
+import random
 from dataclasses import dataclass
 from typing import Self
 
@@ -99,9 +100,13 @@ class PostEmbed:
 
         subheader = f"{post.note_count} notes"
 
+        provider_name = config.instance.name
+        if config.instance.motd:
+            provider_name += " | " + random.choice(config.instance.motd)  # noqa: S311
+
         common_options = {
             # site_name and theme_color are set directly in the template
-            "provider_name": config.instance.name,
+            "provider_name": provider_name,
             "provider_url": "https://" + config.instance.domain,
         }
 
