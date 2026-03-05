@@ -108,6 +108,11 @@ async def test_render_edge_cases(tumblr_api):
         == '<div class="row-multiple row-2"><figure class="tmblr-full"><img src="https://64.media.tumblr.com/0a6a8c0d9caf3fbdc06ce5b0030e229c/7412f9231adc5661-90/s640x960/bce7d89327764e468653a6c92af972c4c7c88c96.png"></figure><figure class="tmblr-full"><img src="https://64.media.tumblr.com/d789ab235b8c14012d79704caa56c4a1/7412f9231adc5661-0e/s640x960/1113f8c2a526b434f2477d980b1f58c21cc61fbe.png"></figure></div><div class="text-block"><p>highschool sweethearts 🎀🎨</p></div><div class="text-block"><p>inspo !</p></div><figure class="tmblr-full"><img src="https://64.media.tumblr.com/ae2300a4795f6357dff889e1a8954302/7412f9231adc5661-fa/s640x960/509086a3b48a2ea1f1f899e5618ba53f76fb6fb2.jpg"></figure>'
     )
 
+    assert (
+        post.to_html(truncate=True)
+        == '<div class="row-multiple row-2"><figure class="tmblr-full"><img src="https://64.media.tumblr.com/0a6a8c0d9caf3fbdc06ce5b0030e229c/7412f9231adc5661-90/s640x960/bce7d89327764e468653a6c92af972c4c7c88c96.png"></figure><figure class="tmblr-full"><img src="https://64.media.tumblr.com/d789ab235b8c14012d79704caa56c4a1/7412f9231adc5661-0e/s640x960/1113f8c2a526b434f2477d980b1f58c21cc61fbe.png"></figure></div><div class="text-block"><p>highschool sweethearts 🎀🎨</p></div><div class="read-more">Keep reading</div>'
+    )
+
 
 BLOCK_TEXT_EXAMPLES = (
     (
