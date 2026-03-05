@@ -270,6 +270,8 @@ async def api_render_post(
         return {"error": "Internal render error"}, 500
     # Return value is JSON: error
     elif ret.startswith(b"{"):
+        if b"Post not found" in ret:
+            return ret, 404, {"Content-Type": "application/json"}
         return ret, 400, {"Content-Type": "application/json"}
     # Otherwise, return the render
     return ret, 200, {"Content-Type": RENDER_FILETYPE_MIMES[filetype]}

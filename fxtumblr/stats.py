@@ -34,6 +34,9 @@ class Statistics:
 
         # Register counters for render errors
         self.register_counter("render_error_count", "Render error count")
+        self.register_counter(
+            "render_uncaught_error_count", "Render uncaught error count"
+        )
 
     def register_counter(self, name: str, description: str):
         """Register a counter with the given name."""

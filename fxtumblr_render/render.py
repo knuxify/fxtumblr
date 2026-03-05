@@ -2,6 +2,7 @@
 """Functions for doing renders and handling render tasks."""
 
 import asyncio
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import StrEnum
@@ -134,7 +135,7 @@ class RenderTaskPost(RenderTask):
         # Get post data
         post = await worker.tumblr.get_post(self.blog_name, self.post_id)
         if not post:
-            return None
+            return json.dumps({"error": "Post not found"}).encode("utf-8")
 
         # Render the post to HTML
         html = render_template.render(post=post, modifiers=self.modifiers)
