@@ -46,7 +46,7 @@ password = "FIXME"
 [render]
 
 # --- DOCKER: DO NOT MODIFY ---
-host = "localhost"
+host = "fxtumblr-render"
 port = 6500
 backend = "playwright-chromium"
 path = "/opt/fxtumblr/renders"
