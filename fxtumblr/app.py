@@ -16,6 +16,8 @@ from quart import (
     send_from_directory,
 )
 
+from fxtumblr_render.fonts import get_font_uri
+
 from . import config
 from .embed.meta import MetaEmbed, MetaImageEmbed, MetaProfileEmbed, MetaVideoEmbed
 from .post_embed import PostEmbed
@@ -39,8 +41,10 @@ app.jinja_env.globals["app_name"] = config.instance.name
 app.jinja_env.globals["domain"] = config.instance.domain
 app.jinja_env.globals["instance"] = {
     "name": config.instance.name,
+    "domain": config.instance.domain,
     "contact_email": config.instance.contact_email,
 }
+app.jinja_env.globals["get_font_uri"] = get_font_uri
 
 
 #: Main Tumblr API instance.

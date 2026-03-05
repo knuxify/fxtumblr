@@ -1,13 +1,62 @@
 <!DOCTYPE html>
-<html>
-	<!--
-fxtumblr index page
-https://github.com/knuxify/fxtumblr
-	-->
-	<head>
-		<title>{{instance.name}}</title>
-	</head>
-	<body>
-		<h1>Hello from {{instance.name}}!</h1>
-	</body>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="Content-Type" content="text/html">
+	<meta name="viewport" content="width=device-width">
+
+	<title>{{instance.name}}</title>
+
+	<style>
+		@font-face {
+			font-family: "Favorit";
+			src: local("Favorit"),
+			url("{{get_font_uri('favorit-regular')}}"),
+		}
+
+		body { background-color: #000000; color: #fff; font-size: 1.25rem; line-height: 1.35em; font-family: Arial, sans-serif; height: 100vh; margin: 0; text-align: center; }
+		.small { color: rgba(255, 255, 255, .65); font-size: .875rem; font-weight: 400; }
+		.small a { color: rgba(255, 255, 255, .85); }
+
+		p { font-size: 0.9em; }
+
+		.tumblr { font-family: Favorit, Arial, sans-serif; }
+		.subtitle { opacity: 0.8; }
+		.section { max-width: 800px; padding: 3.5em 1em; margin: 0 auto; }
+		header { background-color: #001935; color: #fff; min-height: 35vh; display: flex; align-items: center; justify-content: center; padding: 50px 0; }
+		header h1 { font-size: 3em; letter-spacing: -4px; margin: 0; }
+
+		.split { display: grid; grid-template-columns: 0.9fr 1.1fr;  gap: 42px; align-items: center; }
+	</style>
+</head>
+<body>
+	<header><div class="section header">
+		{% if instance.name == "fxtumblr" -%}
+		<h1><i style="font-weight: 85; margin-bottom: 5px;">fx</i><b>tumblr</b></h1>
+		{%- else -%}
+		<h1>{{instance.name}}</h1>
+		{%- endif %}
+		<p class="subtitle">Fancy embeds for <span class="tumblr">[tumblr]</span> posts</p>
+	</div></header>
+
+	<div style="background-color: #000D1B">
+		<div class="section split">
+			<div style="text-align: left;">
+				<h2>How it works</h2>
+				<p class="subtitle">When posting a Tumblr link, replace <code>tumblr.com</code> with <code>{{instance.domain}}</code>.</p>
+				{%- if instance.domain == "tpmblr.com" -%}<p class="small">On Discord, you can also type <code>s/u/p</code> to replace the first "u" in the last message with a "p", which will automatically convert tumblr.com to t<b>p</b>mblr.com!</p>{%- endif -%}
+				<p class="subtitle">If a standard embed cannot display the contents, the post will be rendered into an image and displayed in the embed!</p>
+			</div>
+
+			<video autoplay loop muted playsinline disablepictureinpicture disableremoteplayback style="max-width: 100%">
+				<source src="/static/demo.mp4" type="video/mp4"/>
+			</video>
+		</div>
+	</div>
+
+	<footer class="section small">
+		<p>This is an unofficial service and is not affiliated with Tumblr or Automattic.</p>
+		<p><a href="https://github.com/knuxify/fxtumblr">Source code</a></p>
+	</footer>
+</body>
 </html>
