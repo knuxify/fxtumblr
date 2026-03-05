@@ -244,12 +244,7 @@ if config.render.redirect_legacy_urls:
 @app.route(
     "/_api/renders/post/<string:blog_id>/<int:post_id>/render.<string:filetype_str>"
 )
-@app.route(
-    "/_api/renders/post/<string:blog_id>/<int:post_id>/<string:modifiers_str>/render.<string:filetype_str>"
-)
-async def api_render_post(
-    blog_id: str, post_id: int, filetype_str: str, modifiers_str: str | None = None
-):
+async def api_render_post(blog_id: str, post_id: int, filetype_str: str):
     """Get the cached post render or queue a new render."""
 
     try:
@@ -257,9 +252,9 @@ async def api_render_post(
     except ValueError:
         return {"error": f"Unknown filetype {filetype_str}"}, 400
 
-    if modifiers_str:
+    if "modifiers" in request.args:
         try:
-            modifiers = get_modifier_list(modifiers_str)
+            modifiers = get_modifier_list(request.args["modifiers"])
         except ValueError as e:
             return {"error": str(e)}, 400
     else:

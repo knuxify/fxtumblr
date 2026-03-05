@@ -182,7 +182,7 @@ def get_render_url(
     return (
         "https://"
         + config.instance.domain
-        + f"/_api/render/{blog_name}/{post_id}/render.{modifier_str}.{str(filetype)}"
+        + f"/_api/render/{blog_name}/{post_id}/render.{str(filetype)}?modifiers={modifier_str}"
     )
 
 
