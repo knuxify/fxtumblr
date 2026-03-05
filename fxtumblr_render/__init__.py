@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: MIT
 """Render server code."""
 
-from logging import getLogger
+import logging
 
 from fxtumblr import config as config
 
-logger = getLogger("fxtumblr_render")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("fxtumblr_render")
+logger.setLevel(logging.INFO)

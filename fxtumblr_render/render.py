@@ -17,7 +17,7 @@ from fxtumblr.render.paths import (
     get_render_path,
 )
 
-from . import config
+from . import config, logger
 from .fonts import get_font_uri
 from .screenshot import ScreenshotFiletype
 
@@ -103,7 +103,7 @@ class RenderTaskPost(RenderTask):
             )
 
         except (TypeError, KeyError, ValueError) as e:
-            print(e)
+            logger.error(e)
             raise ValueError("Invalid render task: invalid data") from e
 
     async def _save_render(self, data: str | bytes, filetype: RenderFiletype):

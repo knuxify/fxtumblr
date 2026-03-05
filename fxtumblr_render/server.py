@@ -10,7 +10,7 @@ from typing import Any
 
 from fxtumblr.tumblr import TumblrAPI
 
-from . import config
+from . import config, logger
 from .browser import Browser, get_browser
 from .prune import prune_renders_thread
 from .render import RenderTask
@@ -46,9 +46,9 @@ class Worker:
             try:
                 ret = await task.run(worker=self)
             except:  # noqa: E722
-                traceback.print_exc()
+                logger.error(traceback.format_exc())
             t2 = time.time()
-            print("Task execution time:", t2 - t1)
+            logger.debug("Task execution time:", t2 - t1)
 
             self.server.results[task.task_id] = ret
             self.server.status[task.task_id].set()
@@ -90,9 +90,9 @@ class Server:
 
         asyncio.create_task(prune_renders_thread())
 
-        print("Starting browser...")
+        logger.info("Starting browser...")
         await self.browser.start()
-        print("Done, starting the server...")
+        logger.info("Done, starting the server...")
 
         self.queue = asyncio.Queue()
         self.status = {}
@@ -110,7 +110,7 @@ class Server:
         host = config.render.host
         port = int(config.render.port)
         server = await asyncio.start_server(self.handle_request, host, port)
-        print(f"Render server listening @ {host}:{port}")
+        logger.info(f"Render server listening @ {host}:{port}")
         async with server:
             await server.serve_forever()
 
@@ -120,16 +120,16 @@ class Server:
         try:
             data = json.loads(data.decode())
         except (ValueError, json.decoder.JSONDecodeError):
-            traceback.print_exc()
-            print("Malformed render task:", data)
+            logger.error("Malformed render task:", data)
+            logger.error(traceback.format_exc())
             writer.close()
             return
 
         try:
             task = RenderTask.from_dict(data)
         except ValueError:
-            traceback.print_exc()
-            print("Malformed render task:", data)
+            logger.error("Malformed render task:", data)
+            logger.error(traceback.format_exc())
             writer.close()
             return
 
@@ -170,8 +170,9 @@ class Server:
         try:
             return await self._handle_request(reader, writer)
         except:  # noqa: E722
-            print("Uncaught exception in task")
-            traceback.print_exc()
+            logger.error("Uncaught exception in task")
+            logger.error(traceback.format_exc())
+
             writer.close()
 
     async def on_close(self):
