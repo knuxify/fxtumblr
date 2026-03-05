@@ -32,6 +32,9 @@ class Statistics:
         self.register_counter("embed_error_count", "Embed generation error count")
         self.register_counter("api_error_count", "Tumblr API access error count")
 
+        # Register counters for render errors
+        self.register_counter("render_error_count", "Render error count")
+
     def register_counter(self, name: str, description: str):
         """Register a counter with the given name."""
         self.counters.append(name)

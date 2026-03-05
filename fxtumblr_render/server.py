@@ -8,6 +8,7 @@ import traceback
 from dataclasses import dataclass
 from typing import Any
 
+from fxtumblr.stats import stats
 from fxtumblr.tumblr import TumblrAPI
 
 from . import config, logger
@@ -43,10 +44,15 @@ class Worker:
             task: RenderTask = await self.server.queue.get()
 
             t1 = time.time()
+
             try:
                 ret = await task.run(worker=self)
+
             except:  # noqa: E722
                 logger.error(traceback.format_exc())
+                if config.stats.enabled:
+                    await stats.increment_counter("render_uncaught_error_count")
+
             t2 = time.time()
             logger.debug("Task execution time:", t2 - t1)
 
@@ -151,7 +157,7 @@ class Server:
         await self.status[task.task_id].wait()
 
         # Get result and return it
-        writer.write(self.results[task.task_id])
+        writer.write(self.results[task.task_id] or b"")
         await writer.drain()
         writer.close()
 
@@ -172,6 +178,8 @@ class Server:
         except:  # noqa: E722
             logger.error("Uncaught exception in task")
             logger.error(traceback.format_exc())
+            if config.stats.enabled:
+                await stats.increment_counter("render_uncaught_error_count")
 
             writer.close()
 

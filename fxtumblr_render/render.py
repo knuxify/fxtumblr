@@ -16,6 +16,7 @@ from fxtumblr.render.paths import (
     get_render_cache_key,
     get_render_path,
 )
+from fxtumblr.stats import stats
 
 from . import config, logger
 from .fonts import get_font_uri
@@ -127,7 +128,7 @@ class RenderTaskPost(RenderTask):
             async with aiofiles.open(path, "w") as html_file:
                 await html_file.write(data)
 
-    async def run(self, worker: "Worker") -> bytes | None:
+    async def _run(self, worker: "Worker") -> bytes | None:
         """Run the post render task."""
 
         # Get post data
@@ -167,3 +168,19 @@ class RenderTaskPost(RenderTask):
             await asyncio.create_task(self._save_render(screenshot_data, self.filetype))
 
         return screenshot_data
+
+    async def run(self, worker: "Worker") -> bytes | None:
+        """
+        Run the render task.
+
+        Wrapper for self._run which tracks exceptions.
+        """
+
+        try:
+            return await self._run(worker)
+
+        except Exception as e:
+            if config.stats.enabled:
+                await stats.increment_counter("render_error_count")
+
+            raise e from e
