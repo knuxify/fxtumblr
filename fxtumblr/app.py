@@ -30,6 +30,7 @@ from .render.paths import (
 )
 from .stats import stats
 from .tumblr import PrivateBlogException, TumblrAPI, TumblrAPIException
+from .tumblr.npf import ContentBlock, ContentBlockAudio, ContentBlockVideo
 
 #: Main Quart application object.
 app = Quart(__name__)
@@ -174,6 +175,51 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
 
     if not post:
         return await render_template("error.html", msg="Post not found."), 404
+
+    # Handle "video" and "audio" parameters
+    def _find_block(index: int, block_type: Type[ContentBlock]) -> ContentBlock | None:
+        count = 0
+        for npf_post in post.trail:
+            for block in npf_post.content:
+                if isinstance(block, block_type):
+                    count += 1
+                    if count == index:
+                        return block
+        return None
+
+    if "video" in request.args:
+        try:
+            vid_index = int(request.args["video"])
+        except ValueError:
+            return await render_template(
+                "error.html", msg="Invalid value for argument: video"
+            ), 400
+
+        video: ContentBlockVideo = _find_block(vid_index, ContentBlockVideo)  # type: ignore[assignment]
+
+        if video and video.media and video.media.url:
+            return redirect(video.media.url)
+        else:
+            return await render_template(
+                "error.html", msg="Index out of range, or non-Tumblr video linked"
+            ), 400
+
+    if "audio" in request.args:
+        try:
+            audio_index = int(request.args["audio"])
+        except ValueError:
+            return await render_template(
+                "error.html", msg="Invalid value for argument: audio"
+            ), 400
+
+        audio: ContentBlockAudio = _find_block(audio_index, ContentBlockAudio)  # type: ignore[assignment]
+
+        if audio and audio.media and audio.media.url:
+            return redirect(audio.media.url)
+        else:
+            return await render_template(
+                "error.html", msg="Index out of range, or non-Tumblr audio linked"
+            ), 400
 
     try:
         embed = PostEmbed.from_post(post)
