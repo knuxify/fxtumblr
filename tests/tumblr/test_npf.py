@@ -66,6 +66,28 @@ async def test_npf_post(tumblr_api):
     assert post.layout
 
 
+async def test_render_edge_cases(tumblr_api):
+    """Test miscelaneous render edge cases."""
+
+    # Edge case 1: Poll with missing answer result.
+    # https://www.tumblr.com/janmisali/728090722324119552
+    # The option labeled "\" is not present in poll results; it briefly showed
+    # up as NaN%, now it shows up as 0%. We do the same in our parser.
+    async with aiofiles.open(
+        _get_tumblr_test_data("post_broken_poll_answer.json")
+    ) as test_data:
+        post = NPFPost.from_post_dict(
+            json.loads(await test_data.read())["response"]["posts"][0]
+        )
+
+    await post.fetch_poll_results(tumblr_api, skip_cache=True)
+
+    assert (
+        post.to_html()
+        == r'<div class="poll-block poll-over"><span class="poll-question">which one is backslash?</span><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 56.08%;"></div><span class="poll-answer-text">/</span><span class="poll-answer-percentage">56.08%</span></div><div class="poll-answer"><div class="poll-answer-filler" style="width: 0%;"></div><span class="poll-answer-text">\</span><span class="poll-answer-percentage">0%</span></div><div class="poll-answer"><div class="poll-answer-filler" style="width: 10.00%;"></div><span class="poll-answer-text">both of them</span><span class="poll-answer-percentage">10.00%</span></div><div class="poll-answer"><div class="poll-answer-filler" style="width: 2.62%;"></div><span class="poll-answer-text">neither of them</span><span class="poll-answer-percentage">2.62%</span></div><div class="poll-answer"><div class="poll-answer-filler" style="width: 31.30%;"></div><span class="poll-answer-text">[show results]</span><span class="poll-answer-percentage">31.30%</span></div><span class="poll-meta">57,482 votes · Final result</span></div>'
+    )
+
+
 BLOCK_TEXT_EXAMPLES = (
     (
         {"type": "text", "text": "This is a test post!"},

@@ -73,6 +73,17 @@ def tumblr_api_server(httpserver):
             },
         ).respond_with_json(json.load(test_data))
 
+    # Special case post 1: Poll with missing answer
+    with open(_get_tumblr_test_data("post_broken_poll_answer.json")) as test_data:
+        httpserver.expect_request(
+            "/v2/blog/janmisali/posts",
+            query_string={
+                "id": "728090722324119552",
+                "npf": "true",
+                "api_key": "consumer_key",
+            },
+        ).respond_with_json(json.load(test_data))
+
     # Result of post_id=0
     with open(_get_tumblr_test_data("post_id0.json")) as test_data:
         httpserver.expect_request(
@@ -107,6 +118,17 @@ def tumblr_api_server(httpserver):
                 "api_key": "consumer_key",
             },
         ).respond_with_json(json.load(test_data), status=400)
+
+    # Poll results for broken poll answer test
+    with open(
+        _get_tumblr_test_data("poll_results_broken_poll_answer.json")
+    ) as test_data:
+        httpserver.expect_request(
+            "/v2/polls/janmisali/728090722324119552/d0b6b130-0f4b-46b1-af77-1ea386c85529/results",
+            query_string={
+                "api_key": "consumer_key",
+            },
+        ).respond_with_json(json.load(test_data))
 
     # 404 responses
     with open(_get_tumblr_test_data("resp_404.json")) as test_data:

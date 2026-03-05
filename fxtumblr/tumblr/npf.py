@@ -1406,7 +1406,10 @@ class ContentBlockPoll(ContentBlock):
         total_votes = 0
 
         for answer in self.answers:
-            votes = results.results[answer.client_id]
+            # NOTE: It's possible for poll results to be missing an answer
+            # (example: https://www.tumblr.com/janmisali/728090722324119552);
+            # hence we default to 0 votes if the answer is missing.
+            votes = results.results.get(answer.client_id, 0)
             answer.votes = votes
             total_votes += votes
 
@@ -1492,7 +1495,7 @@ class ContentBlockPoll(ContentBlock):
         if is_over:
             for answer in self.answers:
                 if self.results:
-                    answer_count = self.results.results[answer.client_id]
+                    answer_count = answer.votes or 0
                     if self.total_votes:
                         _answer_percentage = (answer_count / self.total_votes) * 100
                         answer_percentage = (
@@ -1541,7 +1544,7 @@ class ContentBlockPoll(ContentBlock):
 
         for answer in self.answers:
             if self.results:
-                answer_count = self.results.results[answer.client_id]
+                answer_count = answer.votes or 0
                 if self.total_votes:
                     _answer_percentage = (answer_count / self.total_votes) * 100
                     answer_percentage = (
