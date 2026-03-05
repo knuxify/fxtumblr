@@ -45,6 +45,7 @@ class Worker:
 
             t1 = time.time()
 
+            ret = None
             try:
                 ret = await task.run(worker=self)
 
@@ -54,7 +55,7 @@ class Worker:
                     await stats.increment_counter("render_uncaught_error_count")
 
             t2 = time.time()
-            logger.debug("Task execution time:", t2 - t1)
+            logger.debug(f"Task execution time: {t2 - t1}")
 
             self.server.results[task.task_id] = ret
             self.server.status[task.task_id].set()
@@ -139,19 +140,19 @@ class Server:
             writer.close()
             return
 
-        # If we're not dealing with a duplicate task, add it to the queue
-        if task.task_id not in self.status:
-            self.status[task.task_id] = asyncio.Event()
-
-            # Add the task to the queue
-            await self.queue.put(task)
-
         # Acquire semaphore; this is done to sync multiple tasks that are
         # waiting for the same ID
         if task.task_id in self.result_refcounts:
             self.result_refcounts[task.task_id] += 1
         else:
             self.result_refcounts[task.task_id] = 1
+
+        # If we're not dealing with a duplicate task, add it to the queue
+        if task.task_id not in self.status:
+            self.status[task.task_id] = asyncio.Event()
+
+            # Add the task to the queue
+            await self.queue.put(task)
 
         # Wait for the task to complete
         await self.status[task.task_id].wait()
