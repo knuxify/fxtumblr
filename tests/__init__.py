@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MIT
 """Test suite for fxtumblr."""
 
+import os
+
+os.environ["IN_PYTEST"] = "1"
+
 import fxtumblr
 from fxtumblr.config_parser import Config
 

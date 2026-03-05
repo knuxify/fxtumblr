@@ -7,6 +7,8 @@ from inspect import getsourcefile
 
 import pytest
 
+os.environ["IN_PYTEST"] = "1"
+
 from fxtumblr.tumblr.api import TumblrAPI
 
 

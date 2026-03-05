@@ -6,7 +6,7 @@ from logging import getLogger
 
 from .config_parser import Config
 
-if "PYTEST_CURRENT_TEST" not in os.environ:
+if "PYTEST_CURRENT_TEST" not in os.environ and "IN_PYTEST" not in os.environ:
     config = Config.from_file("config.toml")
 
 logger = getLogger("fxtumblr")
