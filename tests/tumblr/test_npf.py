@@ -87,6 +87,27 @@ async def test_render_edge_cases(tumblr_api):
         == r'<div class="poll-block poll-over"><span class="poll-question">which one is backslash?</span><div class="poll-answer poll-answer-win"><div class="poll-answer-filler" style="width: 56.08%;"></div><span class="poll-answer-text">/</span><span class="poll-answer-percentage">56.08%</span></div><div class="poll-answer"><div class="poll-answer-filler" style="width: 0%;"></div><span class="poll-answer-text">\</span><span class="poll-answer-percentage">0%</span></div><div class="poll-answer"><div class="poll-answer-filler" style="width: 10.00%;"></div><span class="poll-answer-text">both of them</span><span class="poll-answer-percentage">10.00%</span></div><div class="poll-answer"><div class="poll-answer-filler" style="width: 2.62%;"></div><span class="poll-answer-text">neither of them</span><span class="poll-answer-percentage">2.62%</span></div><div class="poll-answer"><div class="poll-answer-filler" style="width: 31.30%;"></div><span class="poll-answer-text">[show results]</span><span class="poll-answer-percentage">31.30%</span></div><span class="poll-meta">57,482 votes · Final result</span></div>'
     )
 
+    # Edge case 2: Blocks in row layout out of order + truncate_after.
+    # https://www.tpmblr.com/toastyyjams/808575515119255552
+    # This post is a strange case:
+    # - The second image in the first row is block 4 rather than 1;
+    # - There is a truncate_after on block 1.
+    # Funnily enough, Tumblr's own renderer renders this post out of order!
+    # This highlights an interesting trait of truncate_after - it's not
+    # the *amount* of blocks after which truncation should occur, but rather
+    # the *index* of the last visible block.
+    async with aiofiles.open(
+        _get_tumblr_test_data("post_blocks_out_of_order_and_truncation.json")
+    ) as test_data:
+        post = NPFPost.from_post_dict(
+            json.loads(await test_data.read())["response"]["posts"][0]
+        )
+
+    assert (
+        post.to_html()
+        == '<div class="row-multiple row-2"><figure class="tmblr-full"><img src="https://64.media.tumblr.com/0a6a8c0d9caf3fbdc06ce5b0030e229c/7412f9231adc5661-90/s640x960/bce7d89327764e468653a6c92af972c4c7c88c96.png"></figure><figure class="tmblr-full"><img src="https://64.media.tumblr.com/d789ab235b8c14012d79704caa56c4a1/7412f9231adc5661-0e/s640x960/1113f8c2a526b434f2477d980b1f58c21cc61fbe.png"></figure></div><div class="text-block"><p>highschool sweethearts 🎀🎨</p></div><div class="text-block"><p>inspo !</p></div><figure class="tmblr-full"><img src="https://64.media.tumblr.com/ae2300a4795f6357dff889e1a8954302/7412f9231adc5661-fa/s640x960/509086a3b48a2ea1f1f899e5618ba53f76fb6fb2.jpg"></figure>'
+    )
+
 
 BLOCK_TEXT_EXAMPLES = (
     (

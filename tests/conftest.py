@@ -84,6 +84,19 @@ def tumblr_api_server(httpserver):
             },
         ).respond_with_json(json.load(test_data))
 
+    # Special case post 2: Blocks in rows out of order, plus truncate_after
+    with open(
+        _get_tumblr_test_data("post_blocks_out_of_order_and_truncation.json")
+    ) as test_data:
+        httpserver.expect_request(
+            "/v2/blog/toastyyjams/posts",
+            query_string={
+                "id": "808575515119255552",
+                "npf": "true",
+                "api_key": "consumer_key",
+            },
+        ).respond_with_json(json.load(test_data))
+
     # Result of post_id=0
     with open(_get_tumblr_test_data("post_id0.json")) as test_data:
         httpserver.expect_request(

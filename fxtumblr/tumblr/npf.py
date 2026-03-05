@@ -1688,7 +1688,7 @@ class LayoutBlockRows(LayoutBlock):
     #: List of LayoutDisplay objects representing the block display data.
     display: list[LayoutDisplay]
 
-    #: If not None, represents the amount of blocks before a truncation block
+    #: If not None, represents the index of the last block shown before a truncation block
     #: ("Read More...") must be shown.
     truncate_after: int | None = None
 
@@ -1984,7 +1984,7 @@ def _parse_layouts(
                 if (
                     truncate
                     and layout.truncate_after
-                    and len(block_order) > layout.truncate_after
+                    and block_order[-1] == layout.truncate_after
                 ):
                     is_truncated = True
                     break
