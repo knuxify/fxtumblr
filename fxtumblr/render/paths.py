@@ -179,11 +179,16 @@ def get_render_url(
 
     modifier_str = get_modifier_string(modifiers)
 
-    return (
+    ret = (
         "https://"
         + config.instance.domain
-        + f"/_api/render/{blog_name}/{post_id}/render.{str(filetype)}?modifiers={modifier_str}"
+        + f"/_api/renders/post/{blog_name}/{post_id}/render.{str(filetype)}"
     )
+
+    if modifier_str:
+        ret += "?modifiers={modifier_str}"
+
+    return ret
 
 
 # Miscelaneous
