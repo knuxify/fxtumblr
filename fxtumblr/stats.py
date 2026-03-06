@@ -6,6 +6,8 @@ import hashlib
 
 from . import config
 from .cache import cache
+from .render import RenderFiletype, RenderModifier
+from .render.paths import get_render_cache_key
 
 STATS_TIMEOUT = config.stats.timeout
 
@@ -25,6 +27,10 @@ class Statistics:
         # Register counters for posts
         self.register_counter("post_count", "Post embed count")
         self.register_counter("unique_post_count", "Unique post embed count")
+
+        # Register counters for renders
+        self.register_counter("render_count", "Post render count")
+        self.register_counter("unique_render_count", "Unique post render count")
 
         # Register counters for errors
         self.register_counter("error_count", "Error count")
@@ -83,7 +89,7 @@ class Statistics:
         """Get the unique anonymized hash for the given post."""
 
         def _get_post_hash(self, blog_id: str, post_id: int) -> str:
-            return hashlib.sha256(str.encode(f"{blog_id}-{post_id}")).hexdigest()
+            return hashlib.sha256(f"{blog_id}-{post_id}".encode()).hexdigest()
 
         return await asyncio.to_thread(_get_post_hash, self, blog_id, post_id)
 
@@ -109,6 +115,49 @@ class Statistics:
             await cache.set(post_key, "hit")
             # Post remains unique for 24 hours
             await cache.timeout(post_key, 60 * 60 * 24)
+
+    async def get_render_hash(
+        self,
+        blog_id: str,
+        post_id: int,
+        modifiers: list[RenderModifier],
+        filetype: RenderFiletype,
+    ) -> str:
+        """Get the unique anonymized hash for the given render."""
+
+        def _get_post_hash(cache_key: str) -> str:
+            return hashlib.sha256(cache_key.encode()).hexdigest()
+
+        cache_key = get_render_cache_key(blog_id, post_id, modifiers, filetype)
+
+        return await asyncio.to_thread(_get_post_hash, cache_key)
+
+    async def register_render_hit(
+        self,
+        blog_name: str,
+        post_id: int,
+        modifiers: list[RenderModifier],
+        filetype: RenderFiletype,
+    ):
+        """Register a hit for the render with the given parameters."""
+
+        if config.stats.ignore_posts:
+            for ignored_blog_id, ignored_post_id in config.stats.ignore_posts:
+                if blog_name == ignored_blog_id and post_id == ignored_post_id:
+                    return
+
+        await self.increment_counter("render_count")
+
+        render_hash = await self.get_render_hash(
+            blog_name, post_id, modifiers, filetype
+        )
+        render_key = f"fxt-stats:render:{render_hash}"
+
+        if not await cache.exists(render_key):
+            await self.increment_counter("unique_render_count")
+            await cache.set(render_key, "hit")
+            # Render remains unique for 24 hours
+            await cache.timeout(render_key, 60 * 60 * 24)
 
 
 #: Global statistics object.

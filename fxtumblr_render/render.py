@@ -140,16 +140,25 @@ class RenderTaskPost(RenderTask):
         # Render the post to HTML
         html = render_template.render(post=post, modifiers=self.modifiers)
 
+        # If the render filetype is HTML, just return the data here
+        if self.filetype == RenderFiletype.HTML:
+            asyncio.create_task(
+                stats.register_render_hit(
+                    self.blog_name, self.post_id, self.modifiers, self.filetype
+                )
+            )
+            return html.encode("utf-8")
+
         # If render debugging is enabled, save the HTML to a file
         if config.render.debug:
-            await asyncio.create_task(self._save_render(html, RenderFiletype.HTML))
+            asyncio.create_task(self._save_render(html, RenderFiletype.HTML))
 
         # Generate the PNG
         render_path_png = get_render_path(
             self.blog_name,
             self.post_id,
-            modifiers=self.modifiers,
-            filetype=RenderFiletype.PNG,
+            self.modifiers,
+            self.filetype,
         )
 
         screenshot_data = await worker.browser.screenshot(
@@ -158,7 +167,7 @@ class RenderTaskPost(RenderTask):
 
         if config.render.mem_cache_timeout:
             cache_key = get_render_cache_key(
-                self.blog_name, self.post_id, self.modifiers, RenderFiletype.PNG
+                self.blog_name, self.post_id, self.modifiers, self.filetype
             )
 
             await cache.set_bin(
@@ -166,7 +175,13 @@ class RenderTaskPost(RenderTask):
             )
 
         if config.render.disk_cache_timeout:
-            await asyncio.create_task(self._save_render(screenshot_data, self.filetype))
+            asyncio.create_task(self._save_render(screenshot_data, self.filetype))
+
+        asyncio.create_task(
+            stats.register_render_hit(
+                self.blog_name, self.post_id, self.modifiers, self.filetype
+            )
+        )
 
         return screenshot_data
 
