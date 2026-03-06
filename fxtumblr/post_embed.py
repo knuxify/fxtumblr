@@ -53,9 +53,11 @@ class PostEmbed:
         # Determine the post type by iterating over all posts.
         for npf_post in post.trail:
             for block in npf_post.content:
-                # Text blocks can be nicely represented in Markdown
+                # Save text blocks; while most can be represented in Markdown,
+                # some have formatting that wouldn't be preserved
                 if isinstance(block, ContentBlockText):
-                    pass
+                    if block.formatting:
+                        should_render = True
 
                 # Image: up to 1 image (right now only one is supported,
                 # if/when activity embeds get added we will be able to use 4).
