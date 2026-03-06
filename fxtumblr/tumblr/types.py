@@ -103,6 +103,9 @@ class MediaList(list):
         if self.no_dimensions:
             return None
 
+        if not self:
+            return None
+
         _self_sorted = sorted(self, key=lambda m: m.width, reverse=True)
 
         for media in _self_sorted:
@@ -119,6 +122,9 @@ class MediaList(list):
         :returns: A matching Media object, or None if the list is empty.
         """
         if self.no_dimensions:
+            return None
+
+        if not self:
             return None
 
         _self_sorted = sorted(self, key=lambda m: m.width, reverse=True)
