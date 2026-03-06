@@ -51,6 +51,7 @@ jobs:
         id: push
         uses: docker/bake-action@v7
         with:
+          source: .
           push: true
           files: ./docker/docker-bake.hcl
 
