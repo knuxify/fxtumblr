@@ -47,6 +47,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      - name: Debug - list files
+        run: find . -name "*.hcl" && ls docker/
+
       - name: Build and push
         id: push
         uses: docker/bake-action@v7
