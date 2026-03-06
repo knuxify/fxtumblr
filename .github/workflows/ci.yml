@@ -54,10 +54,3 @@ jobs:
           source: .
           files: docker/docker-bake.hcl
           push: true
-
-      - name: Generate artifact attestation
-        uses: actions/attest@v4
-        with:
-          subject-name: index.docker.io/knuxify/fxtumblr
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
