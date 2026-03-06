@@ -21,7 +21,7 @@ from fxtumblr_render.fonts import get_font_uri
 from . import config
 from .embed.meta import MetaEmbed, MetaImageEmbed, MetaProfileEmbed, MetaVideoEmbed
 from .post_embed import PostEmbed
-from .render import RENDER_FILETYPE_MIMES, RenderFiletype
+from .render import RENDER_FILETYPE_MIMES, RenderFiletype, RenderModifier
 from .render.client import render_client
 from .render.paths import (
     decode_legacy_filename,
@@ -221,8 +221,16 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
                 "error.html", msg="Index out of range, or non-Tumblr audio linked"
             ), 400
 
+    modifiers = []
+    if "dark" in request.args:
+        modifiers.append(RenderModifier.DARK)
+    if "unroll" in request.args:
+        modifiers.append(RenderModifier.UNROLL)
+
     try:
-        embed = PostEmbed.from_post(post, force_render="forcerender" in request.args)
+        embed = PostEmbed.from_post(
+            post, force_render="forcerender" in request.args, render_modifiers=modifiers
+        )
 
     except Exception as e:
         logger.error(f"Failed to create embed for post ({blog_id}-{post_id}): {e}")
