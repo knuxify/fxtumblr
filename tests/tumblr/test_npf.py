@@ -113,6 +113,23 @@ async def test_render_edge_cases(tumblr_api):
         == '<div class="row-multiple row-2"><figure class="tmblr-full"><img src="https://64.media.tumblr.com/0a6a8c0d9caf3fbdc06ce5b0030e229c/7412f9231adc5661-90/s640x960/bce7d89327764e468653a6c92af972c4c7c88c96.png"></figure><figure class="tmblr-full"><img src="https://64.media.tumblr.com/d789ab235b8c14012d79704caa56c4a1/7412f9231adc5661-0e/s640x960/1113f8c2a526b434f2477d980b1f58c21cc61fbe.png"></figure></div><div class="text-block"><p>highschool sweethearts 🎀🎨</p></div><div class="read-more">Keep reading</div>'
     )
 
+    # Edge case 3: Image with empty attribution
+    # https://www.tumblr.com/mousegirlheart/796276113056923648
+    # Sometimes, an image will contain an empty "attribution" value - that value
+    # being an empty *list*, which is incorrect (it should either be missing
+    # entirely, or be an Attribution object).
+    async with aiofiles.open(
+        _get_tumblr_test_data("post_attrib_empty_list.json")
+    ) as test_data:
+        post = NPFPost.from_post_dict(
+            json.loads(await test_data.read())["response"]["posts"][0]
+        )
+
+    assert (
+        post.to_html()
+        == '<figure class="tmblr-full"><img src="https://64.media.tumblr.com/f44f7f317b520f0460d9c0b27281f6a0/0c250d65b1e6e918-26/s640x960/4ae855f10ae5b13d864e8c06c81cfe0c7bf0efa5.jpg"></figure><blockquote class="text-block text-indented"><p><small>wrong that imprint is all that\'s left of them after i disintegrate them with my Mouse Beam for even daring to look at me. it\'s a warning to other owls. don\'t even try and step to me. never interrupt a mouse frolicking in the snow.</small></p></blockquote>'
+    )
+
 
 BLOCK_TEXT_EXAMPLES = (
     (

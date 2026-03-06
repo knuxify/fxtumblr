@@ -1015,7 +1015,7 @@ class ContentBlockImage(ContentBlock):
         """
         assert data["type"] == cls.type
 
-        if "attribution" in data:
+        if "attribution" in data and data["attribution"]:
             _attribution = Attribution.from_dict(data["attribution"])
         else:
             _attribution = None
@@ -1135,7 +1135,7 @@ class ContentBlockVideo(ContentBlock):
         else:
             poster = None
 
-        if "attribution" in data:
+        if "attribution" in data and data["attribution"]:
             attribution = Attribution.from_dict(data["attribution"])
         else:
             attribution = None
@@ -1730,7 +1730,7 @@ class LayoutBlockAsk(LayoutBlock, RangedLayoutBlock):
         """
         assert data["type"] == cls.type
 
-        if "attribution" in data:
+        if "attribution" in data and data["attribution"]:
             attribution = Attribution.from_dict(data["attribution"])
         else:
             attribution = None

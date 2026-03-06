@@ -99,6 +99,17 @@ def tumblr_api_server(httpserver):
             },
         ).respond_with_json(json.load(test_data))
 
+    # Special case post 3: Image with its attribute value set to an empty list
+    with open(_get_tumblr_test_data("post_attrib_empty_list.json")) as test_data:
+        httpserver.expect_request(
+            "/v2/blog/mousegirlheart/posts",
+            query_string={
+                "id": "796276113056923648",
+                "npf": "true",
+                "api_key": "consumer_key",
+            },
+        ).respond_with_json(json.load(test_data))
+
     # Result of post_id=0
     with open(_get_tumblr_test_data("post_id0.json")) as test_data:
         httpserver.expect_request(
