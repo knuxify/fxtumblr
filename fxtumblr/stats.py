@@ -90,6 +90,11 @@ class Statistics:
     async def register_post_hit(self, blog_id: str, post_id: int):
         """Register a hit for the post with the given identifier and post ID."""
 
+        if config.stats.ignore_posts:
+            for ignored_blog_id, ignored_post_id in config.stats.ignore_posts:
+                if blog_id == ignored_blog_id and post_id == ignored_post_id:
+                    return
+
         await self.increment_counter("post_count")
 
         # Post-specific cache key, used to determine uniqueness

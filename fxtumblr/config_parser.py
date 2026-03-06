@@ -65,6 +65,9 @@ class ConfigStats(BaseModel):
     #: Defaults to 30 days (60 * 60 * 24 * 30 = 2592000).
     timeout: int = 2592000
 
+    #: List of tuples with (blog name, post ID) to not count in statistics.
+    ignore_posts: list[tuple[str, int]] | None = None
+
 
 class ConfigRender(BaseModel):
     """Renderer configuration."""
