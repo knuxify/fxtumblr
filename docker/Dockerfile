@@ -78,7 +78,7 @@ RUN mkdir -p renders && \
     chown -R 10001:10001 renders
 
 USER fxtumblr
-RUN playwright install chromium
+RUN playwright install chromium-headless-shell
 
 # Expose the listening port
 EXPOSE ${FXTUMBLR_RENDER_PORT}
