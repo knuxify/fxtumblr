@@ -51,8 +51,6 @@ class Worker:
 
             except:  # noqa: E722
                 logger.error(traceback.format_exc())
-                if config.stats.enabled:
-                    await stats.increment_counter("render_uncaught_error_count")
 
             t2 = time.time()
             logger.debug(f"Task execution time: {t2 - t1}")
