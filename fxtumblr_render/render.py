@@ -183,7 +183,7 @@ class RenderTaskPost(RenderTask):
         except Exception as e:
             if config.stats.enabled:
                 logger.error(
-                    "Error for {self.blog_name}-{self.post_id} ({self.modifiers}; {self.filetype}):"
+                    f"Error for {self.blog_name}-{self.post_id} ({self.modifiers}; {self.filetype}):"
                 )
                 await stats.increment_counter("render_error_count")
 
