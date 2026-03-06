@@ -222,7 +222,7 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
             ), 400
 
     try:
-        embed = PostEmbed.from_post(post)
+        embed = PostEmbed.from_post(post, force_render="forcerender" in request.args)
 
     except Exception as e:
         logger.error(f"Failed to create embed for post ({blog_id}-{post_id}): {e}")
