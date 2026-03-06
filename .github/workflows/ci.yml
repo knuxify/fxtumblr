@@ -27,6 +27,7 @@ jobs:
   docker:
     name: Push Docker images to Docker Hub
     needs: lint-and-test
+    if: github.ref_name == "v2"
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -54,7 +55,7 @@ jobs:
           files: ./docker/docker-bake.hcl
 
       - name: Generate artifact attestation
-        uses: actions/attest@4
+        uses: actions/attest@v4
         with:
           subject-name: index.docker.io/knuxify/fxtumblr
           subject-digest: ${{ steps.push.outputs.digest }}
