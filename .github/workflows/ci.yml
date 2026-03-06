@@ -27,7 +27,7 @@ jobs:
   docker:
     name: Push Docker images to Docker Hub
     needs: lint-and-test
-    if: github.ref_name == "v2"
+    if: github.ref_name == 'v2'
     runs-on: ubuntu-latest
     permissions:
       packages: write
