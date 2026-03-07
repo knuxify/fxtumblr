@@ -10,7 +10,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
 	"aiofiles",
-	"authlib",
 	"httpx",
 	"redis",
 	"frozendict",
@@ -45,7 +44,6 @@ test = [
 ]
 typing = [
     "mypy",
-    "types-authlib",
     "types-frozendict",
     "types-emoji",
 	"types-python-dateutil",

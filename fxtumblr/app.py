@@ -48,10 +48,7 @@ app.jinja_env.globals["get_font_uri"] = get_font_uri
 
 
 #: Main Tumblr API instance.
-tumblr = TumblrAPI(
-    config.tumblr.consumer_key,
-    config.tumblr.consumer_secret,
-)
+tumblr = TumblrAPI(config.tumblr.api_keys)
 
 
 #: Whether or not statistics are enabled.

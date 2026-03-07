@@ -88,10 +88,7 @@ class Server:
         """Perform renderer setup and run main loop."""
 
         self.browser = get_browser()
-        self.tumblr = TumblrAPI(
-            config.tumblr.consumer_key,
-            config.tumblr.consumer_secret,
-        )
+        self.tumblr = TumblrAPI(config.tumblr.api_keys)
 
         asyncio.create_task(prune_renders_thread())
 

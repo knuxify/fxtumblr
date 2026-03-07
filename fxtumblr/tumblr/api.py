@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from json.decoder import JSONDecodeError
 from typing import Optional, Self
 
-from authlib.integrations.httpx_client import AsyncOAuth1Client
+from httpx import AsyncClient
 
 from .. import logger
 from ..cache import cache
@@ -111,23 +111,27 @@ class TumblrAPI:
     #: Tumblr API base URL. Can be changed for testing.
     api_base = "https://api.tumblr.com"
 
-    def __init__(self, consumer_key: str, consumer_secret: str):
+    def __init__(self, credentials: list[tuple[str, str]]):
         """
         Initialize the TumblrAPI object.
 
-        :param consumer_key: Tumblr API access consumer key.
-        :param consumer_secret: Tumblr API access consumer secret.
+        :param credentials: List of tuples containing the consumer key and
+            consumer secret.
         """
 
-        #: Tumblr API access consumer key.
-        self.consumer_key: str = consumer_key
-        #: Tumblr API access consumer secret.
-        self.consumer_secret: str = consumer_secret
+        #: List of tuples containing the consumer key and consumer secret.
+        self.credentials = credentials
+
+        #: Index of currently selected API key from `self.credentials`.
+        self.current_api_key = 0
+
+        #: Current Tumblr API access consumer key.
+        self.consumer_key: str = self.credentials[0][0]
+        #: Current Tumblr API access consumer secret.
+        self.consumer_secret: str = self.credentials[0][1]
 
         #: httpx client for connections.
-        self.client = AsyncOAuth1Client(
-            self.consumer_key,
-            self.consumer_secret,
+        self.client = AsyncClient(
             headers={"User-Agent": "fxtumblr v2 (https://github.com/knuxify/fxtumblr)"},
         )
 
@@ -152,9 +156,24 @@ class TumblrAPI:
 
         logger.debug(f"Tumblr API query: {url}, params {_params}")
 
-        # Typing ignore; authlib type stubs are incorrect and claim .get
-        # does not exist (it does)
-        r = await self.client.get(url, params=_params)  # type: ignore[attr-defined]
+        r = await self.client.get(url, params=_params)
+
+        # If we're ratelimited, switch to the next API key
+        api_key_switches = 0
+        while r.status_code == 429:
+            api_key_switches += 1
+            if api_key_switches > len(self.credentials):
+                break  # Fall back to error case
+
+            # Switch to the next available key
+            self.current_api_key = (self.current_api_key + 1) % len(self.credentials)
+            self.consumer_key, self.consumer_secret = self.credentials[
+                self.current_api_key
+            ]
+            _params["api_key"] = self.consumer_key
+
+            # Re-do the query
+            r = await self.client.get(url, params=_params)
 
         try:
             data = r.json()
@@ -172,12 +191,6 @@ class TumblrAPI:
                 ],
                 raw={},
             )
-
-        # import json
-        # print(f"\nTumblr API query: {url}, params {_params}\n")
-        # print(json.dumps(data))
-        # from pprint import pprint
-        # pprint(data)
 
         return TumblrAPIResponse.from_api(data)
 

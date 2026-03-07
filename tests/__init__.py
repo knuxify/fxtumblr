@@ -20,10 +20,7 @@ fxtumblr.config = Config.from_data(
         "stats": {
             "enabled": False,
         },
-        "tumblr": {
-            "consumer_key": "FIXME",
-            "consumer_secret": "FIXME",
-        },
+        "tumblr": {"api_keys": [("FIXME", "FIXME")]},
         "redis": {
             "host": "127.0.0.1",
             "port": 9600,

@@ -222,9 +222,9 @@ def tumblr_api(tumblr_api_server):
     consumer_secret = os.environ.get("FXTUMBLR_TEST_TUMBLR_SECRET")
 
     if consumer_key and consumer_secret:
-        t = TumblrAPI(consumer_key, consumer_secret)
+        t = TumblrAPI([(consumer_key, consumer_secret)])
     else:
-        t = TumblrAPI("consumer_key", "consumer_secret")
+        t = TumblrAPI([("consumer_key", "consumer_secret")])
         t.api_base = tumblr_api_server.url_for("/")
 
     return t

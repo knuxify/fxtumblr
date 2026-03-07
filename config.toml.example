@@ -12,9 +12,11 @@ motd = [""]
 
 [tumblr]
 
-# Tumblr API key:
-consumer_key = "FIXME"
-consumer_secret = "FIXME"
+# API keys to use for Tumblr API access. If multiple keys are given,
+# fxtumblr will rotate between them if it hits a ratelimit.
+api_keys = [
+    ["consumer_key_FIXME", "consumer_secret_FIXME"],
+]
 
 [redis]
 

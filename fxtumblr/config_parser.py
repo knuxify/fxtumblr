@@ -28,11 +28,8 @@ class ConfigInstance(BaseModel):
 class ConfigTumblr(BaseModel):
     """Tumblr API access configuration."""
 
-    #: Tumblr API consumer key.
-    consumer_key: str
-
-    #: Tumblr API consumer secret.
-    consumer_secret: str
+    #: API keys. List of tuples containing consumer key and consumer secret.
+    api_keys: list[tuple[str, str]]
 
 
 class ConfigRedis(BaseModel):
