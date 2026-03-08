@@ -45,8 +45,8 @@ class ConfigRedis(BaseModel):
     password: str | None = None
 
     #: Timeout after which post cache data is cleared, in seconds.
-    #: Defaults to 10 minutes (60 * 10 = 600).
-    timeout: int = 600
+    #: Defaults to 30 minutes (60 * 30 = 1800).
+    timeout: int = 1800
 
 
 class ConfigStats(BaseModel):
