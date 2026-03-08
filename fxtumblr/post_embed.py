@@ -73,9 +73,8 @@ class PostEmbed:
                     if not block.media:
                         continue
 
-                    if len(videos) < 1:
-                        videos.append(block)
-                    else:
+                    videos.append(block)
+                    if len(videos) > 1:
                         should_render = True
 
                 # For all other blocks, suggest a render.
@@ -115,6 +114,19 @@ class PostEmbed:
         meta_embed: MetaEmbed
 
         if should_render:
+            if videos:
+                base_url = (
+                    f"https://{config.instance.domain}/{post.blog.name}/{post.id}"
+                )
+                if len(videos) > 1:
+                    common_options["description"] = (
+                        f"Hint: You can get the raw video by pasting in the following link: {base_url}?video=(n), where (n) is the number of the video in the post (starting from 1)."
+                    )
+                elif len(videos) == 1:
+                    common_options["description"] = (
+                        f"Hint: You can get the raw video by pasting in the following link: {base_url}?video"
+                    )
+
             meta_embed = MetaImageEmbed(
                 **common_options,  # type: ignore[arg-type]
                 title=header,

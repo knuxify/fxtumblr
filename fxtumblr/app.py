@@ -186,7 +186,7 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
 
     if "video" in request.args:
         try:
-            vid_index = int(request.args["video"])
+            vid_index = int(request.args["video"] or 1)
         except ValueError:
             return await render_template(
                 "error.html", msg="Invalid value for argument: video"
@@ -203,7 +203,7 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
 
     if "audio" in request.args:
         try:
-            audio_index = int(request.args["audio"])
+            audio_index = int(request.args["audio"] or 1)
         except ValueError:
             return await render_template(
                 "error.html", msg="Invalid value for argument: audio"
