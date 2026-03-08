@@ -179,7 +179,7 @@ class TumblrAPI:
             data = r.json()
         except JSONDecodeError:
             logger.error(
-                f"Invalid response from Tumblr: {r.status_code}, text:\n{r.text}"
+                f"Invalid response from Tumblr ({url}): {r.status_code}, text:\n{r.text}"
             )
             return TumblrAPIResponse(
                 status=500,
