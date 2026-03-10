@@ -326,9 +326,10 @@ class Post:
                 continue
             out += f"▪ {post.blog.name}:\n"
             out += post.to_markdown(truncate=truncate).strip()
+            out += "\n\n"
             i += 1
 
-        return out
+        return out.strip()
 
 
 @dataclass
