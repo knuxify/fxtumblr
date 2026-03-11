@@ -58,6 +58,8 @@ class PostEmbed:
                 if isinstance(block, ContentBlockText):
                     if block.formatting:
                         should_render = True
+                    if block.subtype:
+                        should_render = True
 
                 # Image: up to 1 image (right now only one is supported,
                 # if/when activity embeds get added we will be able to use 4).
