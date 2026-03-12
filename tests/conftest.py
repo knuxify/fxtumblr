@@ -121,7 +121,7 @@ def tumblr_api_server(httpserver):
                 "npf": "true",
                 "api_key": "consumer_key",
             },
-        ).respond_with_data(test_data.read())
+        ).respond_with_data(test_data.read(), status=404)
 
     # Result of post_id=0
     with open(_get_tumblr_test_data("post_id0.json")) as test_data:
