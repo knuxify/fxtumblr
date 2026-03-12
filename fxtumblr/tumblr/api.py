@@ -185,7 +185,7 @@ class TumblrAPI:
                 status=500,
                 errors=[
                     TumblrAPIError(
-                        code=500,
+                        code=r.status_code,
                         title="Failed to parse API data as JSON; likely something is wrong with Tumblr",
                     ),
                 ],
@@ -307,6 +307,11 @@ class TumblrAPI:
             # Handle private blog
             if raise_on_private_blog and resp.errors[0].code == 4012:
                 raise PrivateBlogException
+            return None
+
+        elif resp.status == 500 and resp.errors[0].code == 404:
+            # TUMBLR BUG: Posts marked as "hidden" return a literal HTML 404 page.
+            # In those cases, treat the response as a 404.
             return None
 
         else:

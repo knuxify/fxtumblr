@@ -79,6 +79,12 @@ async def test_get_post(tumblr_api):
             raise_on_private_blog=True,
         )
 
+    # Test "post hidden due to its potentially sensitive nature" (404)
+    post = await tumblr_api.get_post(
+        "princessdollknight", 810480162328215552, skip_cache=True
+    )
+    assert post is None
+
 
 async def test_get_poll_results(tumblr_api):
     """Test poll result fetching."""

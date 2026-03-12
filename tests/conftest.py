@@ -110,6 +110,19 @@ def tumblr_api_server(httpserver):
             },
         ).respond_with_json(json.load(test_data))
 
+    # Special case post 4: Posts listed as "hidden due to its potentially sensitive nature"
+    # return a literal 404 HTML page through the API, due to what I can only assume
+    # is a Tumblr bug?
+    with open(_get_tumblr_test_data("html_404.html")) as test_data:
+        httpserver.expect_request(
+            "/v2/blog/princessdollknight/posts",
+            query_string={
+                "id": "810480162328215552",
+                "npf": "true",
+                "api_key": "consumer_key",
+            },
+        ).respond_with_data(test_data.read())
+
     # Result of post_id=0
     with open(_get_tumblr_test_data("post_id0.json")) as test_data:
         httpserver.expect_request(
