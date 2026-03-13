@@ -1,20 +1,21 @@
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
   # Ruff version.
-  rev: v0.14.3
+  rev: v0.15.6
   hooks:
     # Run the linter.
     - id: ruff-check
       args: [ --fix ]
     # Run the formatter.
     - id: ruff-format
-- repo: https://github.com/pre-commit/mirrors-mypy
-  rev: 'v1.18.2'  # Use the sha / tag you want to point at
+- repo: https://github.com/allganize/ty-pre-commit
+  rev: v0.0.23
   hooks:
-    - id: mypy
-      exclude: tests
+    - id: ty-check
       additional_dependencies: ["types-aiofiles",
                                 "types-frozendict",
                                 "types-emoji",
                                 "types-python-dateutil",
-                                "types-redis"]
+                                "types-redis",
+                                "pydantic",
+                                "quart"]

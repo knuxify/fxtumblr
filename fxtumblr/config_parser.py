@@ -163,4 +163,4 @@ class Config:
             except ValidationError as e:
                 raise ValueError(f"{section}: Invalid value ({e})") from e
 
-        return cls(**configs)  # type: ignore[arg-type]
+        return cls(**configs)

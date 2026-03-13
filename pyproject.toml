@@ -43,7 +43,7 @@ test = [
     "fakeredis",
 ]
 typing = [
-    "mypy",
+    "ty",
     "types-frozendict",
     "types-emoji",
 	"types-python-dateutil",
@@ -55,10 +55,6 @@ typing = [
 asyncio_mode = "auto"
 log_cli = true
 log_cli_level = "INFO"
-
-[tool.mypy]
-exclude = ["tests"]
-check_untyped_defs = true
 
 [tool.setuptools]
 packages = ["fxtumblr", "fxtumblr_render"]

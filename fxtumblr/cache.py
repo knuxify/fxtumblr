@@ -88,9 +88,7 @@ class Cache:
 
     async def ping(self) -> bool:
         """Test the connection to Redis."""
-        # mypy complains that cache.ping can be non-awaitable, seems like
-        # awkward typing on redis's part
-        return bool(await self.cache.ping())  # type: ignore[misc]
+        return bool(await self.cache.ping())
 
     async def increment(self, key: str) -> int:
         """

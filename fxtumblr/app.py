@@ -43,8 +43,8 @@ app.jinja_env.globals["instance"] = {
     "domain": config.instance.domain,
     "contact_email": config.instance.contact_email,
     "motd": config.instance.motd,
-}
-app.jinja_env.globals["get_font_uri"] = get_font_uri
+}  # type: ignore[invalid-assignment]
+app.jinja_env.globals["get_font_uri"] = get_font_uri  # type: ignore[invalid-assignment]
 
 
 #: Main Tumblr API instance.
@@ -259,17 +259,17 @@ def api_oembed():
     else:
         embed_class = MetaEmbed
 
-    params = dict(
+    params: dict[str, str | int] = dict(
         (k, v) for k, v in request.args.items() if k in embed_class.oembed_props
     )
 
     if "height" in params:
-        params["height"] = int(params["height"])  # type: ignore[assignment]
+        params["height"] = int(params["height"])
     if "width" in params:
-        params["width"] = int(params["width"])  # type: ignore[assignment]
+        params["width"] = int(params["width"])
 
     try:
-        embed = embed_class(**params)
+        embed = embed_class(**params)  # type: ignore[invalid-parameters]
     except TypeError as e:
         return {"error": f"Unknown argument: {e}"}, 400
     return embed.to_oembed()
