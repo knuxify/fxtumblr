@@ -123,6 +123,18 @@ def tumblr_api_server(httpserver):
             },
         ).respond_with_data(test_data.read(), status=404)
 
+    # Special case post 5: Old post where part of the reblog chain was converted
+    # into blockquotes
+    with open(_get_tumblr_test_data("post_reblog_chain_blockquotes.json")) as test_data:
+        httpserver.expect_request(
+            "/v2/blog/worldheritagepostorganization/posts",
+            query_string={
+                "id": "806582021235277824",
+                "npf": "true",
+                "api_key": "consumer_key",
+            },
+        ).respond_with_json(json.load(test_data))
+
     # Result of post_id=0
     with open(_get_tumblr_test_data("post_id0.json")) as test_data:
         httpserver.expect_request(

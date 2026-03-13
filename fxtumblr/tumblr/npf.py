@@ -1833,9 +1833,76 @@ INDENTED_BLOCK_WRAPPERS: dict[ContentTextSubtype, HTMLWrapper] = {
 ##
 
 
+class HTMLIndentStack:
+    """A stack of indented ContentBlockText objects which returns HTML wrappers."""
+
+    #: Internal stack of blocks.
+    stack: deque[ContentBlockText] = deque()
+
+    def push(self, block: ContentBlockText) -> Markup:
+        """
+        Push a block to the indent stack; get the HTML tags to open it.
+
+        :param block: Block to push onto the indent stack.
+        :returns: The HTML opening tags as Markup.
+        """
+
+        if block.subtype is None:
+            raise ValueError("Indented blocks should have a subtype")
+
+        wrapper: HTMLWrapper = INDENTED_BLOCK_WRAPPERS[block.subtype]
+
+        if self.stack:
+            assert self.stack[-1].subtype is not None
+            indent_wrapper = INDENTED_BLOCK_WRAPPERS[self.stack[-1].subtype]
+            out = indent_wrapper.up + wrapper.open
+        else:
+            out = wrapper.open
+
+        self.stack.append(block)
+
+        return out
+
+    def pop(self) -> tuple[Markup, ContentBlockText]:
+        """
+        Remove the topmost block from the stack.
+
+        :returns: Tuple containing the HTML closing tags as Markup and the
+                  removed block.
+        """
+
+        block: ContentBlockText = self.stack.pop()
+
+        # Indented blocks will always have a subtype, this is mandated by push()
+        assert block.subtype is not None
+
+        wrapper: HTMLWrapper = INDENTED_BLOCK_WRAPPERS[block.subtype]
+
+        if self.stack:
+            assert self.stack[-1].subtype is not None
+            wrapper_outer = INDENTED_BLOCK_WRAPPERS[self.stack[-1].subtype]
+            out = wrapper.close + wrapper_outer.down
+        else:
+            out = wrapper.close
+
+        return out, block
+
+    def __len__(self) -> int:
+        """Get the amount of items in the stack."""
+        return len(self.stack)
+
+    def __bool__(self) -> bool:
+        """Boolean conversion for the stack."""
+        return bool(self.stack)
+
+    def __getitem__(self, index: int) -> ContentBlockText:
+        """Get the n-th item in the stack."""
+        return self.stack[index]
+
+
 def _update_indented_block_wrappers(
-    indent_stack: list[ContentBlockText], block: ContentBlock
-) -> str:
+    indent_stack: HTMLIndentStack, block: ContentBlock
+) -> Markup:
     """
     Given a stack of currently opened indents and a new block to parse,
     generate opening/closing tags and update the stack.
@@ -1847,67 +1914,31 @@ def _update_indented_block_wrappers(
     :param block: ContentBlock for the currently parsed block.
     :returns: HTML string containing opening/closing tags.
     """
-    out = ""
-
-    def _pop():
-        """Remove an item off the top of the indent stack."""
-        nonlocal indent_stack
-        nonlocal out
-        # Type ignores: indented blocks will always have a subtype,
-        # it's up to callers to ensure this
-        indent_block = indent_stack.pop()
-        wrapper = INDENTED_BLOCK_WRAPPERS[indent_block.subtype]  # type: ignore[index]
-        if indent_block.indent_level > 0:
-            wrapper_outer = INDENTED_BLOCK_WRAPPERS[indent_stack[-1].subtype]  # type: ignore[index]
-            out += wrapper.close + wrapper_outer.down
-        else:
-            out += wrapper.close
-
-    def _open(block: ContentBlockText):
-        """Add an item to the top of the indent stack."""
-        nonlocal indent_stack
-        nonlocal out
-
-        # Added for mypy reasons; these two conditions are indirectly
-        # guaranteed to be true by the outer function (we only consider items
-        # with an indent_level >= 0, which is only true for blocks with a
-        # subtype within the list of indented block subtypes - see
-        # ContentBlockText.from_dict().)
-        if not block.subtype or (indent_stack and not indent_stack[-1].subtype):
-            return
-
-        wrapper = INDENTED_BLOCK_WRAPPERS[block.subtype]
-        if len(indent_stack) > 0 and indent_stack[-1].subtype:
-            indent_wrapper = INDENTED_BLOCK_WRAPPERS[indent_stack[-1].subtype]
-            out += indent_wrapper.up + wrapper.open
-        else:
-            out += wrapper.open
-        indent_stack.append(block)
+    out = Markup()
 
     if not isinstance(block, ContentBlockText) or block.indent_level < 0:
         # Current block is not a text block or has no indent; close all indents
         while indent_stack:
-            _pop()
+            out += indent_stack.pop()[0]
 
     else:
         # Current block is indented.
+        curr_indent: int = len(indent_stack) - 1
+        target_indent: int = block.indent_level
+        indent_delta: int = target_indent - curr_indent
 
         if indent_stack:
             # If there already are opened indented blocks:
-            curr_indent: int = len(indent_stack) - 1
-            target_indent: int = block.indent_level
-            indent_delta: int = target_indent - curr_indent
-
             if indent_delta > 0:
                 # We need to open tags to get to our desired indent level.
                 while indent_delta > 0:
-                    _open(block)
+                    out += indent_stack.push(block)
                     indent_delta -= 1
 
             elif indent_delta < 0:
                 # We need to close tags to get to our desired indent level.
                 while indent_delta < 0:
-                    _pop()
+                    out += indent_stack.pop()[0]
                     indent_delta += 1
 
             else:  # indent_delta == 0
@@ -1915,12 +1946,15 @@ def _update_indented_block_wrappers(
                     # If the subtype of the previous indented block and current
                     # block don't match, we close the previous item and open the
                     # new one.
-                    _pop()
-                    _open(block)
+                    out += indent_stack.pop()[0]
+                    out += indent_stack.push(block)
 
         else:
-            # If there are no opened indented blocks, just open the new one.
-            _open(block)
+            # If there are no opened indented blocks, open new ones until
+            # we reach the desired indent level.
+            while indent_delta > 0:
+                out += indent_stack.push(block)
+                indent_delta -= 1
 
     return out
 
@@ -2031,9 +2065,10 @@ def npf_to_html(
     # 2. Iterate over all content blocks and convert them into HTML.
     out: Markup = Markup("")
     i: int = 0  # index in block_index
-    indent_stack: list[
-        ContentBlockText
-    ] = []  # stack of ContentBlockText objects for indented text blocks
+    # stack of ContentBlockText objects for indented text blocks
+    indent_stack = HTMLIndentStack()
+    # stack of opened layouts
+    layout_stack: deque[RangedLayoutBlock] = deque()
     for block_index in block_order:
         try:
             block = content[block_index]
@@ -2045,6 +2080,7 @@ def npf_to_html(
         # 3.1. If layouts start, open them.
         for _layout in layout_starts[i]:
             out += _layout.html_wrapper.open
+            layout_stack.append(_layout)
 
         # 3.2. If there's a list block, call some function to determine what
         # tags to place, and place the list wrappers in a stack.
@@ -2064,29 +2100,23 @@ def npf_to_html(
         if layout_ends[i]:
             # 3.4.1. If indented blocks are open, close them first.
             while indent_stack:
-                indent_block = indent_stack.pop()
-                assert indent_block.subtype
-                wrapper = INDENTED_BLOCK_WRAPPERS[indent_block.subtype]
-                if indent_block.indent_level > 0:
-                    out += wrapper.close + wrapper.down
-                else:
-                    out += wrapper.close
+                out += indent_stack.pop()[0]
 
             # 3.4.2. Close the layouts.
             for _layout in layout_ends[i]:
                 out += _layout.html_wrapper.close
+                layout_stack.pop()
 
         i += 1
 
-    # 4. Close all opened indented blocks.
+    # 4.1. Close all opened indented blocks.
     while indent_stack:
-        indent_block = indent_stack.pop()
-        assert indent_block.subtype
-        wrapper = INDENTED_BLOCK_WRAPPERS[indent_block.subtype]
-        if indent_block.indent_level > 0:
-            out += wrapper.close + wrapper.down
-        else:
-            out += wrapper.close
+        out += indent_stack.pop()[0]
+
+    # 4.2. Close all opened layouts.
+    while layout_stack:
+        _layout = layout_stack.pop()
+        out += _layout.html_wrapper.close
 
     # 5. If the post is truncated, add the "Read more" block.
     if is_truncated:

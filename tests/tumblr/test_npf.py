@@ -130,6 +130,18 @@ async def test_render_edge_cases(tumblr_api):
         == '<figure class="tmblr-full"><img src="https://64.media.tumblr.com/f44f7f317b520f0460d9c0b27281f6a0/0c250d65b1e6e918-26/s640x960/4ae855f10ae5b13d864e8c06c81cfe0c7bf0efa5.jpg"></figure><blockquote class="text-block text-indented"><p><small>wrong that imprint is all that\'s left of them after i disintegrate them with my Mouse Beam for even daring to look at me. it\'s a warning to other owls. don\'t even try and step to me. never interrupt a mouse frolicking in the snow.</small></p></blockquote>'
     )
 
+    # Edge case 4: Weirdly converted old reblog chain to blockquotes.
+    # Also a good demonstration of a case where we go back and forth between
+    # block with an indent level of 0 and non-indentable blocks.
+    async with aiofiles.open(
+        _get_tumblr_test_data("post_reblog_chain_blockquotes.json")
+    ) as test_data:
+        for post_data in json.loads(await test_data.read())["response"]["posts"][0][
+            "trail"
+        ]:
+            print(post_data)
+            post = NPFPost.from_trail_dict(post_data)
+
 
 BLOCK_TEXT_EXAMPLES = (
     (
