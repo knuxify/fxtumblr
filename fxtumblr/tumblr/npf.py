@@ -2275,12 +2275,18 @@ class NPFPost:
         # Layouts and tags that span *multiple blocks* are instead handled
         # in npf_to_html.
 
-        out = npf_to_html(self.content, self.layout, truncate=truncate)
+        try:
+            out = npf_to_html(self.content, self.layout, truncate=truncate)
 
-        if self.submitted_by:
-            out += Markup(
-                '<div class="submitted-by">Submitted by <span class="submitter-username">{submitted_by}</span></div>'
-            ).format(submitted_by=self.submitted_by)
+            if self.submitted_by:
+                out += Markup(
+                    '<div class="submitted-by">Submitted by <span class="submitter-username">{submitted_by}</span></div>'
+                ).format(submitted_by=self.submitted_by)
+
+        except Exception as e:
+            raise NPFParseError(
+                f"An error occured while parsing post {self.blog.name}-{self.id}"
+            ) from e
 
         return out
 
@@ -2298,10 +2304,16 @@ class NPFPost:
         # to_markdown methods. Most things are handled at the block level
         # except for ordered lists.
 
-        out = npf_to_markdown(self.content, self.layout, truncate=truncate)
+        try:
+            out = npf_to_markdown(self.content, self.layout, truncate=truncate)
 
-        if self.submitted_by:
-            out += f"*(Submitted by {self.submitted_by})*"
+            if self.submitted_by:
+                out += f"*(Submitted by {self.submitted_by})*"
+
+        except Exception as e:
+            raise NPFParseError(
+                f"An error occured while parsing post {self.blog.name}-{self.id}"
+            ) from e
 
         return out
 
