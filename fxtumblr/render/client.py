@@ -115,8 +115,12 @@ class RenderClient:
                     if streaming is True:
 
                         async def file_read_generator():
-                            async with aiofiles.open(render_path, "rb") as render_file:
-                                yield render_file.read(CHUNK_SIZE)
+                            render_file = await aiofiles.open(render_path, "rb")
+                            v = await render_file.read(CHUNK_SIZE)
+                            while v:
+                                yield v
+                                v = await render_file.read(CHUNK_SIZE)
+                            await render_file.close()
 
                         return file_read_generator()
                     else:
