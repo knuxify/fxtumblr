@@ -24,13 +24,13 @@ def cache() -> Cache:  # noqa: F811
 
 
 @pytest.mark.asyncio
-async def test_cache_ping(cache):
+async def test_cache_ping(cache: Cache):
     """Test the cache ping function."""
     assert await cache.ping() is True
 
 
 @pytest.mark.asyncio
-async def test_cache_text(cache):
+async def test_cache_text(cache: Cache):
     """Test basic text caching functions."""
     await cache.set("fxt-test:1", "test!", 2)
     assert await cache.exists("fxt-test:1")
@@ -53,7 +53,7 @@ async def test_cache_text(cache):
 
 
 @pytest.mark.asyncio
-async def test_cache_json(cache):
+async def test_cache_json(cache: Cache):
     """Test JSON caching functions."""
     await cache.set_json("fxt-test:2", {"a": 1, "b": "test"}, 2)
     assert await cache.exists("fxt-test:2")
@@ -75,7 +75,7 @@ async def test_cache_json(cache):
 
 
 @pytest.mark.asyncio
-async def test_cache_bin(cache):
+async def test_cache_bin(cache: Cache):
     """Test binary caching functions."""
     await cache.set_bin("fxt-test:3", "test".encode("utf-8"), 2)
     assert await cache.exists("fxt-test:3")
@@ -97,7 +97,7 @@ async def test_cache_bin(cache):
 
 
 @pytest.mark.asyncio
-async def test_cache_increment(cache):
+async def test_cache_increment(cache: Cache):
     """Test the cache increment function."""
     await cache.set("fxt-test:number", "1", 0)
     assert await cache.increment("fxt-test:number")
@@ -105,7 +105,7 @@ async def test_cache_increment(cache):
 
 
 @pytest.mark.asyncio
-async def test_cache_timeout(cache):
+async def test_cache_timeout(cache: Cache):
     """Test the cache timeout function."""
     await cache.set("fxt-test:timeout", "1", 0)
     assert await cache.timeout("fxt-test:timeout", 2)

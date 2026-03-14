@@ -4,11 +4,11 @@
 import pytest
 
 # from fxtumblr.tumblr.npf import NPFContent
-from fxtumblr.tumblr.api import PrivateBlogException, TumblrAPIException
+from fxtumblr.tumblr.api import PrivateBlogException, TumblrAPI, TumblrAPIException
 from fxtumblr.tumblr.types import Blog, PollResults, Post
 
 
-async def test_get_blog(tumblr_api):
+async def test_get_blog(tumblr_api: TumblrAPI):
     """Test blog fetching."""
 
     # Test regular blog
@@ -34,7 +34,7 @@ async def test_get_blog(tumblr_api):
         )
 
 
-async def test_get_post(tumblr_api):
+async def test_get_post(tumblr_api: TumblrAPI):
     """Test post fetching."""
 
     for username, post_id in (
@@ -86,7 +86,7 @@ async def test_get_post(tumblr_api):
     assert post is None
 
 
-async def test_get_poll_results(tumblr_api):
+async def test_get_poll_results(tumblr_api: TumblrAPI):
     """Test poll result fetching."""
 
     # Test regular poll results

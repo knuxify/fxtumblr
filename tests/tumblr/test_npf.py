@@ -6,6 +6,7 @@ import json
 import aiofiles
 import pytest
 
+from fxtumblr.tumblr.api import TumblrAPI
 from fxtumblr.tumblr.npf import (
     ContentBlock,
     ContentBlockAudio,
@@ -24,7 +25,7 @@ from fxtumblr.tumblr.types import Blog
 from ..conftest import _get_tumblr_test_data
 
 
-async def test_npf_post(tumblr_api):
+async def test_npf_post(tumblr_api: TumblrAPI):
     """Test the NPFPost class."""
     async with aiofiles.open(_get_tumblr_test_data("post_npftest.json")) as test_data:
         post = NPFPost.from_post_dict(
@@ -66,7 +67,7 @@ async def test_npf_post(tumblr_api):
     assert post.layout
 
 
-async def test_render_edge_cases(tumblr_api):
+async def test_render_edge_cases(tumblr_api: TumblrAPI):
     """Test miscelaneous render edge cases."""
 
     # Edge case 1: Poll with missing answer result.

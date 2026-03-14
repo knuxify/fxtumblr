@@ -6,6 +6,7 @@ import os
 from inspect import getsourcefile
 
 import pytest
+from pytest_httpserver.httpserver import HTTPServer
 
 os.environ["IN_PYTEST"] = "1"
 
@@ -26,7 +27,7 @@ def _get_tumblr_test_data(filename: str) -> str:
 
 
 @pytest.fixture
-def tumblr_api_server(httpserver):
+def tumblr_api_server(httpserver: HTTPServer):
     """Test fixture that simulates Tumblr's API."""
 
     # Test post 1: Ultimate NPF Test Post
@@ -235,7 +236,7 @@ def tumblr_api_server(httpserver):
 
 
 @pytest.fixture
-def tumblr_api(tumblr_api_server):
+def tumblr_api(tumblr_api_server: HTTPServer):
     """
     Fixture providing TumblrAPI object.
 
