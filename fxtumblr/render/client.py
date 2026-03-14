@@ -96,16 +96,15 @@ class RenderClient:
 
                 ret = await cache.get_bin(cache_key)
 
-                if streaming is True:
+                if ret:
+                    if streaming is True:
 
-                    async def cache_generator(ret):
-                        yield ret
+                        async def cache_generator(ret):
+                            yield ret
 
-                    return cache_generator(ret)
+                        return cache_generator(ret)
 
-                else:
-                    ret = await cache.get_bin(cache_key)
-                    if ret:
+                    else:
                         return ret
 
             # Get from disk cache, if applicable
