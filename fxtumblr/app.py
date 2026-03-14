@@ -310,41 +310,17 @@ async def api_render_post(blog_id: str, post_id: int, filetype_str: str):
     else:
         modifiers = []
 
-    ret_generator = await render_client.render_post(
-        blog_id,
-        post_id,
-        modifiers,
-        filetype,
-        skip_cache="skip_cache" in request.args,
-        streaming=True,
+    ret = await render_client.render_post(
+        blog_id, post_id, modifiers, filetype, skip_cache="skip_cache" in request.args
     )
-
-    first_val = await anext(ret_generator, None)
-
-    async def response_generator(first_val: bytes, ret_generator):
-        yield first_val
-        async for v in ret_generator:
-            yield v
 
     # No return value: internal error
-    if not first_val:
+    if not ret:
         return {"error": "Internal render error"}, 500
     # Return value is JSON: error
-    elif first_val.startswith(b"{"):
-        if b"Post not found" in first_val:
-            return (
-                response_generator(first_val, ret_generator),
-                404,
-                {"Content-Type": "application/json"},
-            )
-        return (
-            response_generator(first_val, ret_generator),
-            400,
-            {"Content-Type": "application/json"},
-        )
+    elif ret.startswith(b"{"):
+        if b"Post not found" in ret:
+            return ret, 404, {"Content-Type": "application/json"}
+        return ret, 400, {"Content-Type": "application/json"}
     # Otherwise, return the render
-    return (
-        response_generator(first_val, ret_generator),
-        200,
-        {"Content-Type": RENDER_FILETYPE_MIMES[filetype]},
-    )
+    return ret, 200, {"Content-Type": RENDER_FILETYPE_MIMES[filetype]}
