@@ -13,6 +13,7 @@ from .tumblr.npf import (
     ContentBlockImage,
     ContentBlockText,
     ContentBlockVideo,
+    LayoutBlockRows,
 )
 from .tumblr.types import Post
 
@@ -23,6 +24,10 @@ class PostEmbed:
 
     #: HTML meta embed representing the post.
     meta_embed: MetaEmbed
+
+    #: Whether the embed contains a render; if True, it's rendered, if False,
+    #: it's a regular embed.
+    is_rendered: bool
 
     @classmethod
     def from_post(
@@ -52,6 +57,19 @@ class PostEmbed:
 
         # Determine the post type by iterating over all posts.
         for npf_post in post.trail:
+            # If the post has fancy layouts, it should be rendered
+            for layout in npf_post.layout:
+                if isinstance(layout, LayoutBlockRows):
+                    if layout.truncate_after:
+                        should_render = True
+                    else:
+                        for display in layout.display:
+                            if len(display.blocks) > 1:
+                                should_render = True
+                                break
+                else:
+                    should_render = True
+
             for block in npf_post.content:
                 # Save text blocks; while most can be represented in Markdown,
                 # some have formatting that wouldn't be preserved
@@ -183,4 +201,4 @@ class PostEmbed:
                     author_url=post.dash_url,
                 )
 
-        return cls(meta_embed=meta_embed)
+        return cls(meta_embed=meta_embed, is_rendered=should_render)
