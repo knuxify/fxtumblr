@@ -119,6 +119,18 @@ def tumblr_api_server(httpserver: HTTPServer):
     # Test post 4: Self-reblog, tags only
     _define_post("post_self_reblog_tags_only.json", "knuxify", 799921945450840064)
 
+    # Test post 5: Text with formatting
+    _define_post("post_text_formatting.json", "knuxify", 811047603701694464)
+
+    # Test post 6: Text with subtype
+    _define_post("post_text_subtype.json", "knuxify", 811047588066476032)
+
+    # Test post 7: Video in post
+    _define_post("post_video.json", "knuxify", 722920574030053376)
+
+    # Test post 8: Ask and answer
+    _define_post("post_ask_simple.json", "knuxify", 811081495873814528)
+
     # Special case post 1: Poll with missing answer
     _define_post("post_broken_poll_answer.json", "janmisali", 728090722324119552)
 
