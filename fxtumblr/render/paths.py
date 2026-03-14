@@ -186,7 +186,7 @@ def get_render_url(
     )
 
     if modifier_str:
-        ret += "?modifiers={modifier_str}"
+        ret += f"?modifiers={modifier_str}"
 
     return ret
 
