@@ -30,7 +30,7 @@ fxtumblr.config = Config.from_data(
             "port": 6500,
             # The following get changed for renderer tests
             "backend": "playwright-chromium",
-            "path": "renders",
+            "path": "/path/to/renders",
         },
     }
 )

@@ -22,11 +22,14 @@ def get_modifier_string(
     :raises ValueError: if a modifier in the list is invalid and ignore_invalid
                         is False.
     """
-    modifier_strings = []
+    if not modifiers:
+        return ""
+
+    modifier_strings = set()
 
     for mod in modifiers:
         try:
-            modifier_strings.append(str(RenderModifier(mod)))
+            modifier_strings.add(str(RenderModifier(mod)))
         except ValueError as e:  # not a valid modifier
             if not ignore_invalid:
                 raise ValueError(f"Invalid modifier {mod}") from e
@@ -46,16 +49,19 @@ def get_modifier_list(
     :raises ValueError: if a modifier in the list is invalid and ignore_invalid
                         is False.
     """
-    modifiers = []
+    if not modifier_str:
+        return []
+
+    modifiers = set()
 
     for mod in modifier_str.split(","):
         try:
-            modifiers.append(RenderModifier(mod))
+            modifiers.add(RenderModifier(mod))
         except ValueError as e:  # not a valid modifier
             if not ignore_invalid:
                 raise ValueError(f"Invalid modifier {mod}") from e
 
-    return modifiers
+    return list(modifiers)
 
 
 # Path functions
