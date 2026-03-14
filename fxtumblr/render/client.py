@@ -93,17 +93,36 @@ class RenderClient:
                 cache_key = get_render_cache_key(
                     blog_name, post_id, modifiers, filetype
                 )
+
                 ret = await cache.get_bin(cache_key)
-                if ret:
-                    return ret
+
+                if streaming is True:
+
+                    async def cache_generator(ret):
+                        yield ret
+
+                    return cache_generator(ret)
+
+                else:
+                    ret = await cache.get_bin(cache_key)
+                    if ret:
+                        return ret
 
             # Get from disk cache, if applicable
             if config.render.disk_cache_timeout:
                 render_path = get_render_path(blog_name, post_id, modifiers, filetype)
 
                 if await aiofiles.os.path.exists(render_path):
-                    async with aiofiles.open(render_path, "rb") as render_file:
-                        return await render_file.read()
+                    if streaming is True:
+
+                        async def file_read_generator():
+                            async with aiofiles.open(render_path, "rb") as render_file:
+                                yield render_file.read(CHUNK_SIZE)
+
+                        return file_read_generator()
+                    else:
+                        async with aiofiles.open(render_path, "rb") as render_file:
+                            return await render_file.read()
 
         # If there is no cache hit, send a render request and return the result
 
