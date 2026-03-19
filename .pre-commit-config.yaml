@@ -12,13 +12,23 @@ repos:
   rev: v0.0.23
   hooks:
     - id: ty-check
-      additional_dependencies: ["types-aiofiles",
-                                "types-frozendict",
-                                "types-emoji",
-                                "types-python-dateutil",
-                                "types-redis",
-                                "pydantic",
-                                "quart",
-                                "pytest",
-                                "pytest_httpserver",
-                                "fakeredis"]
+      additional_dependencies: [
+        "aiofiles",
+        "httpx",
+        "redis",
+        "frozendict",
+        "emoji",
+        "python-dateutil",
+        "nh3",
+        "markupsafe",
+        "pydantic",
+        "Quart",
+        "jinja2",
+        "pytest",
+        "fakeredis",
+        "types-frozendict",
+        "types-emoji",
+        "types-python-dateutil",
+        "types-redis",
+        "types-aiofiles",
+      ]
