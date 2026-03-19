@@ -107,7 +107,7 @@ class PostEmbed:
         # Get post content in Markdown format.
         content = post.to_markdown()
         if post.tags:
-            content += "\n\n(" + " #".join(post.tags) + ")"
+            content += "\n\n(#" + " #".join(post.tags) + ")"
 
         # If the description ends up being too long, suggest a render.
         if (videos and len(content) > 256) or (not videos and len(content) > 349):
