@@ -178,6 +178,20 @@ class TumblrAPI:
         try:
             data = r.json()
         except JSONDecodeError:
+            if r.status_code == 503:
+                # Tumblr returns a HTML page on any 503 error, even for API queries;
+                # convert it down to a regular error.
+                return TumblrAPIResponse(
+                    status=503,
+                    errors=[
+                        TumblrAPIError(
+                            code=503,
+                            title="Tumblr API is temporarily unavailable",
+                        ),
+                    ],
+                    raw={},
+                )
+
             logger.error(
                 f"Invalid response from Tumblr ({url}): {r.status_code}, text:\n{r.text}"
             )
