@@ -151,7 +151,7 @@ class PostEmbed:
                     )
 
             meta_embed = MetaImageEmbed(
-                **common_options,  # type: ignore[arg-type]
+                **common_options,  # type: ignore[arg-type, ty:invalid-argument-type]
                 title=header,
                 author_name=subheader,
                 author_url=post.dash_url,

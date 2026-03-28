@@ -43,8 +43,8 @@ app.jinja_env.globals["instance"] = {
     "domain": config.instance.domain,
     "contact_email": config.instance.contact_email,
     "motd": config.instance.motd,
-}  # type: ignore[invalid-assignment]
-app.jinja_env.globals["get_font_uri"] = get_font_uri  # type: ignore[invalid-assignment]
+}  # type: ignore[assignment, ty:invalid-assignment]
+app.jinja_env.globals["get_font_uri"] = get_font_uri  # type: ignore[assignment, ty:invalid-assignment]
 
 
 #: Main Tumblr API instance.
@@ -192,7 +192,7 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
                 "error.html", msg="Invalid value for argument: video"
             ), 400
 
-        video: ContentBlockVideo = _find_block(vid_index, ContentBlockVideo)  # type: ignore[assignment]
+        video: ContentBlockVideo = _find_block(vid_index, ContentBlockVideo)  # type: ignore[assignment, ty:invalid-assignment]
 
         if video and video.media and video.media.url:
             return redirect(video.media.url)
@@ -209,7 +209,7 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
                 "error.html", msg="Invalid value for argument: audio"
             ), 400
 
-        audio: ContentBlockAudio = _find_block(audio_index, ContentBlockAudio)  # type: ignore[assignment]
+        audio: ContentBlockAudio = _find_block(audio_index, ContentBlockAudio)  # type: ignore[assignment, ty:invalid-assignment]
 
         if audio and audio.media and audio.media.url:
             return redirect(audio.media.url)
@@ -269,7 +269,7 @@ def api_oembed():
         params["width"] = int(params["width"])
 
     try:
-        embed = embed_class(**params)  # type: ignore[invalid-parameters]
+        embed = embed_class(**params)  # type: ignore[invalid-parameters, ty:invalid-argument-type]
     except TypeError as e:
         return {"error": f"Unknown argument: {e}"}, 400
     return embed.to_oembed()
