@@ -62,6 +62,7 @@ def tumblr_api_server(httpserver: HTTPServer):
             query_string={
                 "id": str(post_id),
                 "npf": "true",
+                "reblog_info": "true",
                 "api_key": "consumer_key",
             },
             status_code=status_code,
@@ -209,7 +210,12 @@ def tumblr_api_server(httpserver: HTTPServer):
 
         httpserver.expect_request(
             "/v2/blog/knuxify/posts",
-            query_string={"id": "1234", "npf": "true", "api_key": "consumer_key"},
+            query_string={
+                "id": "1234",
+                "npf": "true",
+                "reblog_info": "true",
+                "api_key": "consumer_key",
+            },
         ).respond_with_json(data, status=404)
 
         httpserver.expect_request(

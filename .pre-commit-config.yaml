@@ -25,6 +25,7 @@ repos:
         "Quart",
         "jinja2",
         "pytest",
+        "pytest_httpserver",
         "fakeredis",
         "types-frozendict",
         "types-emoji",

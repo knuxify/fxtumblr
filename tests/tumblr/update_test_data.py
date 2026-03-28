@@ -64,6 +64,8 @@ async def update_one(filename: Path | str):
         return False
 
     url, params = data_json["_fxt_meta_fetch"]
+    if params and "npf" in params:  # HACK
+        params["reblog_info"] = "true"
 
     api_response = await tumblr._get(url, params)
 
@@ -72,8 +74,11 @@ async def update_one(filename: Path | str):
             f"{os.path.basename(filename)}: API response status {api_response.status}"
         )
 
+    response_raw = api_response.raw.copy()
+    response_raw["_fxt_meta_fetch"] = (url, params)
+
     async with aiofiles.open(full_path, "w") as data:
-        data_json = json.dumps(api_response.raw)
+        data_json = json.dumps(response_raw)
         await data.write(data_json)
 
     print(f"{os.path.basename(filename)}: updated")
@@ -107,7 +112,7 @@ async def new(obj_type: str, obj_ids: list[str], filename: str):
         url = f"/v2/blog/{obj_ids[0]}/info"
     elif obj_type == "post":
         url = f"/v2/blog/{obj_ids[0]}/posts"
-        params = {"id": obj_ids[1], "npf": "true"}
+        params = {"id": obj_ids[1], "reblog_info": "true", "npf": "true"}
     elif obj_type == "poll_results":
         url = f"/v2/polls/{obj_ids[0]}/{obj_ids[1]}/{obj_ids[2]}/results"
     else:

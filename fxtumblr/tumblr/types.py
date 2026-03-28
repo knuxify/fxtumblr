@@ -3,7 +3,7 @@
 
 import mimetypes
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Literal, Self
 
 from markupsafe import Markup
 
@@ -195,6 +195,91 @@ class Blog:
 
 
 @dataclass
+class PostReblogInfo:
+    """Represents the reblog info of a post."""
+
+    #: Blog that the post was reblogged from.
+    blog: Blog
+
+    # TODO: Check if the theory about the latter two being missing for deleted
+    # posts is correct
+
+    #: ID of the post this post was reblogged from, or None if the post was
+    #: deleted.
+    post_id: int | None
+    #: URL from which the post was reblogged, or None if the post was deleted.
+    post_url: str | None
+
+    @classmethod
+    def from_api(
+        cls, data: dict, prefix: Literal["reblogged_from"] | Literal["reblogged_root"]
+    ) -> Self | None:
+        """
+        Create a PostReblogInfo object from post data.
+
+        :param data: Post data.
+        :param prefix: Prefix for data fetching; either reblogged_from
+            or reblogged_root.
+        :returns: Resulting PostReblogInfo object, or None if there is no
+            reblog data.
+        """
+
+        # Use reblogged_(from,root) to get the data
+        if prefix + "_name" in data:
+            try:
+                blog = Blog(
+                    name=data[prefix + "_name"],
+                    uuid=data[prefix + "_uuid"],
+                    url="https://www.tumblr.com/blog/" + data[prefix + "_name"],
+                    avatars=MediaList(),
+                )
+            except KeyError:
+                # No reblogged_from_uuid; broken blog? (TODO verify)
+                blog = Blog.create_dummy(data[prefix + "_name"])
+
+            return cls(
+                blog=blog,
+                post_id=data.get(prefix + "_id"),
+                post_url=data.get(prefix + "_url"),
+            )
+
+        # If there is no reblog data, try to guess from parent_post_url
+        elif prefix == "reblogged_from" and "parent_post_url" in data:
+            # https://www.tumblr.com/blog/view/(username)/
+            if data["parent_post_url"].startswith("https://www.tumblr.com/blog/view/"):
+                split = data["parent_post_url"][33:].split("/")
+                blog = Blog.create_dummy(split[0])
+                return cls(
+                    blog=blog, post_id=int(split[1]), post_url=data["parent_post_url"]
+                )
+
+            # https://(username).tumblr.com/post/(id)/(slug)
+            elif "tumblr.com/post/" in data["parent_post_url"]:
+                username, rest = data["parent_post_url"].split(".", 1)
+
+        # If there is no parent post URL, try to guess from last trail item
+        elif prefix == "reblogged_root" and data["trail"]:
+            last_trail_item = data["trail"][-1]
+
+            if "broken_blog_name" in last_trail_item:
+                blog = Blog.create_dummy(last_trail_item["broken_blog_name"])
+            else:
+                blog = Blog.from_api(data["trail"][-1]["blog"])
+
+            if "post" in data and "id" in data["post"]:
+                return cls(
+                    blog=blog,
+                    post_id=int(data["post"]["id"]),
+                    post_url=f"https://www.tumblr.com/blog/view/{blog.name}/{data['post']['id']}",
+                )
+
+            return cls(blog=blog, post_id=None, post_url=None)
+
+        # If none of the above matched, give up
+        return None
+
+
+@dataclass
 class Post:
     """
     Represents a post on Tumblr.
@@ -216,6 +301,17 @@ class Post:
     #: List of tags on the post.
     tags: list[str]
 
+    #: Whether this post is a reblog.
+    is_reblog: bool
+
+    #: Reblog data for the post this post was reblogged from;
+    #: None if the post is not a reblog or the reblog data is missing.
+    reblogged_from: PostReblogInfo | None
+
+    #: Reblog data for the root post this post was reblogged from;
+    #: None if the post is not a reblog or the reblog data is missing.
+    reblogged_root: PostReblogInfo | None
+
     #: List of NPFPost objects representing each "post" that makes up this
     #: post - first the reblog trail, then the post itself.
     #:
@@ -223,26 +319,6 @@ class Post:
     #: which specifically covers only the reblog trail; we include the post
     #: itself at the end for ease-of-use.
     trail: list["NPFPost"]
-
-    @property
-    def is_reblog(self) -> bool:
-        """True if the post is a reblog, False otherwise."""
-
-        # If the post has more than 1 item in self.trail (so, more than 0 items
-        # in the reblog trail, besides itself), it's a reblog.
-
-        return len(self.trail) > 1
-
-    @property
-    def reblogged_from(self) -> Blog | None:
-        """
-        Returns the blog from which this post was reblogged, or None if the
-        post is not a reblog.
-        """
-
-        if len(self.trail) > 1:
-            return self.trail[-2].blog
-        return None
 
     @classmethod
     def from_api(cls, data: dict) -> Self:
@@ -255,6 +331,14 @@ class Post:
 
         # Lazy import to avoid circular dependency
         from .npf import NPFPost
+
+        is_reblog = False
+        if (
+            "parent_post_url" in data
+            or "reblogged_from_name" in data
+            or "reblogged_root_name" in data
+        ):
+            is_reblog = True
 
         trail = []
         if "trail" in data:
@@ -270,6 +354,9 @@ class Post:
             post_url=data["post_url"],
             dash_url=f"https://tumblr.com/{blog.name}/{data['id']}",
             note_count=data["note_count"],
+            is_reblog=is_reblog,
+            reblogged_from=PostReblogInfo.from_api(data, "reblogged_from"),
+            reblogged_root=PostReblogInfo.from_api(data, "reblogged_root"),
             trail=trail,
             tags=data["tags"],
         )

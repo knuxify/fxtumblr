@@ -115,10 +115,10 @@ class PostEmbed:
 
         # Header: poster/reblog info
         if post.is_reblog and post.reblogged_from:
-            if post.reblogged_from.name == post.blog.name:
+            if post.reblogged_from.blog.name == post.blog.name:
                 header = post.blog.name + " 🔁"
             else:
-                header = post.blog.name + " 🔁 " + post.reblogged_from.name
+                header = post.blog.name + " 🔁 " + post.reblogged_from.blog.name
         else:
             header = post.blog.name
 

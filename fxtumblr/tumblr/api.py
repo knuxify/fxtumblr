@@ -294,9 +294,9 @@ class TumblrAPI:
 
                 return post
 
-        resp = await self._get(
-            f"/v2/blog/{blog_id}/posts", params={"id": post_id, "npf": "true"}
-        )
+        params = {"id": post_id, "reblog_info": "true", "npf": "true"}
+
+        resp = await self._get(f"/v2/blog/{blog_id}/posts", params=params)
 
         if resp.status == 200 and resp.response:
             if "posts" in resp.response and resp.response["posts"]:
