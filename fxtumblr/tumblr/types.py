@@ -255,7 +255,13 @@ class PostReblogInfo:
 
             # https://(username).tumblr.com/post/(id)/(slug)
             elif "tumblr.com/post/" in data["parent_post_url"]:
-                username, rest = data["parent_post_url"].split(".", 1)
+                username, rest = data["parent_post_url"][8:].split(".", 1)
+                post_id = int(rest.split("/")[2])
+                return cls(
+                    blog=Blog.create_dummy(username),
+                    post_id=post_id,
+                    post_url=data["parent_post_url"],
+                )
 
         # If there is no parent post URL, try to guess from last trail item
         elif prefix == "reblogged_root" and data["trail"]:
