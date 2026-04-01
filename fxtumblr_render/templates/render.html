@@ -41,7 +41,7 @@
 			<div class="user-info-wrapper"><span class="username reblogged-by">{{ post.blog.name }}</span> <span class="reblogged-from-wrapper">Reblogged{% if post.reblogged_from and post.blog.name != post.reblogged_from.blog.name %} <span class="username reblogged-from">{{ post.reblogged_from.blog.name }}</span>{% endif %}</span></div>
 		</header>
 			{% endif %}
-		{% for npf_post in post.trail %}{% if (not loop.last) or (not loop.first and loop.last and npf_post.content) %}
+		{% for npf_post in post.trail %}{% if (not loop.last) or (loop.last and npf_post.content) %}
 			<div class="post">
 				<div class="post-header">
 					<div class="avatar-wrapper"><img class="avatar" src="{{ npf_post.blog.avatars.get_by_width(48).url or "https://assets.tumblr.com/pop/src/assets/images/avatar/anonymous_avatar_40-3af33dc0.png" }}">{% if not loop.first %}<svg class="avatar-reblog-badge" xmlns="http://www.w3.org/2000/svg" {% if "oldstyle" in modifiers %}height="14" width="14"{% else %}height="20" width="20"{% endif %} role="presentation"><use href="{% if "oldstyle" in modifiers %}#managed-icon__badge-reblog{% else %}#managed-icon__badge-reblog-20{% endif %}"></use></svg>{% endif %}</div>
