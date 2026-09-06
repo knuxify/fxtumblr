@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 # Render template setup
 template_loader = jinja2.PackageLoader("fxtumblr_render")
 template_env = jinja2.Environment(loader=template_loader, autoescape=True)
-template_env.globals["get_font_uri"] = get_font_uri
+template_env.globals["get_font_uri"] = get_font_uri  # type: ignore
 render_template = template_env.get_template("render.html")
 
 
@@ -115,19 +115,28 @@ class RenderTaskPost(RenderTask):
         :param data: Data to write, string or bytes.
         :param filetype: Filetype to use.
         """
-        path = get_render_path(
-            self.blog_name,
-            self.post_id,
-            modifiers=self.modifiers,
-            filetype=filetype,
-        )
+        try:
+            path = get_render_path(
+                self.blog_name,
+                self.post_id,
+                modifiers=self.modifiers,
+                filetype=filetype,
+            )
 
-        if isinstance(data, bytes):
-            async with aiofiles.open(path, "wb") as html_file:
-                await html_file.write(data)
-        else:
-            async with aiofiles.open(path, "w") as html_file:
-                await html_file.write(data)
+            if isinstance(data, bytes):
+                async with aiofiles.open(path, "wb") as html_file:
+                    await html_file.write(data)
+            else:
+                async with aiofiles.open(path, "w") as html_file:
+                    await html_file.write(data)
+
+        except:  # noqa: E722
+            if config.stats.enabled:
+                logger.error(
+                    f"Error while saving render for {self.blog_name}-{self.post_id} ({self.modifiers}; {filetype}):"
+                )
+                await stats.increment_counter("render_error_count")
+                await stats.increment_counter("render_save_error_count")
 
     async def _run(self, worker: "Worker") -> bytes | None:
         """Run the post render task."""

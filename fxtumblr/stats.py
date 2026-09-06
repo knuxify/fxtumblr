@@ -40,6 +40,7 @@ class Statistics:
 
         # Register counters for render errors
         self.register_counter("render_error_count", "Render error count")
+        self.register_counter("render_save_error_count", "Render save error count")
         self.register_counter(
             "render_uncaught_error_count", "Render uncaught error count"
         )
