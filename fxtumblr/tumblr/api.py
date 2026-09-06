@@ -132,7 +132,9 @@ class TumblrAPI:
 
         #: httpx client for connections.
         self.client = AsyncClient(
-            headers={"User-Agent": "fxtumblr v2 (https://github.com/knuxify/fxtumblr)"},
+            headers={
+                "User-Agent": "fxtumblr v2 (https://github.com/serialuart/fxtumblr)"
+            },
         )
 
     async def _get(

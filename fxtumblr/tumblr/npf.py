@@ -1580,7 +1580,7 @@ class ContentBlockUnknown(ContentBlock):
         :returns: The conversion result, as a string containing valid HTML.
         """
         return Markup(
-            '<span class="unknown-block">Unknown block type. Please open an issue at <a href="https://github.com/knuxify/fxtumblr">https://github.com/knuxify/fxtumblr</a> and link this post.</span>'
+            '<span class="unknown-block">Unknown block type. Please open an issue at <a href="https://github.com/serialuart/fxtumblr">https://github.com/serialuart/fxtumblr</a> and link this post.</span>'
         )
 
     def to_markdown(self) -> str:
@@ -1590,7 +1590,7 @@ class ContentBlockUnknown(ContentBlock):
         :returns: The conversion result.
         """
 
-        return "Unknown block type. Please open an issue at https://github.com/knuxify/fxtumblr and link this post."
+        return "Unknown block type. Please open an issue at https://github.com/serialuart/fxtumblr and link this post."
 
 
 #: Mapping of type strings to content block classes.
