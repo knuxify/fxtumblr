@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Data classes representing Tumblr data objects."""
 
+import datetime
 import mimetypes
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Self
@@ -310,6 +311,10 @@ class Post:
     #: Whether this post is a reblog.
     is_reblog: bool
 
+    #: Timestamp, as seconds from Unix epoch in UTC timezone.
+    #: Set to -1 if the timestamp is missing.
+    timestamp: int
+
     #: Reblog data for the post this post was reblogged from;
     #: None if the post is not a reblog or the reblog data is missing.
     reblogged_from: PostReblogInfo | None
@@ -361,11 +366,24 @@ class Post:
             dash_url=f"https://tumblr.com/{blog.name}/{data['id']}",
             note_count=data["note_count"],
             is_reblog=is_reblog,
+            timestamp=data.get("timestamp", -1),
             reblogged_from=PostReblogInfo.from_api(data, "reblogged_from"),
             reblogged_root=PostReblogInfo.from_api(data, "reblogged_root"),
             trail=trail,
             tags=data["tags"],
         )
+
+    async def fetch_reblog_trail_timestamps(
+        self, api: "TumblrAPI", skip_cache: bool = False
+    ):
+        """
+        Fetch timestamps for all posts in the reblog trail of this post.
+
+        :param api: TumblrAPI object to use for fetching.
+        :param skip_cache: If True, ignores the cache.
+        """
+        for post in self.trail:
+            await post.fetch_timestamp(api, skip_cache=skip_cache)
 
     async def fetch_poll_results(self, api: "TumblrAPI", skip_cache: bool = False):
         """
@@ -423,6 +441,23 @@ class Post:
             i += 1
 
         return out.strip()
+
+    @property
+    def date_str(self) -> str:
+        """
+        The timestamp converted to a human-readable date, like the one
+        shown in post headers.
+        """
+        if self.timestamp < 0:
+            return ""
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        date = datetime.datetime.fromtimestamp(self.timestamp, tz=datetime.timezone.utc)
+
+        if now.year == date.year:
+            return date.strftime("%b %-d")
+        else:
+            return date.strftime("%b %-d, %Y")
 
 
 @dataclass

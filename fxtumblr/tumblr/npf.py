@@ -2347,6 +2347,31 @@ class NPFPost:
 
         return out
 
+    async def fetch_timestamp(self, api: "TumblrAPI", skip_cache: bool = False):
+        """
+        Fetch the timestamp for this post, if it's taken from the reblog trail.
+
+        :param api: TumblrAPI object to use for fetching.
+        :param skip_cache: If True, ignores the cache.
+        """
+
+        if self.timestamp >= 0:
+            return
+
+        if not self.blog or self.id < 0:
+            return
+
+        post = await api.get_post(
+            self.blog.name,
+            self.id,
+            fetch_poll_results=False,
+            skip_cache=skip_cache,
+        )
+        if not post:
+            return
+
+        self.timestamp = post.timestamp
+
     async def fetch_poll_results(self, api: "TumblrAPI", skip_cache: bool = False):
         """
         Fetch poll results for all polls in this post.

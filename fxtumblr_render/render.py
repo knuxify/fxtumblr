@@ -142,7 +142,11 @@ class RenderTaskPost(RenderTask):
         """Run the post render task."""
 
         # Get post data
-        post = await worker.tumblr.get_post(self.blog_name, self.post_id)
+        post = await worker.tumblr.get_post(
+            self.blog_name,
+            self.post_id,
+            fetch_reblog_trail_timestamps=(RenderModifier.DATE in self.modifiers),
+        )
         if not post:
             return json.dumps({"error": "Post not found"}).encode("utf-8")
 

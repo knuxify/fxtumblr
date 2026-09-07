@@ -9,6 +9,7 @@ class RenderModifier(StrEnum):
 
     DARK = "dark"
     UNROLL = "unroll"
+    DATE = "date"
 
 
 class RenderFiletype(StrEnum):

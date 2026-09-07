@@ -223,6 +223,8 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
         modifiers.append(RenderModifier.DARK)
     if "unroll" in request.args:
         modifiers.append(RenderModifier.UNROLL)
+    if "date" in request.args:
+        modifiers.append(RenderModifier.DATE)
 
     try:
         embed = PostEmbed.from_post(

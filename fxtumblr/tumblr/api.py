@@ -264,6 +264,7 @@ class TumblrAPI:
         post_id: int,
         skip_cache: bool = False,
         fetch_poll_results: bool = True,
+        fetch_reblog_trail_timestamps: bool = False,
         raise_on_private_blog: bool = False,
     ) -> Post | None:
         """
@@ -277,6 +278,9 @@ class TumblrAPI:
         :param fetch_poll_results: If True (the default), fetches poll results
             for all polls in the post. This requires additional API calls; if
             such behavior is undesirable, set this to False.
+        :param fetch_reblog_trail_timestamps: If True, fetches the timestamps
+            for every post in the reblog trail. This requires an additional API
+            call per every post in the trail, and is as such disabled by default.
         :param raise_on_private_blog: If True, and the blog is private,
             raises PrivateBlogException.
         :returns: Post object representing the post if it was found, None otherwise.
@@ -310,6 +314,11 @@ class TumblrAPI:
 
                         if fetch_poll_results:
                             await post.fetch_poll_results(self, skip_cache=skip_cache)
+
+                        if fetch_reblog_trail_timestamps:
+                            await post.fetch_reblog_trail_timestamps(
+                                self, skip_cache=skip_cache
+                            )
 
                         if not skip_cache:
                             await cache.set_json(cache_key, post_data)
