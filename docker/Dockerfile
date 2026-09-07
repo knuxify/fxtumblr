@@ -30,29 +30,29 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /opt/fxtumblr
 
-# Copy the source code into the container
-COPY fxtumblr fxtumblr
-COPY fxtumblr_render fxtumblr_render
-COPY pyproject.toml pyproject.toml
-
-# Install shared dependencies
-RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install .
-
 # Add fxtumblr user
 ARG UID=10001
 ARG GID=10001
 RUN groupadd -g "${GID}" fxtumblr && \
     useradd -m -u ${UID} -g fxtumblr fxtumblr
 
+# Copy dependency info into the container
+COPY pyproject.toml pyproject.toml
+# (readme is needed by pyproject)
+COPY README.md README.md
+
 #
 # Embed server
 #
 FROM base AS fxtumblr
 
+# Copy the source code into the container
+COPY fxtumblr fxtumblr
+COPY fxtumblr_render fxtumblr_render
+
 # Install embed server dependencies
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install .[embed-server]
+    python -m pip install --only-deps .[embed-server]
 
 # Expose the listening port
 EXPOSE ${FXTUMBLR_PORT}
@@ -66,19 +66,27 @@ ENTRYPOINT hypercorn -w "${FXTUMBLR_WORKERS}" fxtumblr.app -b "0.0.0.0:${FXTUMBL
 #
 FROM base AS fxtumblr-render
 
-# Install render server dependencies
-RUN --mount=type=cache,target=/root/.cache/pip \
-    apt update && \
-    apt install -y fonts-noto fonts-noto-cjk fonts-noto-cjk-extra fonts-noto-extra fonts-noto-color-emoji && \
-    python -m pip install .[render-playwright] && \
-    playwright install-deps chromium
-
 # Create renders directory
 RUN mkdir -p renders && \
     chown -R 10001:10001 renders
 
+# Install system-side render server dependencies
+RUN --mount=type=cache,target=/root/.cache/pip \
+    apt update && \
+    apt install -y fonts-noto fonts-noto-cjk fonts-noto-cjk-extra fonts-noto-extra fonts-noto-color-emoji && \
+    python -m pip install playwright && \
+    playwright install-deps chromium
+
+# Copy the source code into the container
+COPY fxtumblr fxtumblr
+COPY fxtumblr_render fxtumblr_render
+
+# Install Python-side render server dependencies
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install --only-deps .[embed-server]
+
 USER fxtumblr
-RUN playwright install chromium-headless-shell
+RUN playwright install --only-shell chromium-headless-shell
 
 # Expose the listening port
 EXPOSE ${FXTUMBLR_RENDER_PORT}
