@@ -77,6 +77,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install playwright && \
     playwright install-deps chromium
 
+USER fxtumblr
+RUN playwright install --only-shell chromium-headless-shell
+
+USER root
 # Copy the source code into the container
 COPY fxtumblr fxtumblr
 COPY fxtumblr_render fxtumblr_render
@@ -84,9 +88,6 @@ COPY fxtumblr_render fxtumblr_render
 # Install Python-side render server dependencies
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --only-deps .[embed-server]
-
-USER fxtumblr
-RUN playwright install --only-shell chromium-headless-shell
 
 # Expose the listening port
 EXPOSE ${FXTUMBLR_RENDER_PORT}
