@@ -226,9 +226,14 @@ async def generate_embed(blog_id: str, post_id: int, summary: str | None = None)
     if "date" in request.args:
         modifiers.append(RenderModifier.DATE)
 
+    if modifiers:
+        force_render = True
+    else:
+        force_render = "forcerender" in request.args
+
     try:
         embed = PostEmbed.from_post(
-            post, force_render="forcerender" in request.args, render_modifiers=modifiers
+            post, force_render=force_render, render_modifiers=modifiers
         )
 
     except Exception as e:
