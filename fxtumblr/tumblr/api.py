@@ -163,8 +163,10 @@ class TumblrAPI:
         # If we're ratelimited, switch to the next API key
         api_key_switches = 0
         while r.status_code == 429:
+            logger.warning("Ratelimit detected, switching to another API key...")
             api_key_switches += 1
             if api_key_switches > len(self.credentials):
+                logger.error("Ran out of API keys to rotate")
                 break  # Fall back to error case
 
             # Switch to the next available key
