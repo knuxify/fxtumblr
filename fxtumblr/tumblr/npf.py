@@ -2362,3 +2362,20 @@ class NPFPost:
                     )
                 except ValueError:
                     continue
+
+    @property
+    def date_str(self) -> str:
+        """
+        The timestamp converted to a human-readable date, like the one
+        shown in post headers.
+        """
+        if self.timestamp < 0:
+            return ""
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        date = datetime.datetime.fromtimestamp(self.timestamp, tz=datetime.timezone.utc)
+
+        if now.year == date.year:
+            return date.strftime("%b %-d")
+        else:
+            return date.strftime("%b %-d, %Y")

@@ -52,6 +52,7 @@ html, body {
 		background-color: rgb(26, 26, 26);
 		color: #fff;
 		--black: 255, 255, 255;
+		--secondary: rgba(76, 94, 114, 1);
 	{% else %}
 		background-color: #fff;
 		color: #000;
@@ -88,6 +89,11 @@ html, body {
 	font-size: .875rem; font-weight: 350; line-height: 1.25rem;
 }
 
+.post-header .date {
+	font-size: .875rem; font-weight: 350; line-height: 1.25rem;
+	color: rgba(var(--black), 0.65);
+}
+
 .main-header .reblogged-by {
 	color: rgb(var(--black));
 }
@@ -114,6 +120,10 @@ html, body {
 	background-color: rgb(1, 207, 53); color: rgba(255, 255, 255, 1);
 	border-radius: 9999px;
 	outline: 2px solid {% if "dark" in modifiers %}rgb(26, 26, 26){% else %}rgba(255, 255, 255, 1){% endif %};
+}
+
+.post-header .username-date-container {
+	display: flex; flex-direction: column; flex-wrap: wrap;
 }
 
 .tags {
