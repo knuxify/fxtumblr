@@ -300,6 +300,11 @@ class TumblrAPI:
                 if fetch_poll_results:
                     await post.fetch_poll_results(self, skip_cache=skip_cache)
 
+                if fetch_reblog_trail_timestamps:
+                    await post.fetch_reblog_trail_timestamps(
+                        self, skip_cache=skip_cache
+                    )
+
                 return post
 
         params = {"id": post_id, "reblog_info": "true", "npf": "true"}
